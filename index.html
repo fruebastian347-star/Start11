@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Startopstilling</title>
+
+    <link
+        rel="stylesheet"
+        href="start11.css"
+    >
+</head>
+
+
+<body>
+
+<div class="start11-shell">
+
+    <!-- =====================================================
+         GLOBAL TOPBAR
+    ====================================================== -->
+    <header class="start11-global-topbar">
+
+        <a href="html.html" class="start11-brand" aria-label="Tilbage">
+            <span>START11</span>
+        </a>
+
+        <nav class="start11-main-nav" aria-label="Hovednavigation">
+            <button class="start11-nav-item active" type="button" data-start11-target="matchesSection">KAMPE</button>
+            <button class="start11-nav-item" type="button" data-start11-target="lineupSection">OPSTILLING</button>
+            <button class="start11-nav-item" type="button" data-start11-target="squadSection">TRUP</button>
+            <button class="start11-nav-item" type="button" data-start11-target="tacticsSection">TAKTIK</button>
+            <button class="start11-nav-item" id="topPdfButton" type="button">PDF</button>
+        </nav>
+
+        <div class="start11-topbar-right">
+
+            <div
+                id="cloudStatus"
+                class="cloud-status"
+            >
+                Lokal tilstand
+            </div>
+
+            <div
+                id="teamControls"
+                class="team-controls"
+                style="display:none;"
+            >
+                <select
+                    id="teamSelector"
+                    aria-label="Vælg hold"
+                ></select>
+
+                <button
+                    id="newTeamButton"
+                    class="small-button"
+                    type="button"
+                >
+                    + HOLD
+                </button>
+            </div>
+
+            <button
+                id="saveButton"
+                class="small-button start11-save-button"
+                type="button"
+            >
+                GEM
+            </button>
+
+            <button
+                id="loginButton"
+                class="account-login-button"
+                type="button"
+            >
+                LOG IND
+            </button>
+
+            <div
+                id="accountMenu"
+                class="account-menu"
+                style="display:none;"
+            >
+
+                <button
+                    id="accountMenuButton"
+                    class="account-menu-button"
+                    type="button"
+                    aria-expanded="false"
+                >
+                    <span
+                        id="accountAvatar"
+                        class="account-avatar"
+                    >
+                        U
+                    </span>
+
+                    <span
+                        id="accountDisplayName"
+                        class="account-display-name"
+                    >
+                        Bruger
+                    </span>
+
+                    <span class="account-chevron">
+                        ▾
+                    </span>
+                </button>
+
+                <div
+                    id="accountDropdown"
+                    class="account-dropdown"
+                >
+
+                    <div class="account-dropdown-user">
+
+                        <div
+                            id="accountDropdownAvatar"
+                            class="account-dropdown-avatar"
+                        >
+                            U
+                        </div>
+
+                        <div class="account-dropdown-user-text">
+
+                            <strong id="accountDropdownName">
+                                Bruger
+                            </strong>
+
+                            <span id="accountEmail">
+                                Ikke logget ind
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="account-dropdown-divider"></div>
+
+                    <button
+                        id="myTeamsMenuButton"
+                        class="account-dropdown-item"
+                        type="button"
+                    >
+                        <span class="account-dropdown-icon">▦</span>
+                        <span>Mine hold</span>
+                        <span class="account-dropdown-arrow">›</span>
+                    </button>
+
+                    <button
+                        id="accountSettingsMenuButton"
+                        class="account-dropdown-item"
+                        type="button"
+                    >
+                        <span class="account-dropdown-icon">⚙</span>
+                        <span>Kontoindstillinger</span>
+                        <span class="account-dropdown-arrow">›</span>
+                    </button>
+
+                    <button
+                        id="helpSupportMenuButton"
+                        class="account-dropdown-item"
+                        type="button"
+                    >
+                        <span class="account-dropdown-icon">?</span>
+                        <span>Hjælp & support</span>
+                        <span class="account-dropdown-arrow">›</span>
+                    </button>
+
+                    <div class="account-dropdown-divider"></div>
+
+                    <button
+                        id="logoutButton"
+                        class="account-dropdown-item account-logout"
+                        type="button"
+                        style="display:none;"
+                    >
+                        <span class="account-dropdown-icon">↪</span>
+                        Log ud
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         DASHBOARD
+    ====================================================== -->
+    <main class="start11-dashboard">
+
+        <!-- LEFT COLUMN -->
+        <aside
+            class="start11-left-column"
+            id="matchesSection"
+        >
+
+            <section class="start11-card next-match-card">
+
+                <div class="start11-card-heading">
+                    <h2>NÆSTE KAMP</h2>
+                    <span class="start11-dbu-badge">DBU</span>
+                </div>
+
+                <div class="next-match-league" id="dashboardCompetition">
+                    KAMPPROGRAM
+                </div>
+
+                <div class="next-match-versus">
+
+                    <div class="next-match-team">
+
+                        <div class="dashboard-team-logo">
+
+                            <img
+                                id="dashboardHomeLogo"
+                                class="dashboard-team-logo-image"
+                                alt="Hjemmehold logo"
+                            >
+
+                            <span
+                                id="dashboardHomeLogoFallback"
+                                class="dashboard-team-logo-fallback"
+                            >
+                                H
+                            </span>
+
+                        </div>
+
+                        <strong id="dashboardHomeTeam">FC THY</strong>
+
+                    </div>
+
+                    <span class="next-match-vs">VS</span>
+
+                    <div class="next-match-team">
+
+                        <div class="dashboard-team-logo dashboard-team-logo-away">
+
+                            <img
+                                id="dashboardAwayLogo"
+                                class="dashboard-team-logo-image"
+                                alt="Udehold logo"
+                            >
+
+                            <span
+                                id="dashboardAwayLogoFallback"
+                                class="dashboard-team-logo-fallback"
+                            >
+                                U
+                            </span>
+
+                        </div>
+
+                        <strong id="dashboardAwayTeam">MODSTANDER</strong>
+
+                    </div>
+
+                </div>
+
+                <div class="next-match-meta">
+                    <span id="dashboardMatchDate">Dato ikke valgt</span>
+                    <span id="dashboardMatchTime">Tid ikke valgt</span>
+                    <span id="dashboardMatchPlace">Spillested ikke valgt</span>
+                </div>
+
+                <button
+                    class="start11-primary-action"
+                    id="openCurrentMatchButton"
+                    type="button"
+                >
+                    ÅBN KAMP →
+                </button>
+
+            </section>
+
+
+            <section class="start11-card upcoming-card">
+
+                <div class="start11-card-heading">
+                    <h2>KOMMENDE KAMPE</h2>
+                    <button
+                        class="start11-text-button"
+                        id="editMatchPlanShortcut"
+                        type="button"
+                    >
+                        Rediger
+                    </button>
+                </div>
+
+                <div
+                    id="upcomingMatchesList"
+                    class="upcoming-matches-list"
+                ></div>
+
+            </section>
+
+
+            <section class="start11-card dbu-connect-card">
+
+                <div class="start11-card-heading">
+                    <h2>DBU CONNECT</h2>
+                    <span class="start11-status-dot"></span>
+                </div>
+
+                <p>
+                    Gem linket til jeres DBU-holdside. Layoutet er klar til automatisk kampsync via en lille backend/proxy.
+                </p>
+
+                <input
+                    id="dbuTeamUrlInput"
+                    class="start11-input"
+                    type="url"
+                    placeholder="https://www.dbu.dk/resultater/hold/..."
+                >
+
+                <div class="start11-inline-actions">
+                    <button
+                        id="saveDbuTeamUrl"
+                        class="start11-secondary-action"
+                        type="button"
+                    >
+                        GEM LINK
+                    </button>
+
+                    <button
+                        id="openDbuTeamUrl"
+                        class="start11-secondary-action"
+                        type="button"
+                    >
+                        ÅBN DBU
+                    </button>
+
+                    <button
+                        id="syncDbuMatchesButton"
+                        class="start11-secondary-action"
+                        type="button"
+                    >
+                        HENT KAMPE
+                    </button>
+                </div>
+
+                <div
+                    id="dbuConnectionStatus"
+                    class="dbu-connection-status"
+                >
+                    Ikke forbundet
+                </div>
+
+            </section>
+
+        </aside>
+
+
+        <!-- CENTER COLUMN -->
+        <section
+            class="start11-center-column"
+            id="lineupSection"
+        >
+
+            <section class="start11-card lineup-card">
+
+                <div class="lineup-card-toolbar">
+
+                    <div>
+                        <div class="start11-eyebrow">KAMP</div>
+
+                        <div class="match-title-display">
+                            <span id="displayHomeTeam">FC THY</span>
+                            <span class="vs">VS</span>
+                            <span id="displayAwayTeam">MODSTANDER</span>
+                        </div>
+                    </div>
+
+                    <div class="lineup-toolbar-actions">
+
+                        <label class="formation-inline-label" for="formationSelector">
+                            FORMATION
+                        </label>
+
+                        <select id="formationSelector">
+                            <option value="4-4-2">4-4-2</option>
+                            <option value="4-3-3">4-3-3</option>
+                            <option value="4-2-3-1">4-2-3-1</option>
+                            <option value="4-4-2-diamond">4-4-2 (Diamant)</option>
+                            <option value="3-5-2">3-5-2</option>
+                            <option value="5-3-2">5-3-2</option>
+                            <option value="3-4-3">3-4-3</option>
+                            <option value="4-1-4-1">4-1-4-1</option>
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <section class="pitch-wrapper">
+
+                    <div
+                        id="pitch"
+                        class="pitch"
+                    >
+
+                        <div class="pitch-lines">
+                            <div class="halfway-line"></div>
+                            <div class="center-circle"></div>
+                            <div class="center-dot"></div>
+                            <div class="penalty-box top"></div>
+                            <div class="goal-box top"></div>
+                            <div class="penalty-box bottom"></div>
+                            <div class="goal-box bottom"></div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <div class="bench-zone">
+
+                    <div class="bench-zone-header">
+                        <div>
+                            <span class="start11-eyebrow">KAMPTRUP</span>
+                            <h3>UDSKIFTERE <span id="substituteCountBadge"></span></h3>
+                        </div>
+
+                        <button
+                            id="addSubstituteButton"
+                            class="start11-secondary-action"
+                            type="button"
+                        >
+                            + TILFØJ UDSKIFTER
+                        </button>
+                    </div>
+
+                    <div
+                        id="substituteList"
+                        class="substitute-list-redesign"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <section
+                id="playerDetails"
+                class="player-details start11-card"
+            >
+                <div class="no-player">
+                    Klik på en spiller for at se spillerens information og fokuspunkter.
+                </div>
+            </section>
+
+        </section>
+
+
+        <!-- MATCH SQUAD COLUMN -->
+        <section class="start11-middle-column">
+
+            <section class="start11-card match-squad-card">
+
+                <div class="start11-segmented-control">
+                    <button
+                        class="squad-view-tab active"
+                        data-squad-view="match"
+                        type="button"
+                    >
+                        KAMPTRUP
+                    </button>
+
+                    <button
+                        class="squad-view-tab"
+                        data-squad-view="all"
+                        type="button"
+                    >
+                        TRUP
+                    </button>
+
+                    <button
+                        class="squad-view-tab"
+                        data-squad-view="notSelected"
+                        type="button"
+                    >
+                        IKKE UDTAGET
+                    </button>
+                </div>
+
+                <div class="start11-card-heading match-squad-heading">
+                    <h2 id="matchSquadHeading">KAMPTRUP</h2>
+                    <span id="matchSquadCount" class="start11-count-badge">0</span>
+                </div>
+
+                <div
+                    id="matchSquadOverview"
+                    class="match-squad-overview"
+                ></div>
+
+                <button
+                    id="openSquadSectionButton"
+                    class="start11-outline-action"
+                    type="button"
+                >
+                    + TILFØJ SPILLER TIL KAMPTRUP
+                </button>
+
+                <p class="start11-help-text">
+                    Hele truppen gemmes permanent. Spillere kan være ikke udtaget uden at blive slettet.
+                </p>
+
+                <!-- Beholdes til eksisterende JavaScript -->
+                <div class="legacy-roster-holder" aria-hidden="true">
+                    <div id="rosterList"></div>
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- FULL SQUAD COLUMN -->
+        <aside
+            class="start11-right-column"
+            id="squadSection"
+        >
+
+            <section class="start11-card full-squad-card">
+
+                <div class="start11-card-heading">
+                    <h2>TRUP</h2>
+                    <span id="fullSquadCount" class="start11-count-badge">0</span>
+                </div>
+
+                <input
+                    id="squadSearchInput"
+                    class="start11-input"
+                    type="search"
+                    placeholder="Søg spiller..."
+                >
+
+                <div class="squad-filter-row">
+
+                    <select
+                        id="squadPositionFilter"
+                        class="start11-select"
+                    >
+                        <option value="">Alle positioner</option>
+                        <option value="GK">Målmand</option>
+                        <option value="RB">Højre back</option>
+                        <option value="CB">Centerback</option>
+                        <option value="LB">Venstre back</option>
+                        <option value="DM">6'er</option>
+                        <option value="CM">8'er</option>
+                        <option value="AM">10'er</option>
+                        <option value="RM">Højre midtbane</option>
+                        <option value="LM">Venstre midtbane</option>
+                        <option value="RW">Højre kant</option>
+                        <option value="LW">Venstre kant</option>
+                        <option value="ST">Angriber</option>
+                    </select>
+
+                    <select
+                        id="squadStatusFilter"
+                        class="start11-select"
+                    >
+                        <option value="">Alle statuser</option>
+                        <option value="available">Tilgængelig</option>
+                        <option value="unavailable">Ikke tilgængelig</option>
+                        <option value="injured">Skadet</option>
+                    </select>
+
+                </div>
+
+                <div class="full-squad-table-header">
+                    <span>#</span>
+                    <span>NAVN</span>
+                    <span>POS</span>
+                    <span>STATUS</span>
+                </div>
+
+                <div
+                    id="fullSquadList"
+                    class="full-squad-list"
+                ></div>
+
+                <button
+                    id="addFullSquadPlayerButton"
+                    class="start11-outline-action"
+                    type="button"
+                >
+                    + TILFØJ NY SPILLER
+                </button>
+
+            </section>
+
+        </aside>
+
+
+        <!-- BOTTOM ROW -->
+        <section class="start11-bottom-grid">
+
+            <section class="start11-card match-info-card">
+
+                <div class="start11-card-heading">
+                    <h2>KAMPINFORMATION</h2>
+
+                    <button
+                        id="editMatchInfoBottom"
+                        class="start11-text-button"
+                        type="button"
+                    >
+                        REDIGER
+                    </button>
+                </div>
+
+                <div class="match-info-grid">
+                    <div>
+                        <span>Række</span>
+                        <strong id="bottomCompetition">DBU kamp</strong>
+                    </div>
+                    <div>
+                        <span>Dato</span>
+                        <strong id="bottomMatchDate">—</strong>
+                    </div>
+                    <div>
+                        <span>Tidspunkt</span>
+                        <strong id="bottomMatchTime">—</strong>
+                    </div>
+                    <div>
+                        <span>Spillested</span>
+                        <strong id="bottomMatchPlace">—</strong>
+                    </div>
+                    <div>
+                        <span>Modstander</span>
+                        <strong id="bottomOpponent">—</strong>
+                    </div>
+                    <div>
+                        <span>Hjemme/Ude</span>
+                        <strong id="bottomHomeAway">Hjemme</strong>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <section
+                class="start11-card tactics-card"
+                id="tacticsSection"
+            >
+
+                <div class="start11-card-heading">
+                    <h2>TAKTISKE FOKUSPUNKTER</h2>
+
+                    <button
+                        id="editTacticsBottom"
+                        class="start11-text-button"
+                        type="button"
+                    >
+                        REDIGER
+                    </button>
+                </div>
+
+                <div class="tactics-preview-grid">
+
+                    <div>
+                        <h3>MED BOLD</h3>
+                        <p id="dashboardWithBall">
+                            Ingen fokuspunkter tilføjet endnu.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3>UDEN BOLD</h3>
+                        <p id="dashboardWithoutBall">
+                            Ingen fokuspunkter tilføjet endnu.
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="start11-card coach-card">
+
+                <div class="start11-card-heading">
+                    <h2>TRÆNERBESKED</h2>
+                </div>
+
+                <p id="dashboardCoachMessage">
+                    Tilføj en trænerbesked i kampplanen.
+                </p>
+
+                <button
+                    id="dashboardPdfButton"
+                    class="start11-primary-action"
+                    type="button"
+                >
+                    ▣ GENERER KAMP-PDF
+                </button>
+
+            </section>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     TRUP-SPILLER MODAL
+========================================================= -->
+
+<div
+    id="squadPlayerModal"
+    class="modal start11-account-modal"
+>
+    <div class="modal-content start11-account-panel start11-squad-player-panel">
+
+        <button
+            id="closeSquadPlayerModal"
+            class="close-button"
+            type="button"
+            aria-label="Luk"
+        >
+            ×
+        </button>
+
+        <div class="start11-player-modal-header">
+
+            <div class="start11-player-modal-icon">
+                ♙
+            </div>
+
+            <div>
+                <div class="start11-modal-kicker">TRUP</div>
+
+                <h2 id="squadPlayerModalTitle">
+                    TILFØJ NY SPILLER
+                </h2>
+
+                <p class="squad-player-modal-description">
+                    Opret spilleren én gang i truppen. Derefter kan hun udtages
+                    til kampe og placeres i startopstillingen eller på bænken.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="squad-player-form-grid">
+
+            <label>
+                Navn
+                <input
+                    id="squadPlayerName"
+                    type="text"
+                    maxlength="80"
+                    placeholder="Spillernavn"
+                >
+            </label>
+
+            <label>
+                Nummer
+                <input
+                    id="squadPlayerNumber"
+                    type="number"
+                    min="0"
+                    max="99"
+                    placeholder="11"
+                >
+            </label>
+
+            <label>
+                Primær position
+                <select id="squadPlayerPosition">
+                    <option value="GK">Målmand</option>
+                    <option value="RB">Højre back</option>
+                    <option value="CB">Centerback</option>
+                    <option value="LB">Venstre back</option>
+                    <option value="DM">6'er</option>
+                    <option value="CM" selected>8'er</option>
+                    <option value="AM">10'er</option>
+                    <option value="RM">Højre midtbane</option>
+                    <option value="LM">Venstre midtbane</option>
+                    <option value="RW">Højre kant</option>
+                    <option value="LW">Venstre kant</option>
+                    <option value="ST">Angriber</option>
+                </select>
+            </label>
+
+            <label>
+                Status
+                <select id="squadPlayerStatus">
+                    <option value="available">Tilgængelig</option>
+                    <option value="unavailable">Ikke tilgængelig</option>
+                    <option value="injured">Skadet</option>
+                </select>
+            </label>
+
+        </div>
+
+
+        <div class="start11-squad-extra-fields">
+
+            <label>
+                Styrker
+                <textarea
+                    id="squadPlayerStrengths"
+                    rows="3"
+                    placeholder="Fx 1v1, fart, blik for spillet..."
+                ></textarea>
+            </label>
+
+            <label>
+                Svagheder / udviklingsområder
+                <textarea
+                    id="squadPlayerWeaknesses"
+                    rows="3"
+                    placeholder="Fx orientering, duelspil..."
+                ></textarea>
+            </label>
+
+            <label>
+                Fokuspunkter med bold
+                <textarea
+                    id="squadPlayerFocusWithBall"
+                    rows="3"
+                    placeholder="Spillerspecifikt fokus med bold..."
+                ></textarea>
+            </label>
+
+            <label>
+                Fokuspunkter uden bold
+                <textarea
+                    id="squadPlayerFocusWithoutBall"
+                    rows="3"
+                    placeholder="Spillerspecifikt fokus uden bold..."
+                ></textarea>
+            </label>
+
+            <label class="start11-squad-extra-wide">
+                Videolink
+                <input
+                    id="squadPlayerVideo"
+                    type="url"
+                    placeholder="https://..."
+                >
+            </label>
+
+        </div>
+
+
+        <label class="start11-checkbox-row">
+
+            <input
+                id="squadPlayerSelected"
+                type="checkbox"
+            >
+
+            <span>
+                <strong>Udtaget til den aktuelle kamp</strong>
+                <small>
+                    Spilleren bliver tilføjet til kamptruppen med det samme.
+                </small>
+            </span>
+
+        </label>
+
+
+        <div class="squad-player-modal-footer-text">
+            Spillerens oplysninger gemmes i hele truppen og kan redigeres senere.
+        </div>
+
+
+        <div class="start11-modal-actions">
+
+            <button
+                id="deleteSquadPlayerButton"
+                class="start11-danger-button"
+                type="button"
+                style="display:none;"
+            >
+                SLET FRA TRUP
+            </button>
+
+            <button
+                id="saveSquadPlayerButton"
+                class="start11-primary-button"
+                type="button"
+            >
+                GEM SPILLER
+            </button>
+
+        </div>
+
+    </div>
+</div>
+
+
+<!-- =========================================================
+     PLAYER MODAL
+========================================================= -->
+
+<div
+    id="playerModal"
+    class="modal"
+>
+
+    <div class="modal-content">
+
+        <button
+            class="close-button"
+            onclick="lukPlayerModal()"
+        >
+            ×
+        </button>
+
+
+        <h2 id="modalTitle">
+            Tilføj spiller
+        </h2>
+
+
+        <form id="playerForm">
+
+
+            <label>
+                Navn
+            </label>
+
+            <input
+                type="text"
+                id="playerName"
+                placeholder="F.eks. Clara"
+                required
+            >
+
+
+            <label>
+                Nummer
+            </label>
+
+            <input
+                type="number"
+                id="playerNumber"
+                min="1"
+                max="99"
+                placeholder="10"
+                required
+            >
+
+
+            <label>
+                Position
+            </label>
+
+            <select id="playerPosition">
+
+                <option value="GK">
+                    Målmand (GK)
+                </option>
+
+                <option value="RB">
+                    Højre back (RB)
+                </option>
+
+                <option value="CB">
+                    Midterforsvarer (CB)
+                </option>
+
+                <option value="LB">
+                    Venstre back (LB)
+                </option>
+
+                <option value="DM">
+                    Defensiv midtbane (DM)
+                </option>
+
+                <option value="CM">
+                    Central midtbane (CM)
+                </option>
+
+                <option value="AM">
+                    Offensiv midtbane (AM)
+                </option>
+
+                <option value="RM">
+                    Højre midtbane (RM)
+                </option>
+
+                <option value="LM">
+                    Venstre midtbane (LM)
+                </option>
+
+                <option value="RW">
+                    Højre kant (RW)
+                </option>
+
+                <option value="LW">
+                    Venstre kant (LW)
+                </option>
+
+                <option value="ST">
+                    Angriber (ST)
+                </option>
+
+            </select>
+
+
+            <label>
+                Styrker / positive
+            </label>
+
+            <textarea
+                id="playerStrengths"
+                placeholder="F.eks. teknisk stærk, godt overblik..."
+            ></textarea>
+
+
+            <label>
+                Svagheder / negative
+            </label>
+
+            <textarea
+                id="playerWeaknesses"
+                placeholder="F.eks. mangler fart..."
+            ></textarea>
+
+
+            <div class="modal-divider"></div>
+
+
+            <h3>
+                🎯 SPILLERENS FOKUSPUNKTER
+            </h3>
+
+
+            <label>
+                Med bold
+            </label>
+
+            <textarea
+                id="playerFocusWithBall"
+                placeholder="Skriv spillerens fokuspunkter med bold..."
+            ></textarea>
+
+
+            <label>
+                Uden bold
+            </label>
+
+            <textarea
+                id="playerFocusWithoutBall"
+                placeholder="Skriv spillerens fokuspunkter uden bold..."
+            ></textarea>
+
+
+            <label>
+                Video
+            </label>
+
+            <input
+                type="url"
+                id="playerVideo"
+                placeholder="https://youtu.be/..."
+            >
+
+
+            <div class="modal-buttons">
+
+                <button
+                    type="submit"
+                    class="save-player"
+                >
+                    GEM SPILLER
+                </button>
+
+                <button
+                    type="button"
+                    class="remove-player"
+                    onclick="fjernSpiller()"
+                >
+                    FJERN SPILLER
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     KAMPPLAN MODAL
+========================================================= -->
+
+<div
+    id="matchplanModal"
+    class="modal"
+>
+
+    <div class="modal-content matchplan-modal">
+
+        <button
+            class="close-button"
+            onclick="lukKampplan()"
+        >
+            ×
+        </button>
+
+
+        <h2>
+            KAMPPLAN
+        </h2>
+
+        <p class="modal-intro">
+            Alt herunder bliver gemt automatisk og kommer
+            med i kamppakken.
+        </p>
+
+
+        <!-- KAMPINFO -->
+
+        <div class="form-section">
+
+            <h3>
+                🏟️ KAMPINFO
+            </h3>
+
+
+            <div class="two-columns">
+
+                <div>
+
+                    <label>
+                        Hjemmehold
+                    </label>
+
+                    <input
+                        type="text"
+                        id="homeTeam"
+                        placeholder="FC THY"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Modstander
+                    </label>
+
+                    <input
+                        type="text"
+                        id="awayTeam"
+                        placeholder="AAB"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="two-columns">
+
+                <div>
+
+                    <label>
+                        Kampdato
+                    </label>
+
+                    <input
+                        type="date"
+                        id="matchDate"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Kampstart
+                    </label>
+
+                    <input
+                        type="time"
+                        id="matchTime"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <label>
+                Spillested
+            </label>
+
+            <input
+                type="text"
+                id="matchPlace"
+                placeholder="Thisted FC"
+            >
+
+        </div>
+
+
+
+        <!-- =================================================
+             LOGOER OG BAGGRUND
+        ================================================== -->
+
+        <div class="form-section">
+
+            <h3>
+                🖼️ PDF-DESIGN
+            </h3>
+
+            <p class="upload-info">
+                Upload logoer og et baggrundsbillede.
+                Billederne gemmes i browseren og bruges automatisk
+                på PDF'en.
+            </p>
+
+
+            <div class="upload-grid">
+
+
+                <!-- HJEMME LOGO -->
+
+                <div class="upload-card">
+
+                    <label>
+                        Hjemmeholdets logo
+                    </label>
+
+                    <input
+                        type="file"
+                        id="homeLogoInput"
+                        accept="image/*"
+                    >
+
+                    <div
+                        id="homeLogoPreview"
+                        class="upload-preview"
+                    ></div>
+
+                    <button
+                        type="button"
+                        class="remove-image-button"
+                        onclick="fjernBillede('homeLogo')"
+                    >
+                        Fjern logo
+                    </button>
+
+                </div>
+
+
+                <!-- UDE LOGO -->
+
+                <div class="upload-card">
+
+                    <label>
+                        Modstanderens logo
+                    </label>
+
+                    <input
+                        type="file"
+                        id="awayLogoInput"
+                        accept="image/*"
+                    >
+
+                    <div
+                        id="awayLogoPreview"
+                        class="upload-preview"
+                    ></div>
+
+                    <button
+                        type="button"
+                        class="remove-image-button"
+                        onclick="fjernBillede('awayLogo')"
+                    >
+                        Fjern logo
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- BAGGRUND -->
+
+            <div class="upload-card background-upload">
+
+                <label>
+                    Baggrundsbillede til PDF
+                </label>
+
+                <input
+                    type="file"
+                    id="backgroundInput"
+                    accept="image/*"
+                >
+
+                <div
+                    id="backgroundPreview"
+                    class="background-preview"
+                ></div>
+
+                <button
+                    type="button"
+                    class="remove-image-button"
+                    onclick="fjernBillede('background')"
+                >
+                    Fjern baggrund
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PRAKTISK INFO -->
+
+        <div class="form-section">
+
+            <h3>
+                📋 PRAKTISK INFO
+            </h3>
+
+            <textarea
+                id="practicalInfo"
+                class="large-textarea"
+                placeholder="Mødetid:
+Sted:
+Kørsel:
+Tøj:
+Frugt:
+Andre beskeder:"
+            ></textarea>
+
+        </div>
+
+
+
+        <!-- PROGRAM -->
+
+        <div class="form-section">
+
+            <h3>
+                🕐 PROGRAM
+            </h3>
+
+            <textarea
+                id="matchProgram"
+                class="large-textarea"
+                placeholder="14:30 – Inspicering af bane
+14:40 – Holdtaktisk
+14:50 – Positionsspecifikt
+15:00 – Omklædning
+15:30 – Opvarmning
+16:00 – Kampstart"
+            ></textarea>
+
+        </div>
+
+
+
+        <!-- MED BOLD -->
+
+        <div class="form-section">
+
+            <h3>
+                ⚽ HOLDTAKTISK – MED BOLD
+            </h3>
+
+            <textarea
+                id="teamWithBall"
+                class="large-textarea"
+                placeholder="Skriv de vigtigste holdtaktiske fokuspunkter med bold..."
+            ></textarea>
+
+        </div>
+
+
+
+        <!-- UDEN BOLD -->
+
+        <div class="form-section">
+
+            <h3>
+                🛡️ HOLDTAKTISK – UDEN BOLD
+            </h3>
+
+            <textarea
+                id="teamWithoutBall"
+                class="large-textarea"
+                placeholder="Skriv de vigtigste holdtaktiske fokuspunkter uden bold..."
+            ></textarea>
+
+        </div>
+
+
+
+        <!-- BESKED -->
+
+        <div class="form-section">
+
+            <h3>
+                💬 BESKED TIL SPILLERNE
+            </h3>
+
+            <textarea
+                id="coachMessage"
+                class="large-textarea"
+                placeholder="En besked til spillerne..."
+            ></textarea>
+
+        </div>
+
+
+
+        <button
+            class="save-matchplan"
+            onclick="gemKampplan()"
+        >
+            💾 GEM KAMPPLAN
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     CLOUD LOGIN
+========================================================= -->
+
+<div
+    id="cloudLoginModal"
+    class="modal"
+>
+
+    <div
+        class="modal-content"
+        style="max-width:460px;"
+    >
+
+        <button
+            id="closeCloudLogin"
+            class="close-button"
+            type="button"
+        >
+            ×
+        </button>
+
+
+        <h2>
+            ☁ START11 LOGIN
+        </h2>
+
+
+        <p class="modal-intro">
+            Log ind for at gemme dine hold og kampplaner
+            privat i skyen og bruge dem på dine andre enheder.
+        </p>
+
+
+        <label for="loginEmail">
+            Email
+        </label>
+
+        <input
+            id="loginEmail"
+            type="email"
+            autocomplete="email"
+            placeholder="din@email.dk"
+        >
+
+
+        <label for="loginPassword">
+            Adgangskode
+        </label>
+
+        <input
+            id="loginPassword"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Adgangskode"
+        >
+
+
+        <div
+            class="modal-buttons"
+            style="margin-top:18px;"
+        >
+
+            <button
+                id="loginSubmit"
+                type="button"
+                class="save-player"
+            >
+                LOG IND
+            </button>
+
+            <button
+                id="signupSubmit"
+                type="button"
+                class="save-player"
+            >
+                OPRET KONTO
+            </button>
+
+        </div>
+
+
+        <p
+            style="
+                font-size:12px;
+                opacity:.7;
+                margin-top:14px;
+            "
+        >
+            Dine data er knyttet til din konto.
+            Andre trænere kan ikke se dem,
+            medmindre du senere vælger at dele et hold.
+        </p>
+
+
+        <div
+            id="loginAccountEmail"
+            style="
+                font-size:12px;
+                opacity:.65;
+                margin-top:8px;
+            "
+        ></div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     MINE HOLD
+========================================================= -->
+<div id="myTeamsModal" class="modal start11-account-modal">
+    <div class="modal-content start11-account-panel start11-teams-panel">
+        <button id="closeMyTeamsModal" class="close-button" type="button">×</button>
+
+        <div class="start11-modal-heading">
+            <div>
+                <span class="start11-eyebrow">START11 CLOUD</span>
+                <h2>MINE HOLD</h2>
+                <p>Skift mellem dine hold, omdøb dem eller opret et nyt.</p>
+            </div>
+            <div class="start11-heading-badge">♟</div>
+        </div>
+
+        <div id="teamsDashboardList" class="teams-dashboard-list"></div>
+
+        <div class="create-team-card">
+            <div class="create-team-copy">
+                <strong>OPRET NYT HOLD</strong>
+                <span>Det nye hold starter som en kopi af din nuværende opstilling.</span>
+            </div>
+            <div class="create-team-controls">
+                <input id="newTeamNameInput" type="text" maxlength="60" placeholder="F.eks. FC THY U14">
+                <button id="createTeamFromDashboard" class="start11-primary-button" type="button">+ OPRET HOLD</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     KONTOINDSTILLINGER
+========================================================= -->
+<div id="accountSettingsModal" class="modal start11-account-modal">
+    <div class="modal-content start11-account-panel start11-settings-panel">
+        <button id="closeAccountSettingsModal" class="close-button" type="button">×</button>
+
+        <div class="start11-modal-heading">
+            <div>
+                <span class="start11-eyebrow">DIN START11-KONTO</span>
+                <h2>KONTOINDSTILLINGER</h2>
+                <p>Administrer profil, login og sikkerhed.</p>
+            </div>
+            <div class="start11-heading-badge">⚙</div>
+        </div>
+
+        <div class="account-settings-profile">
+            <div id="settingsAvatar" class="settings-avatar">U</div>
+            <div>
+                <strong id="settingsDisplayName">Bruger</strong>
+                <span id="settingsProfileEmail">email@email.dk</span>
+            </div>
+        </div>
+
+        <section class="settings-section-card">
+            <div class="settings-section-title">PROFIL</div>
+            <label for="settingsNameInput">Navn</label>
+            <input id="settingsNameInput" type="text" maxlength="80" autocomplete="name" placeholder="Dit navn">
+
+            <label for="settingsEmailInput">Email</label>
+            <input id="settingsEmailInput" type="email" readonly>
+            <div class="settings-field-note">Email kan ikke ændres i denne version.</div>
+
+            <button id="saveAccountProfileButton" class="start11-primary-button settings-wide-button" type="button">GEM ÆNDRINGER</button>
+        </section>
+
+        <section class="settings-section-card">
+            <div class="settings-section-title">SIKKERHED</div>
+            <div class="password-grid">
+                <input id="newPasswordInput" type="password" autocomplete="new-password" placeholder="Ny adgangskode">
+                <input id="confirmPasswordInput" type="password" autocomplete="new-password" placeholder="Gentag adgangskode">
+            </div>
+            <button id="changePasswordButton" class="start11-secondary-button settings-wide-button" type="button">SKIFT ADGANGSKODE</button>
+        </section>
+
+        <section class="settings-section-card settings-danger-card">
+            <div class="settings-section-title">KONTO</div>
+            <button id="settingsLogoutButton" class="start11-danger-button settings-wide-button" type="button">↪ LOG UD</button>
+        </section>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     HJÆLP & SUPPORT
+========================================================= -->
+<div id="helpSupportModal" class="modal start11-account-modal">
+    <div class="modal-content start11-account-panel start11-help-panel">
+        <button id="closeHelpSupportModal" class="close-button" type="button">×</button>
+
+        <div class="start11-modal-heading">
+            <div>
+                <span class="start11-eyebrow">START11 GUIDE</span>
+                <h2>HJÆLP & SUPPORT</h2>
+                <p>Hvordan kan vi hjælpe?</p>
+            </div>
+            <div class="start11-heading-badge">?</div>
+        </div>
+
+        <div class="faq-list">
+            <button class="faq-item" type="button" aria-expanded="false">
+                <span><b>STARTOPSTILLING</b><small>Hvordan tilføjer og flytter jeg spillere?</small></span><i>+</i>
+            </button>
+            <div class="faq-answer">Klik på en plads på banen eller en spiller i listen for at redigere spilleren. Spillere på banen kan trækkes til en ny placering med musen.</div>
+
+            <button class="faq-item" type="button" aria-expanded="false">
+                <span><b>MINE HOLD</b><small>Hvordan opretter og skifter jeg hold?</small></span><i>+</i>
+            </button>
+            <div class="faq-answer">Åbn <b>Mine hold</b> fra profilmenuen. Her kan du oprette, skifte, omdøbe og slette dine cloud-hold.</div>
+
+            <button class="faq-item" type="button" aria-expanded="false">
+                <span><b>CLOUD-SYNKRONISERING</b><small>Hvordan gemmes mine data?</small></span><i>+</i>
+            </button>
+            <div class="faq-answer">Når du er logget ind, gemmer START11 ændringer i Supabase og beholder samtidig en lokal kopi i browseren som fallback.</div>
+
+            <button class="faq-item" type="button" aria-expanded="false">
+                <span><b>KAMPPDF</b><small>Hvordan laver jeg en kamp-PDF?</small></span><i>+</i>
+            </button>
+            <div class="faq-answer">Udfyld kampplanen, gem dine ændringer og vælg derefter <b>Generer kamppdf</b> i venstre menu.</div>
+
+            <button class="faq-item" type="button" aria-expanded="false">
+                <span><b>KONTO & LOGIN</b><small>Problemer med login eller konto?</small></span><i>+</i>
+            </button>
+            <div class="faq-answer">Kontrollér først email og adgangskode. Du kan ændre dit profilnavn og din adgangskode under <b>Kontoindstillinger</b>.</div>
+        </div>
+
+        <div class="support-contact-card">
+            <div>
+                <strong>HAR DU STADIG BRUG FOR HJÆLP?</strong>
+                <span>Kontaktfunktionen kan kobles til din supportmail, når du har valgt den adresse START11 skal bruge.</span>
+            </div>
+            <button id="supportContactButton" class="start11-secondary-button" type="button">KONTAKT SUPPORT</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- NOTIFICATION -->
+
+<div id="notification"></div>
+
+
+
+<!-- PDF -->
+
+<div id="pdfDocument"></div>    
+
+
+
+<script src="start11.js"></script>
+
+</body>
+</html>

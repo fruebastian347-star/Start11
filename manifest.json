@@ -1,0 +1,80 @@
+[
+  {
+    "file": "js/01_core_cloud_auth.js",
+    "lines": "1-8192",
+    "description": "Core, Supabase, auth, cloud, lineup, roster, matchplan, PDF, base init",
+    "bytes": 137258
+  },
+  {
+    "file": "js/02_squad_matchflow.js",
+    "lines": "8193-14375",
+    "description": "Dashboard squad and match squad flow",
+    "bytes": 113418
+  },
+  {
+    "file": "js/03_dbu_calendar_clubs.js",
+    "lines": "14376-20000",
+    "description": "DBU Connect, calendar, team-specific DBU, clubs/teams",
+    "bytes": 127413
+  },
+  {
+    "file": "js/04_legacy_extensions.js",
+    "lines": "20001-32011",
+    "description": "Existing legacy extensions kept isolated during migration",
+    "bytes": 281901
+  },
+  {
+    "file": "js/05_coaching_hub.js",
+    "lines": "32012-36188",
+    "description": "Coaching Hub, development, match plans and video integration",
+    "bytes": 142121
+  },
+  {
+    "file": "js/06_training_calendar_media.js",
+    "lines": "36189-45523",
+    "description": "Training calendar, media, video folders and exercise cards/bank",
+    "bytes": 222215
+  },
+  {
+    "file": "js/07_exercise_designer_matchmode.js",
+    "lines": "45524-51001",
+    "description": "Exercise tactical designer and match-specific lineup mode",
+    "bytes": 146501
+  },
+  {
+    "file": "js/08_coach_os_matchdata.js",
+    "lines": "51002-57090",
+    "description": "Coach OS and Match Data Hub",
+    "bytes": 188149
+  },
+  {
+    "file": "js/09_dbu_bridge_pro_designer_responsive.js",
+    "lines": "57091-63873",
+    "description": "DBU safety bridge, pro exercise designer, animation and responsive layer",
+    "bytes": 214802
+  },
+  {
+    "file": "js/10_training_library.js",
+    "lines": "63874-65542",
+    "description": "Training library and Windows-style exercise folders",
+    "bytes": 66031
+  },
+  {
+    "file": "js/11_tactical_situations.js",
+    "lines": "65543-66388",
+    "description": "Stable integration and tactical match situations",
+    "bytes": 55687
+  },
+  {
+    "file": "js/12_video_analysis.js",
+    "lines": "66389-67297",
+    "description": "Fullscreen/pro video workspace, scrubber, drawing and PDF focus patch",
+    "bytes": 52854
+  },
+  {
+    "file": "js/13_exercise_cloud_sync.js",
+    "lines": "67298-67306",
+    "description": "V27.4 multi-device account-scoped exercise sync",
+    "bytes": 504
+  }
+]
