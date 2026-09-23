@@ -51656,11 +51656,15 @@ function s21ProtectHubModal(){
   shell.addEventListener("pointerdown", e=>e.stopPropagation());
   shell.addEventListener("click", e=>e.stopPropagation());
 
-  /* Capture-listener stopper det gamle backdrop-handler-flow,
-     men lader klik inde i selve hubben fortsætte normalt. */
-  modal.addEventListener("mousedown", e=>{
-    if(e.target !== modal) e.stopImmediatePropagation();
-  }, true);
+  /* V21.1 FIX:
+     Brug IKKE en capture-listener med stopImmediatePropagation her.
+     Den gamle løsning stoppede eventet på modal-niveau, før klik inde i
+     PRINCIPPER nåede input/select/button og fik derfor hubben til at
+     opføre sig som om interaktionen blev afbrudt.
+
+     Den oprindelige s13Modal-handler lukker allerede kun når
+     e.target === modal, så klik inde i .s13shell må bare få lov
+     til at fortsætte normalt. */
 }
 
 function s21HubRefresh(){
@@ -57086,9 +57090,7 @@ if(
         3800
     );
 
-}
-
-/* =========================================================
+}/* =========================================================
    START11 – DBU -> KAMPPLAN SAFETY BRIDGE
    Sikrer at DBU-kampens stamdata altid er source of truth,
    også når kampplan/PDF åbnes fra match-mode.
