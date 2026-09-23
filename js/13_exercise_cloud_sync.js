@@ -615,7 +615,27 @@ function openBrief(type="match",obj=null){
  o.classList.add("open");const names=defs.map(x=>x[0]),render=()=>o.querySelector("#s30preview").innerHTML=buildPreview(type,obj,selectedValues(o,names));render();
  o.querySelectorAll('input[type="checkbox"]').forEach(x=>x.onchange=render);
  o.querySelector("#s30close").onclick=()=>o.classList.remove("open");
- o.querySelector("#s30print").onclick=()=>window.print();
+ o.querySelector("#s30print").onclick=()=>{
+  const preview=o.querySelector("#s30preview");
+  if(!preview)return;
+  const frame=document.createElement("iframe");
+  frame.setAttribute("aria-hidden","true");
+  frame.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(frame);
+  const doc=frame.contentDocument||frame.contentWindow?.document;
+  if(!doc){frame.remove();return;}
+  doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>START11 rapport</title><style>
+    @page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;color:#111;background:#fff;font-family:Arial,sans-serif;font-size:12px;line-height:1.45}h1{font-size:27px;margin:0 0 6px}h2{font-size:20px;margin:0 0 7px}h3{font-size:15px;margin:0 0 8px}.muted{color:#666;font-size:11px;margin-bottom:10px}.box{border:1px solid #d9d9d9;border-radius:8px;padding:12px;margin:10px 0;break-inside:avoid;page-break-inside:avoid}ul{padding-left:18px}p{margin:7px 0}
+  </style></head><body>${preview.innerHTML}</body></html>`);
+  doc.close();
+  const run=()=>{
+    try{frame.contentWindow.focus();frame.contentWindow.print();}
+    finally{setTimeout(()=>frame.remove(),1500)}
+  };
+  if(frame.contentWindow?.document?.readyState==="complete")setTimeout(run,120);
+  else frame.onload=()=>setTimeout(run,120);
+ };
 }
 window.start11OpenBriefStudio=openBrief;
 
