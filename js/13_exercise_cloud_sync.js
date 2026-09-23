@@ -411,3 +411,87 @@ console.info("START11 loaded:", window.START11_BUILD);
 
   console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+   START11 V29 – DBU LIGA HUB + MATCH STORY SCORER FIX
+========================================================= */
+(function(){
+  if(window.__START11_V29__) return;
+  window.__START11_V29__=true;
+  window.START11_BUILD="V29-DBU-LIGA-HUB";
+
+  const esc29=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const norm29=v=>String(v||"").trim().toLowerCase();
+  const notify29=m=>{try{if(typeof visNotification==="function")visNotification(m);else console.info(m)}catch(_){}};
+  const data29=()=>typeof s13Data!=="undefined"&&s13Data?s13Data:{};
+  const ownTeam29=()=>{try{return (typeof start11CalendarTeamName==="function"?start11CalendarTeamName():"")||(typeof start11GetClubMeta==="function"?start11GetClubMeta()?.teamName:"")||""}catch(_){return ""}};
+
+  function styles29(){
+    if(document.getElementById("s29styles"))return;
+    const s=document.createElement("style");s.id="s29styles";s.textContent=`
+      #s29overlay{position:fixed;inset:0;z-index:2147483500;background:rgba(0,0,0,.78);backdrop-filter:blur(9px);display:none;align-items:flex-start;justify-content:center;padding:5vh 14px 24px}#s29overlay.open{display:flex}
+      .s29modal{width:min(1050px,98vw);max-height:90vh;overflow:auto;background:#0d130f;border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 30px 100px rgba(0,0,0,.58);padding:18px;color:#fff}.s29head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.s29k{font-size:9px;font-weight:950;letter-spacing:.13em;color:var(--s11-primary,#72e06a)}.s29title{font-size:28px;font-weight:950;margin-top:3px}.s29mut{font-size:11px;opacity:.62}.s29btn{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.05);color:inherit;border-radius:9px;padding:9px 12px;font:inherit;font-size:10px;font-weight:900;cursor:pointer}.s29btn.primary{background:var(--s11-primary,#72e06a);color:#071007;border-color:transparent}.s29tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 12px}.s29tab.active{background:var(--s11-primary,#72e06a);color:#071007}.s29panel{border:1px solid rgba(255,255,255,.09);border-radius:13px;overflow:hidden;background:rgba(255,255,255,.025)}.s29table{width:100%;border-collapse:collapse;font-size:11px}.s29table th{font-size:8px;letter-spacing:.08em;text-transform:uppercase;opacity:.55;text-align:left;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.08)}.s29table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.055)}.s29table tr.mine{background:color-mix(in srgb,var(--s11-primary,#72e06a) 12%,transparent)}.s29table tr:last-child td{border-bottom:0}.s29team{display:flex;align-items:center;gap:8px;font-weight:850}.s29logo{width:24px;height:24px;object-fit:contain}.s29cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.s29card{padding:14px;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.025)}.s29big{font-size:25px;font-weight:950;margin-top:4px}.s29empty{padding:28px;text-align:center;opacity:.62}.s29match{display:grid;grid-template-columns:80px 1fr auto 1fr;gap:10px;align-items:center;padding:10px;border-bottom:1px solid rgba(255,255,255,.055)}.s29match:last-child{border-bottom:0}.s29right{text-align:right}@media(max-width:700px){.s29cards{grid-template-columns:1fr}.s29table{font-size:9px}.s29table th,.s29table td{padding:8px 5px}.s29match{grid-template-columns:62px 1fr auto 1fr;font-size:9px}.s29hide-mobile{display:none}}
+    `;document.head.appendChild(s);
+  }
+  function overlay29(){let o=document.getElementById("s29overlay");if(!o){o=document.createElement("div");o.id="s29overlay";document.body.appendChild(o);o.onclick=e=>{if(e.target===o)o.classList.remove("open")}}return o}
+  function dbuKey29(){return typeof START11_DBU_URL_KEY!=="undefined"?START11_DBU_URL_KEY:"start11DbuTeamUrl"}
+  function cacheKey29(){return "start11.v29.league."+(typeof activeTeamId!=="undefined"&&activeTeamId?activeTeamId:"default")}
+  function cached29(){try{return JSON.parse(localStorage.getItem(cacheKey29())||"null")}catch(_){return null}}
+  function saveCache29(x){try{localStorage.setItem(cacheKey29(),JSON.stringify({at:Date.now(),data:x}))}catch(_){}}
+
+  async function fetchLeague29(force=false){
+    const cached=cached29();if(!force&&cached?.data&&Date.now()-Number(cached.at||0)<6*60*60*1000)return cached.data;
+    const url=(document.getElementById("dbuTeamUrlInput")?.value||localStorage.getItem(dbuKey29())||"").trim();
+    if(!url)throw new Error("Indsæt først jeres DBU-holdlink.");
+    if(typeof ensureSession==="function"){const ok=await ensureSession();if(!ok)throw new Error("Du skal være logget ind.")}
+    const res=await fetch(`${SUPABASE_URL}/functions/v1/dbu-matches`,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${session?.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({url})});
+    const x=await res.json().catch(()=>null);if(!res.ok||!x?.success)throw new Error(x?.error||`DBU svarede ${res.status}`);
+    if(!x.league?.found)throw new Error("START11 kunne ikke finde rækken/puljen fra dette DBU-holdlink.");
+    saveCache29(x.league);return x.league;
+  }
+
+  function teamLogo29(x){return x?.logo?`<img class="s29logo" src="${esc29(x.logo)}" alt="">`:""}
+  function standing29(l){
+    const own=norm29(ownTeam29()),rows=l.standings||[];
+    if(!rows.length)return `<div class="s29empty">DBU-siden indeholder ikke en stilling, som START11 kunne læse.</div>`;
+    return `<div class="s29panel"><table class="s29table"><thead><tr><th>#</th><th>Hold</th><th>K</th><th>V</th><th>U</th><th>T</th><th>Mål</th><th class="s29hide-mobile">+/-</th><th>P</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${own&&norm29(r.team).includes(own)||own&&own.includes(norm29(r.team))?"mine":""}"><td>${esc29(r.position||i+1)}</td><td><div class="s29team">${teamLogo29(r)}<span>${esc29(r.team)}</span></div></td><td>${esc29(r.played)}</td><td>${esc29(r.won)}</td><td>${esc29(r.drawn)}</td><td>${esc29(r.lost)}</td><td>${esc29(r.goals)}</td><td class="s29hide-mobile">${esc29(r.difference)}</td><td><strong>${esc29(r.points)}</strong></td></tr>`).join("")}</tbody></table></div>`;
+  }
+  function matches29(l){const rows=l.matches||[];if(!rows.length)return `<div class="s29empty">Ingen ligakampe fundet på DBU-siden.</div>`;return `<div class="s29panel">${rows.map(m=>`<div class="s29match"><div class="s29mut">${esc29(m.date)}<br>${esc29(m.time)}</div><div class="s29right">${esc29(m.homeTeam)}</div><strong>${esc29(m.result||"–")}</strong><div>${esc29(m.awayTeam)}</div></div>`).join("")}</div>`}
+  function scorers29(l){const rows=l.topScorers||[];if(!rows.length)return `<div class="s29empty">DBU stiller ikke en målscorerliste til rådighed på den fundne rækkeside.</div>`;return `<div class="s29panel"><table class="s29table"><thead><tr><th>#</th><th>Spiller</th><th>Hold</th><th>Mål</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${esc29(r.position||i+1)}</td><td><strong>${esc29(r.player)}</strong></td><td>${esc29(r.team)}</td><td><strong>${esc29(r.goals)}</strong></td></tr>`).join("")}</tbody></table></div>`}
+  function teams29(l){const rows=l.teams||[];if(!rows.length)return `<div class="s29empty">Ingen hold fundet.</div>`;return `<div class="s29cards">${rows.map(t=>`<div class="s29card"><div class="s29team">${teamLogo29(t)}<strong>${esc29(t.name)}</strong></div></div>`).join("")}</div>`}
+  function overview29(l){const own=norm29(ownTeam29()),me=(l.standings||[]).find(r=>norm29(r.team).includes(own)||own.includes(norm29(r.team))),top=(l.topScorers||[])[0];return `<div class="s29cards"><div class="s29card"><div class="s29k">JERES PLACERING</div><div class="s29big">${esc29(me?.position||"—")}</div><div class="s29mut">${esc29(me?`${me.points} point · ${me.goals}`:"Holdet blev ikke matchet i stillingen")}</div></div><div class="s29card"><div class="s29k">RÆKKEN</div><div class="s29big">${esc29((l.standings||[]).length||"—")}</div><div class="s29mut">hold i den fundne stilling</div></div><div class="s29card"><div class="s29k">TOPSCORER</div><div class="s29big" style="font-size:18px">${esc29(top?.player||"—")}</div><div class="s29mut">${top?`${esc29(top.goals)} mål · ${esc29(top.team)}`:"Ingen målscorerdata fra DBU"}</div></div></div>`}
+
+  function renderLeague29(l,tab="overview"){
+    styles29();const o=overlay29();const tabs=[["overview","OVERSIGT"],["standing","STILLING"],["matches","KAMPE"],["scorers","MÅLSCORERE"],["teams","HOLD"]];
+    const body=tab==="standing"?standing29(l):tab==="matches"?matches29(l):tab==="scorers"?scorers29(l):tab==="teams"?teams29(l):overview29(l);
+    o.innerHTML=`<div class="s29modal"><div class="s29head"><div><div class="s29k">START11 · DBU LIGA</div><div class="s29title">${esc29(l.name||"Liga")}</div><div class="s29mut">Data hentet fra den DBU-række, der er koblet til holdet.</div></div><div style="display:flex;gap:7px"><button id="s29refresh" class="s29btn">OPDATÉR</button><button id="s29close" class="s29btn">LUK</button></div></div><div class="s29tabs">${tabs.map(([k,n])=>`<button class="s29btn s29tab ${tab===k?"active":""}" data-tab="${k}">${n}</button>`).join("")}</div><div id="s29body">${body}</div></div>`;o.classList.add("open");
+    o.querySelector("#s29close").onclick=()=>o.classList.remove("open");o.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>renderLeague29(l,b.dataset.tab));o.querySelector("#s29refresh").onclick=async()=>{const b=o.querySelector("#s29refresh");b.disabled=true;b.textContent="HENTER…";try{const n=await fetchLeague29(true);renderLeague29(n,tab);notify29("Liga-data opdateret.")}catch(e){notify29(e.message||String(e));b.disabled=false;b.textContent="OPDATÉR"}}
+  }
+  window.start11OpenDbuLeague=async function(){styles29();const c=cached29();if(c?.data)renderLeague29(c.data);else{notify29("Henter liga fra DBU…");try{renderLeague29(await fetchLeague29(false))}catch(e){notify29(e.message||String(e))}}};
+
+  function mountLeagueButton29(){
+    const sync=document.getElementById("syncDbuMatchesButton");if(!sync||document.getElementById("s29LeagueButton"))return;
+    const b=document.createElement("button");b.type="button";b.id="s29LeagueButton";b.className=sync.className||"";b.textContent="LIGA";b.style.marginLeft="8px";b.onclick=()=>window.start11OpenDbuLeague();sync.insertAdjacentElement("afterend",b);
+  }
+
+  /* Match Story: show only goal scorers actually registered in START11 live data. */
+  function storyMatch29(modal){
+    const title=norm29(modal.querySelector(".s28-title")?.textContent);const d=data29();
+    let m=(d.matches||[]).find(x=>norm29(x.opponent||x.title)===title);
+    if(!m&&typeof s19MatchMode!=="undefined"&&s19MatchMode?.active)m=s19MatchMode.match;
+    return m||null;
+  }
+  function liveFor29(m){const all=data29().liveMatches||[];if(m?.liveMatchId){const x=all.find(v=>v.id===m.liveMatchId);if(x)return x}const opp=norm29(m?.opponent||m?.title);return all.find(v=>(!m?.date||v.date===m.date)&&(!opp||[v.home,v.away].some(n=>norm29(n)===opp)))||null}
+  function addScorersToStory29(){
+    const modal=document.querySelector("#s28overlay.open .s28-modal");if(!modal||!String(modal.querySelector(".s28-kicker")?.textContent||"").includes("KAMPENS HISTORIE")||modal.querySelector("#s29StoryGoals"))return;
+    const m=storyMatch29(modal),live=liveFor29(m),goals=(live?.events||[]).filter(e=>e.type==="goal-for");if(!goals.length)return;
+    const row=document.createElement("div");row.id="s29StoryGoals";row.className="s28-row";row.innerHTML=`<div><div class="s28-type">VORES MÅL</div><strong>${goals.map(g=>`${esc29(g.minute?g.minute+"' ":"")}${esc29(String(g.note||"").split(" · assist ")[0]||"Ukendt målscorer")}`).join(" · ")}</strong></div>`;
+    const liveRow=[...modal.querySelectorAll(".s28-row")].find(x=>String(x.querySelector(".s28-type")?.textContent||"").trim()==="LIVE");if(liveRow)liveRow.insertAdjacentElement("afterend",row);else modal.querySelector(".s28-list")?.prepend(row);
+  }
+
+  const obs=new MutationObserver(()=>{mountLeagueButton29();addScorersToStory29()});obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{styles29();mountLeagueButton29()});else{styles29();mountLeagueButton29()}
+  setTimeout(mountLeagueButton29,1000);setTimeout(mountLeagueButton29,3500);
+  console.info("START11 loaded:",window.START11_BUILD);
+})();
