@@ -51237,7 +51237,7 @@ if(typeof s13Training==="function"){const _s20training=s13Training;s13Training=f
 function s20Principles(t){
   s20EnsureData();const clips=s20AllClips();
   t.innerHTML=`<section class="s13panel"><div class="s13head"><div><strong>TAKTISK PRINCIPBIBLIOTEK</strong><div class="s13mut">Kobl principper til øvelser og videoklip.</div></div><button id="s20addpr" class="s13btn primary">+ PRINCIP</button></div>
-  <div class="s13stack">${s13Data.principles.map(p=>`<div class="s13item" data-p="${p.id}">
+  <div class="s13stack">${s13Data.principles.map(p=>`<div class="s13item" data-principle="${p.id}">
     <div class="s13row"><input class="s13in" data-f="title" value="${s13Esc(p.title||"")}"><select class="s13sel" data-f="phase">${["Generelt","Med bold","Uden bold","Offensiv omstilling","Defensiv omstilling","Standardsituationer"].map(x=>`<option ${p.phase===x?"selected":""}>${x}</option>`).join("")}</select><button class="s13btn" data-del>×</button></div>
     <label class="s13field" style="margin-top:7px">Beskrivelse<textarea class="s13txt" data-f="description">${s13Esc(p.description||"")}</textarea></label>
     <div class="s13grid"><label class="s13field">Coachingpunkter<textarea class="s13txt" data-f="coachingPoints">${s13Esc(p.coachingPoints)}</textarea></label><label class="s13field">Triggers<textarea class="s13txt" data-f="triggers">${s13Esc(p.triggers)}</textarea></label></div>
@@ -51247,7 +51247,7 @@ function s20Principles(t){
     <div style="text-align:right;margin-top:8px"><button class="s13btn primary" data-save>GEM PRINCIP</button></div>
   </div>`).join("")||`<div class="s13mut">Ingen principper endnu.</div>`}</div></section>`;
   document.getElementById("s20addpr")?.addEventListener("click",()=>{s13Data.principles.push({id:s13Id("principle"),title:"Nyt princip",phase:"Generelt",description:"",coachingPoints:"",triggers:"",tags:"",exerciseIds:[],videoClipIds:[]});s13Save();s20Principles(t)});
-  t.querySelectorAll("[data-p]").forEach(r=>{const p=s13Data.principles.find(x=>x.id===r.dataset.p);r.querySelector("[data-save]")?.addEventListener("click",()=>{r.querySelectorAll("[data-f]").forEach(f=>p[f.dataset.f]=f.value);p.exerciseIds=[...r.querySelectorAll("[data-ex]:checked")].map(x=>x.dataset.ex);p.videoClipIds=[...r.querySelectorAll("[data-v]:checked")].map(x=>x.dataset.v);s13Save();visNotification?.("Princip gemt.")});r.querySelector("[data-del]")?.addEventListener("click",()=>{if(confirm("Slet princippet?")){s13Data.principles=s13Data.principles.filter(x=>x.id!==p.id);s13Save();s20Principles(t)}})});
+  t.querySelectorAll("[data-principle]").forEach(r=>{const p=s13Data.principles.find(x=>x.id===r.dataset.principle);r.querySelector("[data-save]")?.addEventListener("click",()=>{r.querySelectorAll("[data-f]").forEach(f=>p[f.dataset.f]=f.value);p.exerciseIds=[...r.querySelectorAll("[data-ex]:checked")].map(x=>x.dataset.ex);p.videoClipIds=[...r.querySelectorAll("[data-v]:checked")].map(x=>x.dataset.v);s13Save();visNotification?.("Princip gemt.")});r.querySelector("[data-del]")?.addEventListener("click",()=>{if(confirm("Slet princippet?")){s13Data.principles=s13Data.principles.filter(x=>x.id!==p.id);s13Save();s20Principles(t)}})});
 }
 
 /* =========================================================
@@ -51560,11 +51560,11 @@ function s21InstallHubPolish(){
       border-radius:999px;
     }
 
-    #s13content [data-p] select,
-    #s13content [data-p] input,
-    #s13content [data-p] textarea,
-    #s13content [data-p] button,
-    #s13content [data-p] label{
+    #s13content [data-principle] select,
+    #s13content [data-principle] input,
+    #s13content [data-principle] textarea,
+    #s13content [data-principle] button,
+    #s13content [data-principle] label{
       position:relative;
       z-index:2;
     }
@@ -51618,22 +51618,51 @@ function s21ProtectPrincipEditor(){
   const content = document.getElementById("s13content");
   if(!content || s13Tab !== "principles") return;
 
-  /* V27.5 FIX:
-     Lad alle normale events nå deres rigtige controls. Den tidligere
-     stopPropagation-beskyttelse kunne gøre editoren skrøbelig og er ikke
-     nødvendig, når Coaching Hub ikke længere lukker på backdrop-klik. */
-  content.querySelectorAll("[data-p] button").forEach(btn=>{
-    if(!btn.getAttribute("type")) btn.type = "button";
+  content.querySelectorAll("[data-principle]").forEach(card=>{
+    if(card.dataset.s21Protected === "1") return;
+    card.dataset.s21Protected = "1";
+
+    [
+      "mousedown",
+      "pointerdown",
+      "click",
+      "change",
+      "input",
+      "focusin"
+    ].forEach(type=>{
+      card.addEventListener(type, e=>{
+        e.stopPropagation();
+      });
+    });
+
+    card.querySelectorAll("button").forEach(btn=>{
+      if(!btn.getAttribute("type")) btn.type = "button";
+    });
   });
 
   const add = document.getElementById("s20addpr");
   if(add && !add.getAttribute("type")) add.type = "button";
 }
 
+/* Mere robust modal-close:
+   Kun et reelt klik på selve backdrop må lukke Coaching Hub.
+   Interaktion med native select/options må aldrig gøre det. */
 function s21ProtectHubModal(){
-  /* V27.5 FIX:
-     Ingen click/mousedown/pointerdown interception her.
-     Lukning styres kun af de eksplicitte LUK-handlinger i Coaching Hub. */
+  const modal = document.getElementById("s13modal");
+  const shell = modal?.querySelector(".s13shell");
+  if(!modal || !shell || modal.dataset.s21ModalProtected === "1") return;
+
+  modal.dataset.s21ModalProtected = "1";
+
+  shell.addEventListener("mousedown", e=>e.stopPropagation());
+  shell.addEventListener("pointerdown", e=>e.stopPropagation());
+  shell.addEventListener("click", e=>e.stopPropagation());
+
+  /* Capture-listener stopper det gamle backdrop-handler-flow,
+     men lader klik inde i selve hubben fortsætte normalt. */
+  modal.addEventListener("mousedown", e=>{
+    if(e.target !== modal) e.stopImmediatePropagation();
+  }, true);
 }
 
 function s21HubRefresh(){
@@ -51667,8 +51696,8 @@ function s21Init(){
           n.id === "s13modal" ||
           n.id === "s13tabs" ||
           n.id === "s13content" ||
-          n.matches?.("[data-p]") ||
-          n.querySelector?.("#s13modal,#s13tabs,#s13content,[data-p]")
+          n.matches?.("[data-principle]") ||
+          n.querySelector?.("#s13modal,#s13tabs,#s13content,[data-principle]")
         )
       )
     );
