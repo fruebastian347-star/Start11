@@ -15425,7 +15425,9 @@ function start11CalendarToIsoDate(value) {
 
     // DBU kan fx levere: "søn.30-08 2026", "søn. 30-08-2026" eller "30-08 2026".
     text = text
-        .replace(/^(man|tir|ons|tor|tors|fre|lør|lor|søn|son)\.?\s*/i, "")
+        .replace(/^(?:man|tir|ons|tor|tors|fre|lør|lor|søn|son)\.?\s*/i, "")
+        // DBU kan også levere forkortede/fejlformaterede præfikser som "s.08-10 2026".
+        .replace(/^[a-zæøå]{1,5}\.\s*(?=\d{1,2}[.\-/]\d{1,2})/i, "")
         .replace(/\s+/g, " ")
         .trim();
 
