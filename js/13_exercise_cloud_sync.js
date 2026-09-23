@@ -653,4 +653,80 @@ function init(){ensure();styles();if(!installHub())setTimeout(init,500)}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,4500));else setTimeout(init,4500);
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+/* =========================================================
+   START11 V31 – PREMIUM SHELL / HOME + LINEUP MODES
+   Visual navigation layer only. Existing data/functions remain source of truth.
+========================================================= */
+(function start11V31PremiumShell(){
+  "use strict";
+  if(window.__START11_V31_PREMIUM_SHELL__) return;
+  window.__START11_V31_PREMIUM_SHELL__=true;
 
+  const HOME="matchesSection";
+  const LINEUP="lineupSection";
+
+  function navButtons(){
+    return [...document.querySelectorAll(".start11-nav-item[data-start11-target]")];
+  }
+
+  function setMode(target, scroll=true){
+    const lineup=target===LINEUP;
+    document.body.classList.toggle("s31-lineup-mode",lineup);
+    document.body.classList.toggle("s31-home-mode",!lineup);
+
+    navButtons().forEach(btn=>{
+      const active=btn.dataset.start11Target===target;
+      btn.classList.toggle("active",active);
+      btn.setAttribute("aria-current",active?"page":"false");
+    });
+
+    if(scroll){
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+  }
+
+  function installNavigation(){
+    navButtons().forEach(btn=>{
+      if(btn.dataset.s31Bound==="1") return;
+      btn.dataset.s31Bound="1";
+      btn.addEventListener("click",()=>{
+        const target=btn.dataset.start11Target;
+        if(target===HOME || target===LINEUP){
+          setMode(target,true);
+        }else{
+          document.body.classList.remove("s31-lineup-mode","s31-home-mode");
+        }
+      },true);
+    });
+  }
+
+  function polishLabels(){
+    const home=navButtons().find(b=>b.dataset.start11Target===HOME);
+    const lineup=navButtons().find(b=>b.dataset.start11Target===LINEUP);
+    if(home) home.textContent="HJEM";
+    if(lineup) lineup.textContent="STARTOPSTILLING";
+
+    const formation=document.querySelector(".formation-inline-label");
+    if(formation) formation.textContent="FORMATION";
+  }
+
+  function boot(){
+    polishLabels();
+    installNavigation();
+    setMode(HOME,false);
+
+    // Dynamic navigation is extended by later START11 modules.
+    const observer=new MutationObserver(()=>{
+      polishLabels();
+      installNavigation();
+    });
+    const top=document.querySelector(".start11-global-topbar");
+    if(top) observer.observe(top,{childList:true,subtree:true});
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",boot,{once:true});
+  }else{
+    boot();
+  }
+})();
