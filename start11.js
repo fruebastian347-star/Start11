@@ -1985,6 +1985,114 @@ function gemAlt() {
 
 
 /* =========================================================
+   GLOBAL AUTOSAVE
+   ---------------------------------------------------------
+   Fanger ændringer på tværs af START11 og sender den
+   aktuelle samlede holdtilstand gennem den eksisterende
+   debouncede cloud-sync. setTimeout(0) gør, at modulets
+   egen event-handler får lov at opdatere data først.
+========================================================= */
+
+let start11GlobalAutosaveInstalled = false;
+
+function start11GlobalAutosave() {
+
+    if (
+        typeof scheduleCloudSave !== "function"
+    ) {
+        return;
+    }
+
+    setTimeout(
+        () => {
+
+            try {
+
+                /*
+                    Hold de gamle kernefelter i localStorage opdateret
+                    uden at kræve et tryk på GEM.
+                */
+                localStorage.setItem(
+                    "startopstillingSpillere",
+                    JSON.stringify(spillere)
+                );
+
+                localStorage.setItem(
+                    "startopstillingUdskiftere",
+                    JSON.stringify(udskiftere)
+                );
+
+                localStorage.setItem(
+                    "kampplan",
+                    JSON.stringify(kampplan)
+                );
+
+                if (formationSelector?.value) {
+                    localStorage.setItem(
+                        "start11Formation",
+                        formationSelector.value
+                    );
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "START11 autosave lokal cache:",
+                    error
+                );
+
+            }
+
+            scheduleCloudSave();
+
+        },
+        0
+    );
+}
+
+function start11InstallGlobalAutosave() {
+
+    if (start11GlobalAutosaveInstalled) {
+        return;
+    }
+
+    start11GlobalAutosaveInstalled = true;
+
+    /*
+        input  = tekst, sliders m.m.
+        change = selects, checkbox, dato/tid, filfelter m.m.
+        click  = knapper der ændrer appens datamodel
+        drop   = drag/drop-handlinger
+    */
+    ["input", "change", "click", "drop"].forEach(
+        eventName => {
+
+            document.addEventListener(
+                eventName,
+                start11GlobalAutosave,
+                false
+            );
+
+        }
+    );
+}
+
+if (document.readyState === "loading") {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        start11InstallGlobalAutosave,
+        { once: true }
+    );
+
+} else {
+
+    start11InstallGlobalAutosave();
+
+}
+
+
+/* =========================================================
    OPSTILLING
 ========================================================= */
 
