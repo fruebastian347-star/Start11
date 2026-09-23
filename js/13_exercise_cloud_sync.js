@@ -130,20 +130,80 @@ console.info("START11 loaded:", window.START11_BUILD);
   }
 
   function dashboardBriefing(){
-    const install=()=>{
-      if(typeof s20Dashboard!=="function"||s20Dashboard.__s28)return;
-      const old=s20Dashboard; const wrapped=function(t){const r=old.apply(this,arguments);setTimeout(()=>injectBrief(t),0);return r};wrapped.__s28=true;s20Dashboard=wrapped;
-    };
-    function injectBrief(t){if(!t||t.querySelector("#s28brief"))return;const d=data(),sessions=(d.sessions||[]).filter(x=>x.date>=today()).sort((a,b)=>xdate(a).localeCompare(xdate(b))),matches=(d.matches||[]).filter(x=>x.date>=today()).sort((a,b)=>xdate(a).localeCompare(xdate(b))),nextS=sessions[0],nextM=matches[0],clips=(d.videoProjects||[]).reduce((n,p)=>n+(p.clips?.length||0),0),attMissing=nextS?players().filter(p=>!nextS.attendance?.[p.id]).length:0;const card=document.createElement("section");card.id="s28brief";card.className="s28-card";card.style.marginBottom="12px";card.innerHTML=`<div class="s28-kicker">COACH ASSISTANT · I DAG</div><div class="s28-title">${nextM?`Næste kamp: ${esc(nextM.opponent||nextM.title||"Kamp")}`:nextS?`Næste træning: ${esc(nextS.title||nextS.theme||"Træning")}`:"Planen er klar"}</div><div class="s28-muted">START11 samler det vigtigste, så du ikke skal lede efter det.</div><div class="s28-list">${nextM?`<div class="s28-row"><span>⚽ Kamp</span><strong>${esc(fmt(nextM.date))}</strong></div>`:""}${nextS?`<div class="s28-row"><span>🎯 Træning</span><strong>${esc(nextS.theme||nextS.title||fmt(nextS.date))}</strong></div>`:""}<div class="s28-row"><span>🎥 Videoklip</span><strong>${clips}</strong></div>${nextS?`<div class="s28-row"><span>✓ Fremmøde mangler</span><strong>${attMissing}</strong></div>`:""}</div><div class="s28-actions"><button id="s28cmd" class="s28-btn primary">SØG I START11</button>${nextM?`<button id="s28story" class="s28-btn">KAMPENS HISTORIE</button>`:""}</div>`;t.prepend(card);card.querySelector("#s28cmd").onclick=()=>window.start11CommandPalette?.();if(nextM)card.querySelector("#s28story").onclick=()=>openMatchStory(nextM)}
-    function xdate(x){return String(x.date||"9999")}; install(); setInterval(install,2000);
+    function xdate(x){return String(x?.date||"9999")}
+    function buildCard(){
+      const d=data();
+      const sessions=(d.sessions||[]).filter(x=>x.date>=today()).sort((a,b)=>xdate(a).localeCompare(xdate(b)));
+      const matches=(d.matches||[]).filter(x=>x.date>=today()).sort((a,b)=>xdate(a).localeCompare(xdate(b)));
+      const nextS=sessions[0], nextM=matches[0];
+      const clips=(d.videoProjects||[]).reduce((n,p)=>n+(p.clips?.length||0),0);
+      const attMissing=nextS?players().filter(p=>!nextS.attendance?.[p.id]).length:0;
+      const card=document.createElement("section");
+      card.id="s28brief"; card.className="s28-card"; card.style.margin="0 0 14px";
+      card.innerHTML=`<div class="s28-kicker">COACH ASSISTANT · I DAG</div><div class="s28-title">${nextM?`Næste kamp: ${esc(nextM.opponent||nextM.title||"Kamp")}`:nextS?`Næste træning: ${esc(nextS.title||nextS.theme||"Træning")}`:"Ingen kommende aktivitet registreret"}</div><div class="s28-muted">START11 samler det vigtigste, så du ikke skal lede efter det.</div><div class="s28-list">${nextM?`<div class="s28-row"><span>⚽ Kamp</span><strong>${esc(fmt(nextM.date))}</strong></div>`:""}${nextS?`<div class="s28-row"><span>🎯 Træning</span><strong>${esc(nextS.theme||nextS.title||fmt(nextS.date))}</strong></div>`:""}<div class="s28-row"><span>🎥 Videoklip</span><strong>${clips}</strong></div>${nextS?`<div class="s28-row"><span>✓ Fremmøde mangler</span><strong>${attMissing}</strong></div>`:""}</div><div class="s28-actions"><button id="s28cmd" class="s28-btn primary">SØG I START11</button>${nextM?`<button id="s28story" class="s28-btn">KAMPENS HISTORIE</button>`:""}</div>`;
+      card.querySelector("#s28cmd").onclick=()=>window.start11CommandPalette?.();
+      if(nextM) card.querySelector("#s28story").onclick=()=>openMatchStory(nextM);
+      return card;
+    }
+    function inject(){
+      const old=document.getElementById("s28brief");
+      if(old) return;
+      /* Main START11 match/dashboard page. */
+      const matches=document.getElementById("matchesSection");
+      if(matches && getComputedStyle(matches).display!=="none"){
+        const anchor=matches.querySelector(".matches-dashboard-grid,.dashboard-grid,.start11-matches-grid")||matches.firstElementChild;
+        const card=buildCard();
+        if(anchor) matches.insertBefore(card,anchor); else matches.prepend(card);
+        return;
+      }
+      /* Coaching Hub dashboard. */
+      if(typeof s13Tab!=="undefined" && s13Tab==="dashboard"){
+        const hub=document.getElementById("s13content");
+        if(hub){hub.prepend(buildCard());return;}
+      }
+    }
+    if(typeof s20Dashboard==="function" && !s20Dashboard.__s28){
+      const old=s20Dashboard;
+      const wrapped=function(t){const r=old.apply(this,arguments);setTimeout(()=>{document.getElementById("s28brief")?.remove();inject()},0);return r};
+      wrapped.__s28=true; s20Dashboard=wrapped;
+    }
+    new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["style","class"]});
+    inject(); setTimeout(inject,250); setTimeout(inject,1000);
   }
 
-  function decoratePlayerButtons(){
-    const run=()=>document.querySelectorAll('[data-mp]').forEach(b=>{if(b.dataset.s28tl)return;b.dataset.s28tl="1";b.title="Åbn spillerens udviklingstidslinje";b.addEventListener("contextmenu",e=>{e.preventDefault();const p=players().find(x=>String(x.id)===String(b.dataset.mp));if(p)openPlayerTimeline(p)})});
-    new MutationObserver(run).observe(document.body,{subtree:true,childList:true});run();
+  function installPlayerTimelineButton(){
+    function addButton(){
+      const modal=document.getElementById("start11UnifiedPlayerModalV12");
+      if(!modal || modal.style.display==="none") return;
+      const top=modal.querySelector(".s11v12-top-right");
+      if(!top || document.getElementById("s28PlayerTimelineBtn")) return;
+      if(typeof start11V12IsNew!=="undefined" && start11V12IsNew) return;
+      const btn=document.createElement("button");
+      btn.type="button"; btn.id="s28PlayerTimelineBtn"; btn.className="s11v12-btn";
+      btn.textContent="UDVIKLINGSTIDSLINJE";
+      const saveBtn=top.querySelector("#s11v12Save");
+      if(saveBtn) top.insertBefore(btn,saveBtn); else top.appendChild(btn);
+      btn.addEventListener("click",()=>{
+        const id=(typeof start11V12PlayerId!=="undefined")?start11V12PlayerId:null;
+        const p=players().find(x=>String(x.id)===String(id));
+        if(p) openPlayerTimeline(p); else notify("Kunne ikke finde spilleren.");
+      });
+    }
+    if(typeof start11V12RenderTop==="function" && !start11V12RenderTop.__s28){
+      const old=start11V12RenderTop;
+      const wrapped=function(){const r=old.apply(this,arguments);setTimeout(addButton,0);return r};
+      wrapped.__s28=true; start11V12RenderTop=wrapped;
+    }
+    if(typeof start11V12Open==="function" && !start11V12Open.__s28){
+      const old=start11V12Open;
+      const wrapped=function(){const r=old.apply(this,arguments);setTimeout(addButton,0);return r};
+      wrapped.__s28=true; start11V12Open=wrapped;
+    }
+    new MutationObserver(addButton).observe(document.body,{subtree:true,childList:true});
+    addButton();
   }
 
-  function boot(){injectStyles();installSaveFeedback();installDragFeedback();palette();tacticalTemplates();dashboardBriefing();decoratePlayerButtons();const h=location.hash.match(/start11-share=([^&]+)/);if(h){const p=decodeShare(h[1]);if(p)setTimeout(()=>renderShared(p),200)}}
+  function boot(){injectStyles();installSaveFeedback();installDragFeedback();palette();tacticalTemplates();dashboardBriefing();installPlayerTimelineButton();const h=location.hash.match(/start11-share=([^&]+)/);if(h){const p=decodeShare(h[1]);if(p)setTimeout(()=>renderShared(p),200)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
 
