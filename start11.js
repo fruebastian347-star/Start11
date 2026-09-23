@@ -68066,7 +68066,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 console.info("START11 loaded:",window.START11_BUILD);
 })();
 /* =========================================================
-   START11 V31 – PREMIUM SHELL / HOME + LINEUP MODES
+   START11 V31.1 – PREMIUM SHELL / HOME + LINEUP MODES
    Visual navigation layer only. Existing data/functions remain source of truth.
 ========================================================= */
 (function start11V31PremiumShell(){
@@ -68115,11 +68115,11 @@ console.info("START11 loaded:",window.START11_BUILD);
   function polishLabels(){
     const home=navButtons().find(b=>b.dataset.start11Target===HOME);
     const lineup=navButtons().find(b=>b.dataset.start11Target===LINEUP);
-    if(home) home.textContent="HJEM";
-    if(lineup) lineup.textContent="STARTOPSTILLING";
+    if(home && home.textContent!=="HJEM") home.textContent="HJEM";
+    if(lineup && lineup.textContent!=="STARTOPSTILLING") lineup.textContent="STARTOPSTILLING";
 
     const formation=document.querySelector(".formation-inline-label");
-    if(formation) formation.textContent="FORMATION";
+    if(formation && formation.textContent!=="FORMATION") formation.textContent="FORMATION";
   }
 
   function boot(){
