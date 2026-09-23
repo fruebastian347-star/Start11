@@ -67613,7 +67613,211 @@ console.info("START11 loaded:", window.START11_BUILD);
     addButton();
   }
 
-  function boot(){injectStyles();installSaveFeedback();installDragFeedback();palette();tacticalTemplates();dashboardBriefing();installPlayerTimelineButton();const h=location.hash.match(/start11-share=([^&]+)/);if(h){const p=decodeShare(h[1]);if(p)setTimeout(()=>renderShared(p),200)}}
+  function installMatchStoryButton(){
+    function currentStoryMatch(){
+      if(typeof s19MatchMode==="undefined" || !s19MatchMode?.active || !s19MatchMode?.match) return null;
+      const raw=s19MatchMode.match;
+      const opponent=(typeof s19Opponent==="function"?s19Opponent(raw):(raw.opponent||raw.away||raw.home||"Modstander"));
+      const d=data();
+      const review=(d.matches||[]).find(m=>
+        (raw.id && (m.id===raw.id || m.matchId===raw.id)) ||
+        (String(m.opponent||"").toLowerCase()===String(opponent||"").toLowerCase() && (!raw.date || !m.date || m.date===raw.date))
+      );
+      return review || {
+        id:raw.id||s19MatchMode.key||"",
+        matchId:raw.id||"",
+        date:raw.date||"",
+        time:raw.time||"",
+        opponent,
+        title:opponent,
+        result:raw.result||"",
+        good:"",
+        improve:"",
+        tactical:"",
+        nextWeek:"",
+        playerRatings:[]
+      };
+    }
+    function add(){
+      const bar=document.getElementById("s19MatchModeBar");
+      if(!bar || !bar.classList.contains("open") || document.getElementById("s28MatchStoryBtn")) return;
+      const buttons=[...bar.querySelectorAll("button")];
+      const host=buttons[0]?.parentElement || bar;
+      const btn=document.createElement("button");
+      btn.type="button"; btn.id="s28MatchStoryBtn";
+      btn.className=buttons[0]?.className || "s28-btn";
+      btn.textContent="KAMPENS HISTORIE";
+      btn.title="Saml startopstilling, live-data, video og læring for denne kamp";
+      btn.addEventListener("click",()=>{const m=currentStoryMatch();if(m)openMatchStory(m);else notify("Kunne ikke finde den aktive kamp.")});
+      host.insertBefore(btn,buttons[0]||null);
+    }
+    if(typeof s19UpdateMatchBar==="function" && !s19UpdateMatchBar.__s28story){
+      const old=s19UpdateMatchBar;
+      const wrapped=function(){const r=old.apply(this,arguments);setTimeout(add,0);return r};
+      wrapped.__s28story=true; s19UpdateMatchBar=wrapped;
+    }
+    new MutationObserver(add).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});
+    add(); setTimeout(add,300); setTimeout(add,1200);
+  }
+
+  function boot(){injectStyles();installSaveFeedback();installDragFeedback();palette();tacticalTemplates();dashboardBriefing();installPlayerTimelineButton();installMatchStoryButton();const h=location.hash.match(/start11-share=([^&]+)/);if(h){const p=decodeShare(h[1]);if(p)setTimeout(()=>renderShared(p),200)}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
 
+
+/* =========================================================
+   START11 V28.3 – COMPLETE COACH WORKFLOW LAYER
+   - Discoverable tactical designer
+   - Background DBU refresh (max every 6 hours)
+   - Draft autosave through existing native save handlers
+   - Live notes autosave
+   - Match stats + Player of the Match
+   - Better empty-state shortcuts
+   ========================================================= */
+(() => {
+  "use strict";
+  if (window.__START11_V283__) return;
+  window.__START11_V283__ = true;
+  window.START11_BUILD = "V28.3-COMPLETE-COACH-WORKFLOW";
+
+  const esc28 = v => String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  const d28 = () => (typeof s13Data === "object" && s13Data) ? s13Data : {};
+  const save28 = () => { try { if(typeof s13Save === "function") s13Save(); else if(typeof scheduleCloudSave === "function") scheduleCloudSave(); } catch(_){} };
+  const notify28 = m => { try { if(typeof visNotification === "function") visNotification(m); } catch(_){} };
+
+  /* ---------- Tactical designer: make the existing V26.5 board obvious ---------- */
+  function mountTacticalButton(){
+    const bar=document.getElementById("s19MatchModeBar");
+    if(!bar || !bar.classList.contains("open") || document.getElementById("s28TacticalBtn")) return;
+    const host=bar.querySelector(".s19-match-actions") || bar.querySelector("div:last-child") || bar;
+    const sample=host.querySelector("button");
+    const b=document.createElement("button");
+    b.type="button"; b.id="s28TacticalBtn"; b.className=sample?.className || "s28-btn"; b.textContent="TAKTIKTAVLE";
+    b.onclick=()=>{
+      if(typeof window.s25OpenMatchSituations === "function") window.s25OpenMatchSituations();
+      else notify28("Taktikdesigneren kunne ikke åbnes.");
+    };
+    host.appendChild(b);
+  }
+  if(typeof s19UpdateMatchBar === "function" && !s19UpdateMatchBar.__s283){
+    const old=s19UpdateMatchBar;
+    const wrapped=function(){const r=old.apply(this,arguments);setTimeout(mountTacticalButton,0);return r};
+    wrapped.__s283=true; s19UpdateMatchBar=wrapped;
+  }
+  setInterval(mountTacticalButton,1800);
+
+  /* ---------- Background DBU sync: use the app's existing DBU connector ---------- */
+  function maybeAutoDbu(){
+    try{
+      if(typeof syncDbuMatches !== "function") return;
+      const key=(typeof START11_DBU_URL_KEY !== "undefined" ? START11_DBU_URL_KEY : "start11DbuTeamUrl");
+      if(!localStorage.getItem(key)) return;
+      const stampKey="start11.v28.lastDbuSync."+(typeof activeTeamId!=="undefined"&&activeTeamId?activeTeamId:"default");
+      const last=Number(localStorage.getItem(stampKey)||0);
+      if(Date.now()-last < 6*60*60*1000) return;
+      localStorage.setItem(stampKey,String(Date.now()));
+      Promise.resolve(syncDbuMatches()).catch(()=>localStorage.removeItem(stampKey));
+    }catch(_){}
+  }
+  setTimeout(maybeAutoDbu,6500);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden) maybeAutoDbu()});
+
+  /* ---------- Autosave drafts using the app's own save buttons ----------
+     Text fields commit on blur/change so typing is never interrupted. ---------- */
+  const nativeSaveByPrefix=[
+    {prefixes:["s13weekly"],button:"s13saveweekly"},
+    {prefixes:["s13ex"],button:"s13saveex"},
+    {prefixes:["s13sdate","s13stheme","s13stitle","s13snote"],button:"s13savesession"},
+    {prefixes:["s13mdate","s13mres","s13mopp","s13mworked","s13mimp","s13mtac","s13mnext"],button:"s13savematch"},
+    {prefixes:["s20ss","s20se","s20stitle","s20stheme","s20sload","s20sobj","s20snote"],button:"s20saveseason"},
+    {prefixes:["s20sc"],button:"s20savescout"}
+  ];
+  let draftTimer=null;
+  document.addEventListener("change",e=>{
+    const el=e.target;
+    if(!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement)) return;
+    if(el.id==="s20livenotes") return;
+    const rule=nativeSaveByPrefix.find(r=>r.prefixes.some(p=>el.id?.startsWith(p)));
+    if(!rule) return;
+    clearTimeout(draftTimer);
+    draftTimer=setTimeout(()=>{
+      const b=document.getElementById(rule.button);
+      if(b && !b.disabled) b.click();
+    },180);
+  },true);
+
+  /* Live notes are model-aware, so they can save while typing without rerendering. */
+  let liveNoteTimer=null;
+  document.addEventListener("input",e=>{
+    if(e.target?.id!=="s20livenotes") return;
+    clearTimeout(liveNoteTimer);
+    liveNoteTimer=setTimeout(()=>{
+      try{
+        const v=typeof s20CurrentLive==="function"?s20CurrentLive():null;
+        if(!v) return;
+        v.coachNotes=e.target.value||"";
+        save28();
+      }catch(_){}
+    },650);
+  },true);
+
+  /* ---------- Match stats ---------- */
+  function ownPlayers(){
+    return (typeof start11FullSquad!=="undefined"&&Array.isArray(start11FullSquad))?start11FullSquad:[];
+  }
+  function matchLive(m){
+    const all=d28().liveMatches||[];
+    if(m?.liveMatchId) return all.find(x=>x.id===m.liveMatchId)||null;
+    return all.find(x=>x.date===m?.date && (!m?.opponent || [x.home,x.away].some(n=>String(n||"").toLowerCase()===String(m.opponent||"").toLowerCase())))||null;
+  }
+  function matchStats(m){
+    const live=matchLive(m), ev=live?.events||[], by={};
+    const ensure=(id,name)=>{const k=id||name||"unknown";return by[k]||(by[k]={id,name:name||ownPlayers().find(p=>p.id===id)?.name||"Ukendt",goals:0,assists:0,yellow:0,red:0})};
+    ev.forEach(x=>{
+      if(x.type==="goal-for"){
+        const scorer=(x.note||"").split(" · assist ")[0].trim(); const p=ensure(x.playerId,scorer); p.goals++;
+        const a=(x.note||"").split(" · assist ")[1]?.trim(); if(a){const ap=ownPlayers().find(q=>String(q.name||"").toLowerCase()===a.toLowerCase());ensure(ap?.id,a).assists++}
+      }
+      if(x.type==="yellow"||x.type==="red"){const p=ensure(x.playerId,x.note||"");p[x.type]++}
+    });
+    return {live,rows:Object.values(by).filter(x=>x.goals||x.assists||x.yellow||x.red)};
+  }
+  window.start11V28OpenMatchStats=function(m){
+    if(!m) return;
+    const {live,rows}=matchStats(m), ps=ownPlayers();
+    const overlay=typeof showOverlay==="function"?showOverlay(`
+      <div style="display:flex;justify-content:space-between;gap:12px"><div><div class="s28-kicker">KAMPSTATISTIK</div><div class="s28-title">${esc28(m.opponent||"Kamp")}</div><div class="s28-muted">${esc28(m.result||"")} · ${live?.events?.length||0} registrerede events</div></div><button class="s28-btn" data-s28close>LUK</button></div>
+      <div class="s28-list">${rows.map(x=>`<div class="s28-row"><strong>${esc28(x.name)}</strong><span>${x.goals?`⚽ ${x.goals} `:""}${x.assists?`A ${x.assists} `:""}${x.yellow?`🟨 ${x.yellow} `:""}${x.red?`🟥 ${x.red}`:""}</span></div>`).join("")||`<div class="s28-muted">Ingen individuelle kamp-events registreret endnu.</div>`}</div>
+      <label style="display:grid;gap:6px;margin-top:16px"><span class="s28-type">KAMPENS SPILLER</span><select id="s28potm" class="s28-search"><option value="">Ikke valgt</option>${ps.map(p=>`<option value="${esc28(p.id)}" ${m.playerOfMatchId===p.id?"selected":""}>${esc28(p.name)}</option>`).join("")}</select></label>
+      <div class="s28-actions"><button id="s28potmsave" class="s28-btn primary">GEM KAMPENS SPILLER</button><button class="s28-btn" data-s28close>LUK</button></div>`):null;
+    overlay?.querySelector("#s28potmsave")?.addEventListener("click",()=>{m.playerOfMatchId=overlay.querySelector("#s28potm")?.value||"";save28();notify28("Kampens spiller gemt.")});
+  };
+
+  /* Add stats to Match Story without replacing the existing story implementation. */
+  if(typeof openMatchStory==="function" && !openMatchStory.__s283){
+    const old=openMatchStory;
+    const wrapped=function(m){const r=old.apply(this,arguments);setTimeout(()=>{const modal=document.querySelector("#s28overlay .s28-modal");if(!modal||modal.querySelector("#s28stats"))return;const actions=modal.querySelector(".s28-actions");if(!actions)return;const b=document.createElement("button");b.id="s28stats";b.className="s28-btn";b.textContent="KAMPSTATISTIK";b.onclick=()=>window.start11V28OpenMatchStats(m);actions.prepend(b);const p=ownPlayers().find(x=>x.id===m?.playerOfMatchId);if(p){const row=document.createElement("div");row.className="s28-row";row.innerHTML=`<div><div class="s28-type">KAMPENS SPILLER</div><strong>${esc28(p.name)}</strong></div>`;modal.querySelector(".s28-list")?.appendChild(row)}},0);return r};
+    wrapped.__s283=true; openMatchStory=wrapped;
+  }
+
+  /* ---------- Empty states: add useful next action where there is none ---------- */
+  function improveEmptyStates(root=document){
+    root.querySelectorAll(".s13mut").forEach(el=>{
+      if(el.dataset.s283empty) return;
+      const t=(el.textContent||"").trim().toLowerCase();
+      let label="", action=null;
+      if(t.includes("ingen øvelser")){label="+ OPRET ØVELSE";action=()=>document.getElementById("s13newex")?.click()}
+      else if(t.includes("ingen træninger")){label="+ OPRET TRÆNING";action=()=>document.getElementById("s13newsession")?.click()}
+      else if(t.includes("ingen kampanalyser")){label="+ OPRET ANALYSE";action=()=>document.getElementById("s13newmatch")?.click()}
+      else if(t.includes("ingen principper")){label="+ OPRET PRINCIP";action=()=>document.getElementById("s13addpr")?.click()}
+      if(!action) return;
+      el.dataset.s283empty="1";
+      const b=document.createElement("button");b.type="button";b.className="s13btn primary";b.style.marginTop="8px";b.textContent=label;b.onclick=action;el.insertAdjacentElement("afterend",b);
+    });
+  }
+  const mo=new MutationObserver(()=>improveEmptyStates());
+  mo.observe(document.body,{childList:true,subtree:true});
+  setTimeout(()=>improveEmptyStates(),1200);
+
+  console.info("START11 loaded:",window.START11_BUILD);
+})();
