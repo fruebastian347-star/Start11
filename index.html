@@ -25,15 +25,15 @@
     <!-- =====================================================
          GLOBAL TOPBAR
     ====================================================== -->
-    <header class="start11-global-topbar">
+    <header class="start11-global-topbar start11-legacy-engine" hidden aria-hidden="true">
 
         <a href="html.html" class="start11-brand" aria-label="Tilbage">
             <span>START11</span>
         </a>
 
         <nav class="start11-main-nav" aria-label="Hovednavigation">
-            <button class="start11-nav-item active" type="button" data-start11-target="matchesSection">HJEM</button>
-            <button class="start11-nav-item" type="button" data-start11-target="lineupSection">STARTOPSTILLING</button>
+            <button class="start11-nav-item active" type="button" data-start11-target="matchesSection">KAMPE</button>
+            <button class="start11-nav-item" type="button" data-start11-target="lineupSection">OPSTILLING</button>
             <button class="start11-nav-item" type="button" data-start11-target="squadSection">TRUP</button>
             <button class="start11-nav-item" type="button" data-start11-target="tacticsSection">TAKTIK</button>
             <button class="start11-nav-item" id="topPdfButton" type="button">PDF</button>
@@ -195,15 +195,96 @@
     </header>
 
 
-    <!-- =====================================================
+
+    <!-- START11 V34 – MOCKUP-ACCURATE APP SHELL -->
+<section id="s34App" class="s34-app" aria-label="START11">
+  <aside class="s34-sidebar">
+    <div class="s34-logo">START11</div>
+    <button class="s34-team-switch" id="s34TeamSwitch" type="button"><span class="s34-team-badge">⚽</span><strong id="s34SideTeam">FC THY U14</strong><span>⌄</span></button>
+    <nav class="s34-nav">
+      <button class="active" data-s34="home">⌂ <span>Hjem</span></button>
+      <button data-s34="matches">▣ <span>Kampe</span></button>
+      <button data-s34="training">△ <span>Træning</span></button>
+      <button data-s34="players">●● <span>Spillere</span></button>
+      <button data-s34="analysis">▥ <span>Analyse</span></button>
+      <button data-s34="video">▻ <span>Video</span></button>
+    </nav>
+    <div class="s34-nav-bottom">
+      <button data-s34="share">⌯ <span>Del / Eksport</span></button>
+      <button data-s34="settings">⚙ <span>Indstillinger</span></button>
+    </div>
+    <div class="s34-tagline">COACH SMARTER.<br>DEVELOP FURTHER.<br><small>v3.4</small></div>
+  </aside>
+  <div class="s34-workspace">
+    <header class="s34-topbar">
+      <div class="s41-top-team-select">
+        <span class="s34-round-badge">FT</span>
+        <select id="s41TeamSelector" aria-label="Vælg hold"></select>
+        <span class="s41-select-chevron">⌄</span>
+      </div>
+      <button class="s34-search" id="s34Search" type="button">⌕ <span>Søg i START11...</span></button>
+      <div class="s34-top-actions">
+        <button id="s34Notifications" type="button">♧<i></i></button>
+        <div id="s41AccountHost" class="s41-account-host"></div>
+      </div>
+    </header>
+
+    <main id="s34HomeView" class="s34-view s34-home-view">
+      <section class="s34-hero">
+        <div class="s34-hero-copy"><span>Hjem</span><h1>God eftermiddag, <em id="s34CoachName">Christopher</em></h1><p>“Små detaljer skaber stor udvikling.”<br><small>– START11</small></p></div>
+        <div class="s34-hero-art"><div class="s34-silhouette one"></div><div class="s34-silhouette two"></div><div class="s34-silhouette three"></div><div class="s34-handwriting">Same Team<br>Higher<br>Standards</div></div>
+      </section>
+      <section class="s34-home-grid top">
+        <article class="s34-panel"><h3>▣ <span>Næste kamp</span><b>→</b></h3><div class="s34-sub" id="s34MatchDate">—</div><div class="s34-versus"><div><img id="s34HomeLogo" alt=""><strong id="s34HomeTeam">—</strong></div><span>VS</span><div><img id="s34AwayLogo" alt=""><strong id="s34AwayTeam">—</strong></div></div><div class="s34-location" id="s34MatchPlace">—</div><button class="s34-primary" id="s34OpenMatch">Åbn kamp →</button></article>
+        <article class="s34-panel"><h3>△ <span>Næste træning</span><b>→</b></h3><div class="s34-sub" id="s34TrainingDate">Ingen planlagt træning</div><h2 id="s34TrainingTitle">—</h2><div class="s34-checks" id="s34TrainingMeta"></div><button class="s34-primary" id="s34OpenTraining">Åbn træning →</button></article>
+        <article class="s34-panel"><h3>●● <span>Holdstatus</span><b>→</b></h3><div class="s34-count"><strong id="s34PlayerCount">0</strong> spillere</div><div class="s34-status"><p><i class="green"></i><b id="s34Available">0</b> Tilgængelige</p><p><i class="yellow"></i><b id="s34Limited">0</b> Begrænset / ukendt</p><p><i class="red"></i><b>0</b> Ikke tilgængelige</p></div><button class="s34-outline" id="s34OpenSquad">Se truppen →</button></article>
+        <article class="s34-panel s43-league">
+          <h3>▥ <span>Ligatabel</span><b id="s43LeagueName">DBU</b></h3>
+          <div id="s43LeagueTable" class="s43-league-table"><div class="s43-league-empty">Synkronisér DBU for at hente tabellen.</div></div>
+        </article>
+      </section>
+      <section class="s34-home-grid bottom">
+        <article class="s34-panel s34-lineup"><h3>👕 <span>Startopstilling <small>(forventet)</small></span><b id="s34Formation">—</b></h3><div id="s34PitchPreview" class="s34-pitch-preview"></div></article>
+        <article class="s34-panel s34-focus"><h3>◎ <span>Kampfokus</span></h3><div id="s34FocusList"></div><button class="s34-outline" id="s34OpenCoaching">Se kampplan →</button></article>
+        <article class="s34-panel s34-activities"><h3>▣ <span>Kommende aktiviteter</span><b>→</b></h3><div id="s34Activities"></div><button class="s34-outline" id="s34OpenCalendar">Se hele kalenderen →</button></article>
+      </section>
+      <section class="s34-quick"><strong>Hurtig adgang</strong><button data-s34="training">△ Opret træning</button><button data-s34="video">▻ Upload videoklip</button><button data-s34="analysis">▥ Se analyse</button><button data-s34="players">●● Spillerprofiler</button><button data-s34="share">▣ Del / Eksport</button></section>
+    </main>
+
+    <main id="s34PlayersView" class="s34-view s41-page-view" hidden>
+      <div class="s41-page-head">
+        <div><span>TRUP</span><h1>Spillere</h1><p>Administrér spillertruppen, status og spillerprofiler.</p></div>
+        <button id="s41PlayersBack" type="button">← Tilbage til hjem</button>
+      </div>
+      <section id="s41PlayersHost" class="s41-native-page-host"></section>
+    </main>
+
+    <main id="s34LineupView" class="s34-view s34-lineup-view" hidden>
+      <div class="s34-match-head s36-match-head">
+        <button id="s34BackMatches">← Tilbage til kampe</button>
+        <div class="s36-match-head-row">
+          <div>
+            <div class="s36-kicker">KAMP · STARTOPSTILLING</div>
+            <div class="s34-match-title"><img id="s34LineHomeLogo"><strong id="s34LineHome">—</strong><span>VS</span><strong id="s34LineAway">—</strong><img id="s34LineAwayLogo"></div>
+            <div class="s34-match-meta"><span id="s34LineDate">—</span><span>◷ <b id="s34LineTime">—</b></span><span>⌖ <b id="s34LinePlace">—</b></span></div>
+          </div>
+          <div class="s36-head-hint"><strong>STARTOPSTILLING</strong><span>Træk spillerne direkte på banen for at justere positionerne.</span></div>
+        </div>
+      </div>
+      <div class="s35-native-lineup-layout">
+        <aside class="s34-match-tabs"><button class="active" type="button">👕<span>Startopstilling</span></button><button id="s35OpenTactics" type="button">♧<span>Taktik</span></button><button id="s35OpenNotes" type="button">▤<span>Noter</span></button></aside>
+        <section id="s35NativeCenterHost" class="s35-native-center"></section>
+        <aside id="s35NativeSquadHost" class="s35-native-squad"></aside>
+      </div>
+      <footer class="s34-lineup-footer"><button id="s34ResetLineup">↻ Nulstil opstilling</button><span>⟶<small>Træk spillere for at ændre position</small></span><div><button id="s34SaveLineup">▣ Gem opstilling</button><button class="share" id="s34ShareLineup">⌯ Del opstilling</button></div></footer>
+    </main>
+  </div>
+</section>
+
+<!-- =====================================================
          DASHBOARD
     ====================================================== -->
-    <main class="start11-dashboard">
-        <section class="s31-home-intro" id="s31HomeIntro">
-            <span class="s31-page-kicker">HJEM</span>
-            <h1>God træning starter med <em>overblik.</em></h1>
-            <p>Kampe, trup, udvikling og næste handling samlet ét sted.</p>
-        </section>
+    <main class="start11-dashboard start11-legacy-engine" hidden aria-hidden="true">
 
         <!-- LEFT COLUMN -->
         <aside
@@ -311,59 +392,6 @@
 
             </section>
 
-
-            <section class="start11-card dbu-connect-card">
-
-                <div class="start11-card-heading">
-                    <h2>DBU CONNECT</h2>
-                    <span class="start11-status-dot"></span>
-                </div>
-
-                <p>
-                    Gem linket til jeres DBU-holdside. Layoutet er klar til automatisk kampsync via en lille backend/proxy.
-                </p>
-
-                <input
-                    id="dbuTeamUrlInput"
-                    class="start11-input"
-                    type="url"
-                    placeholder="https://www.dbu.dk/resultater/hold/..."
-                >
-
-                <div class="start11-inline-actions">
-                    <button
-                        id="saveDbuTeamUrl"
-                        class="start11-secondary-action"
-                        type="button"
-                    >
-                        GEM LINK
-                    </button>
-
-                    <button
-                        id="openDbuTeamUrl"
-                        class="start11-secondary-action"
-                        type="button"
-                    >
-                        ÅBN DBU
-                    </button>
-
-                    <button
-                        id="syncDbuMatchesButton"
-                        class="start11-secondary-action"
-                        type="button"
-                    >
-                        HENT KAMPE
-                    </button>
-                </div>
-
-                <div
-                    id="dbuConnectionStatus"
-                    class="dbu-connection-status"
-                >
-                    Ikke forbundet
-                </div>
-
-            </section>
 
         </aside>
 
@@ -1585,6 +1613,59 @@ Andre beskeder:"
         </div>
 
         <div id="teamsDashboardList" class="teams-dashboard-list"></div>
+
+        <section class="start11-card dbu-connect-card s43-dbu-team-card">
+
+                        <div class="start11-card-heading">
+                            <h2>DBU CONNECT</h2>
+                            <span class="start11-status-dot"></span>
+                        </div>
+
+                        <p>
+                            Forbind det valgte START11-hold med holdets DBU-side. Herfra kan du gemme linket og synkronisere DBU-data.
+                        </p>
+
+                        <input
+                            id="dbuTeamUrlInput"
+                            class="start11-input"
+                            type="url"
+                            placeholder="https://www.dbu.dk/resultater/hold/..."
+                        >
+
+                        <div class="start11-inline-actions">
+                            <button
+                                id="saveDbuTeamUrl"
+                                class="start11-secondary-action"
+                                type="button"
+                            >
+                                GEM LINK
+                            </button>
+
+                            <button
+                                id="openDbuTeamUrl"
+                                class="start11-secondary-action"
+                                type="button"
+                            >
+                                ÅBN DBU
+                            </button>
+
+                            <button
+                                id="syncDbuMatchesButton"
+                                class="start11-secondary-action"
+                                type="button"
+                            >
+                                HENT KAMPE
+                            </button>
+                        </div>
+
+                        <div
+                            id="dbuConnectionStatus"
+                            class="dbu-connection-status"
+                        >
+                            Ikke forbundet
+                        </div>
+
+                    </section>
 
         <div class="create-team-card">
             <div class="create-team-copy">

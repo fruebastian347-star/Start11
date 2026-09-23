@@ -6327,246 +6327,381 @@ h2 {
 #playerDetails .pdf-focus-block.without-ball .pdf-focus-block-title {
     color: #ff4d4d !important;
 }
+
 /* =========================================================
-   START11 V31 – VISUAL SYSTEM
-   Reference: dark premium football operating system
-   Preserves existing IDs, data bindings and interaction logic.
+   START11 V34 – MOCKUP ACCURATE UI
 ========================================================= */
-:root{
-    --s31-bg:#020806;
-    --s31-panel:#06100c;
-    --s31-panel-2:#08140f;
-    --s31-panel-3:#0a1811;
-    --s31-line:rgba(132,255,92,.16);
-    --s31-line-soft:rgba(255,255,255,.075);
-    --s31-green:var(--s11-primary,#69f04f);
-    --s31-green-2:var(--s11-secondary,#9aff54);
-    --s31-text:#f5f8f5;
-    --s31-muted:#8e9a92;
-    --s31-radius:14px;
-    --s31-shadow:0 18px 55px rgba(0,0,0,.26);
+#s34App{display:none;--v34-green:#69f04d;--v34-line:#173a25;--v34-panel:#06150e;--v34-muted:#a1aaa4}
+body.s34-active{overflow-x:hidden;background:#020906!important}
+body.s34-active>.start11-shell>.start11-global-topbar,body.s34-active .start11-dashboard{display:none!important}
+body.s34-active #s34App{display:grid;grid-template-columns:214px minmax(0,1fr);min-height:100vh;background:radial-gradient(circle at 62% 20%,rgba(19,65,36,.13),transparent 35%),#020906;color:#f4f7f5}
+.s34-sidebar{position:fixed;inset:0 auto 0 0;width:214px;z-index:5000;padding:0 12px 20px;background:linear-gradient(180deg,#030b08,#020705);border-right:1px solid #14231b;display:flex;flex-direction:column}
+.s34-logo{height:74px;display:flex;align-items:center;padding-left:17px;color:var(--v34-green);font-size:27px;font-weight:1000;letter-spacing:.8px;border-bottom:1px solid rgba(255,255,255,.05);margin:0 -12px;padding-right:12px}
+.s34-team-switch{height:58px;margin:14px 4px 8px;padding:0 12px;display:flex;align-items:center;gap:9px;border:1px solid #1d3b28;border-radius:8px;background:#07110c;font-size:11px}.s34-team-switch strong{flex:1}.s34-team-badge{font-size:18px}
+.s34-nav{display:grid;gap:5px}.s34-nav button,.s34-nav-bottom button{height:50px;border:0;border-left:2px solid transparent;border-radius:7px;background:transparent;color:#adb5b0;text-align:left;padding:0 15px;font:inherit;font-size:12px;font-weight:750;cursor:pointer}.s34-nav button span,.s34-nav-bottom span{margin-left:13px}.s34-nav button.active{color:var(--v34-green);border-left-color:var(--v34-green);background:linear-gradient(90deg,rgba(72,203,63,.16),rgba(72,203,63,.05))}.s34-nav-bottom{margin-top:auto;display:grid;gap:2px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px}.s34-tagline{padding:26px 17px 0;color:#9ca6a0;font-size:9px;line-height:1.65;letter-spacing:1.4px}.s34-tagline small{display:block;margin-top:9px;font-size:10px;letter-spacing:0}
+.s34-workspace{grid-column:2;min-width:0}.s34-topbar{height:74px;position:sticky;top:0;z-index:4000;display:grid;grid-template-columns:280px minmax(320px,520px) 1fr;align-items:center;gap:28px;padding:0 34px;background:rgba(2,9,6,.96);border-bottom:1px solid #14231b}.s34-top-team,.s34-top-actions{display:flex;align-items:center;gap:12px;font-size:12px}.s34-round-badge,.s34-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#2a8d37;border:1px solid #55db55;font-weight:900}.s34-search{height:42px;border:1px solid #27352d;border-radius:9px;background:#050b08;color:#9da7a1;text-align:left;padding:0 16px;font:inherit;font-size:12px}.s34-search span{margin-left:9px}.s34-top-actions{justify-content:flex-end}.s34-top-actions>button{position:relative;border:0;background:transparent;color:#ccd2ce;font-size:21px}.s34-top-actions>button i{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--v34-green);right:0;top:0}
+.s34-view{max-width:1530px;margin:0 auto;padding:28px 34px 32px}.s34-hero{height:178px;position:relative;overflow:hidden;display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,.04);margin:-28px -34px 0;padding:24px 34px;background:radial-gradient(ellipse at 67% 70%,rgba(53,105,63,.30),transparent 36%),linear-gradient(90deg,#04100b 0%,#07140e 47%,#0a1a11 75%,#04100b 100%)}
+.s34-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#020906 0%,transparent 38%,transparent 78%,#020906 100%);pointer-events:none}.s34-hero-copy{position:relative;z-index:2}.s34-hero-copy>span{color:#a9b1ac;font-size:12px}.s34-hero h1{font-size:34px;line-height:1.05;margin:13px 0 15px;letter-spacing:-1.1px}.s34-hero h1 em{font-style:normal;color:var(--v34-green)}.s34-hero p{margin:0;color:#a9b1ac;font-size:14px;line-height:1.55}.s34-hero p small{font-size:11px}.s34-hero-art{position:absolute;z-index:1;right:40px;top:0;width:54%;height:100%;opacity:.88}.s34-silhouette{position:absolute;bottom:-18px;width:118px;height:165px;border-radius:55% 55% 18% 18%;background:linear-gradient(180deg,#17261d,#07110c);filter:drop-shadow(0 0 22px rgba(0,0,0,.7))}.s34-silhouette:before{content:"";position:absolute;left:31px;top:-31px;width:58px;height:58px;border-radius:50%;background:#111b15}.s34-silhouette.one{left:15%}.s34-silhouette.two{left:34%;height:178px}.s34-silhouette.three{left:52%;height:157px}.s34-handwriting{position:absolute;right:3%;top:38px;transform:rotate(-7deg);color:#68f351;font-size:25px;line-height:1.08;font-family:cursive;font-style:italic;text-align:center}
+.s34-home-grid{display:grid;gap:14px}.s34-home-grid.top{grid-template-columns:1.05fr 1.05fr 1.05fr .8fr;margin-top:0}.s34-home-grid.bottom{grid-template-columns:1.55fr .7fr .9fr;margin-top:14px}.s34-panel{min-width:0;padding:18px;border:1px solid #1b3b28;border-radius:10px;background:linear-gradient(145deg,rgba(7,25,16,.98),rgba(3,13,8,.99));box-shadow:0 12px 30px rgba(0,0,0,.15)}.s34-panel h3{margin:0;display:flex;align-items:center;gap:9px;color:var(--v34-green);font-size:15px}.s34-panel h3 span{color:#f1f5f2}.s34-panel h3 b{margin-left:auto;color:var(--v34-green);font-size:14px}.s34-panel h3 small{color:#8f9993;font-weight:500}.s34-sub{margin-top:15px;color:#a6afa9;font-size:11px}.s34-versus{display:grid;grid-template-columns:1fr 32px 1fr;align-items:center;margin:14px 0 10px}.s34-versus>div{display:grid;justify-items:center;gap:8px}.s34-versus img{width:54px;height:54px;object-fit:contain}.s34-versus strong{font-size:12px;white-space:nowrap}.s34-versus>span{color:#a3aca6;font-weight:900;text-align:center}.s34-location{text-align:center;color:#a6afa9;font-size:10px;min-height:16px;margin-bottom:14px}.s34-primary,.s34-outline{height:40px;width:100%;border-radius:6px;font:inherit;font-size:11px;font-weight:900;cursor:pointer}.s34-primary{border:0;background:linear-gradient(100deg,#5eea4b,#82ff52);color:#071007}.s34-outline{border:1px solid #2f7142;background:#06110b;color:#7dfb63}.s34-panel h2{font-size:19px;margin:15px 0 10px}.s34-checks{min-height:63px;color:#a6afa9;font-size:11px;line-height:1.8}.s34-checks span{display:block}.s34-checks span:before{content:"✓";display:inline-grid;place-items:center;width:17px;height:17px;margin-right:8px;border-radius:50%;background:#62e64e;color:#071007;font-weight:1000}.s34-count{margin:17px 0 13px}.s34-count strong{font-size:29px;margin-right:5px}.s34-status p{margin:9px 0;color:#a6afa9;font-size:11px}.s34-status i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:10px}.s34-status i.green{background:#60ec4d}.s34-status i.yellow{background:#e8ca45}.s34-status i.red{background:#f04739}.s34-status b{display:inline-block;width:22px;color:#fff}.s34-panel>.s34-outline{margin-top:14px}.s34-quote{background:radial-gradient(circle at 70% 30%,rgba(45,116,54,.20),transparent 45%),#06160e}.s34-quote>div{font-size:36px;color:var(--v34-green)}.s34-quote>strong{display:block;margin-top:25px;color:var(--v34-green);font-size:19px;line-height:1.45}.s34-quote>small{display:block;margin-top:18px;color:#9ba59f}
+.s34-lineup{padding:15px}.s34-pitch-preview{height:300px;margin-top:12px;position:relative;overflow:hidden;border:1px solid #35653b;border-radius:7px;background:#10381d}.s34-pitch-preview>.pitch{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;min-height:0!important;aspect-ratio:auto!important;transform:none!important;margin:0!important;border:0!important}.s34-pitch-preview .pitch-lines{inset:3%!important}.s34-pitch-preview .player-slot{width:70px!important;transform:translate(-50%,-50%) scale(.66)!important;filter:drop-shadow(0 4px 5px rgba(0,0,0,.55))!important}.s34-pitch-preview .player-slot:hover{transform:translate(-50%,-50%) scale(.66)!important}.s34-pitch-preview .shirt{width:54px!important;height:43px!important;font-size:15px!important}.s34-pitch-preview .player-name{max-width:82px!important;margin-top:2px!important;padding:3px 5px!important;font-size:7px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.s34-focus #s34FocusList{display:grid;gap:18px;margin:20px 0}.s34-focus-item{display:grid;grid-template-columns:36px 1fr;gap:11px}.s34-focus-item i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--v34-green);color:#071007;font-style:normal;font-weight:900}.s34-focus-item strong{font-size:12px}.s34-focus-item small{display:block;margin-top:3px;color:#9da7a1;font-size:10px;line-height:1.35}.s34-activities #s34Activities{margin:13px 0}.s34-activity{display:grid;grid-template-columns:58px 1fr auto;gap:8px;align-items:center;min-height:42px;border-bottom:1px solid rgba(255,255,255,.06);font-size:10px}.s34-activity time,.s34-activity span{color:#a1aaa4}.s34-activity strong{color:#eef3ef}.s34-quick{margin-top:14px;height:68px;display:grid;grid-template-columns:150px repeat(5,1fr);align-items:center;gap:10px;padding:10px 14px;border:1px solid #193723;border-radius:10px;background:#06120c}.s34-quick strong{font-size:12px}.s34-quick button{height:40px;border:1px solid #244631;border-radius:7px;background:#07150e;color:#c5ccc7;font:inherit;font-size:10px;cursor:pointer}
+/* LINEUP VIEW */
+.s34-lineup-view{max-width:none;padding:28px 36px 24px}.s34-match-head{position:relative;padding-bottom:20px}.s34-match-head>button{border:0;background:transparent;color:#d5dbd7;font:inherit;font-size:12px;padding:0;margin-bottom:25px;cursor:pointer}.s34-match-title{display:flex;align-items:center;gap:22px}.s34-match-title img{width:48px;height:48px;object-fit:contain}.s34-match-title strong{font-size:25px}.s34-match-title span{font-size:18px;color:#9aa49e;font-weight:900}.s34-match-meta{display:flex;gap:25px;margin:10px 0 0 62px;color:#aab2ad;font-size:12px}.s34-match-meta b{font-weight:500}.s34-lineup-toolbar{position:absolute;right:36px;top:138px;width:370px}.s34-lineup-toolbar label{display:block;padding:12px 18px;border:1px solid #273c30;border-radius:9px;background:#07100b;color:#9fa8a2;font-size:10px}.s34-lineup-toolbar #formationSelector{width:100%!important;height:24px!important;margin-top:2px!important;padding:0!important;border:0!important;background:transparent!important;color:#fff!important;font-size:13px!important}.s34-lineup-layout{display:grid;grid-template-columns:114px minmax(620px,1fr) 390px;gap:18px;align-items:stretch;margin-top:12px}.s34-match-tabs{border:1px solid #14291d;border-radius:10px;background:#04100a;overflow:hidden;display:flex;flex-direction:column}.s34-match-tabs button{height:112px;border:0;border-bottom:1px solid #14291d;background:transparent;color:#a8b0ab;font:inherit;font-size:11px;display:grid;place-items:center;align-content:center;gap:10px}.s34-match-tabs button:first-child{color:var(--v34-green);background:linear-gradient(90deg,rgba(60,202,61,.12),transparent);border-left:2px solid var(--v34-green)}.s34-match-tabs button span{display:block}.s34-pitch-host{min-height:640px;border:1px solid #173922;border-radius:10px;background:#07140d;padding:0;overflow:hidden}.s34-pitch-host>.pitch{width:100%!important;max-width:none!important;height:100%!important;min-height:640px!important;aspect-ratio:auto!important;margin:0!important;transform:none!important;border:0!important;border-radius:9px!important}.s34-pitch-host .pitch-lines{inset:4%!important}.s34-roster{border:1px solid #183523;border-radius:10px;background:#06120c;overflow:hidden}.s34-roster-tabs{height:54px;display:flex;align-items:center;gap:30px;padding:0 22px;border-bottom:1px solid #1b3425;color:#aeb6b0;font-size:12px}.s34-roster-tabs b{height:54px;display:flex;align-items:center;color:#9bff7e;border-bottom:2px solid var(--v34-green)}.s34-roster-head,.s34-roster-row{display:grid;grid-template-columns:28px 1fr 70px 76px;gap:8px;align-items:center;padding:0 18px}.s34-roster-head{height:38px;color:#7f8a83;font-size:9px}.s34-roster-row{height:35px;color:#cbd2cd;font-size:10px}.s34-roster-row .status{justify-self:end;min-width:58px;padding:4px 8px;border-radius:999px;text-align:center;background:#163b1e;color:#6df253;font-size:8px;font-weight:900}.s34-roster-row .status.bench{background:#202824;color:#c5ccc7}.s34-lineup-footer{min-height:88px;margin-top:18px;padding:0 18px;display:grid;grid-template-columns:220px 1fr auto;align-items:center;border:1px solid #173422;border-radius:10px;background:#06120c}.s34-lineup-footer button{height:42px;padding:0 18px;border:1px solid #294b36;border-radius:7px;background:#07110c;color:#d6dcd8;font:inherit;font-size:11px}.s34-lineup-footer>span{text-align:center;color:#78847c;font-size:24px}.s34-lineup-footer>span small{display:block;font-size:10px}.s34-lineup-footer>div{display:flex;gap:12px}.s34-lineup-footer button.share{background:linear-gradient(100deg,#5de94a,#7cff50);color:#061006;border:0;font-weight:900}
+@media(max-width:1250px){.s34-home-grid.top{grid-template-columns:1fr 1fr}.s34-quote{display:none}.s34-home-grid.bottom{grid-template-columns:1.4fr 1fr}.s34-activities{grid-column:1/-1}.s34-lineup-layout{grid-template-columns:90px 1fr 310px}.s34-lineup-toolbar{width:300px}}
+@media(max-width:900px){body.s34-active #s34App{grid-template-columns:1fr}.s34-sidebar{display:none}.s34-workspace{grid-column:1}.s34-topbar{grid-template-columns:1fr auto;padding:0 15px}.s34-search{display:none}.s34-view{padding:20px 14px}.s34-hero{margin:-20px -14px 0;padding:20px 14px}.s34-hero-art{display:none}.s34-home-grid.top,.s34-home-grid.bottom{grid-template-columns:1fr}.s34-quick{grid-template-columns:1fr 1fr;height:auto}.s34-quick>strong{grid-column:1/-1}.s34-lineup-layout{grid-template-columns:1fr}.s34-match-tabs{display:none}.s34-roster{min-height:300px}.s34-lineup-toolbar{position:static;width:auto;margin-bottom:10px}.s34-lineup-footer{grid-template-columns:1fr;gap:10px;padding:14px}.s34-lineup-footer>span{display:none}}
+
+
+/* =========================================================
+   START11 V35 – NATIVE INTERACTIVE LINEUP + MOCKUP SHELL
+   Uses the original START11 lineup/squad DOM so all existing
+   drag/drop, player clicks, formation and squad actions survive.
+========================================================= */
+.s34-team-switch{width:calc(100% - 8px);color:#f4f7f5;cursor:pointer;text-align:left}
+.s34-profile-button{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#f4f7f5;font:inherit;cursor:pointer;padding:0}
+.s35-native-lineup-layout{display:grid;grid-template-columns:112px minmax(0,1fr) 330px;gap:18px;align-items:stretch;margin-top:24px}
+.s35-native-center,.s35-native-squad{min-width:0}
+.s35-native-center>.start11-center-column,.s35-native-squad>.start11-right-column{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+.s35-native-center .lineup-card{margin:0!important;padding:14px!important;border:1px solid #1b3b28!important;border-radius:12px!important;background:linear-gradient(145deg,#06150e,#031008)!important;box-shadow:none!important}
+.s35-native-center .lineup-card-toolbar{min-height:54px;margin:0 0 12px!important;padding:0 4px!important}
+.s35-native-center .lineup-card-toolbar>div:first-child{display:none!important}
+.s35-native-center .lineup-toolbar-actions{margin-left:auto!important}
+.s35-native-center .formation-inline-label{font-size:10px!important;color:#9da7a1!important}
+.s35-native-center #formationSelector{min-width:250px!important;height:48px!important;border:1px solid #294433!important;border-radius:8px!important;background:#06100b!important;color:#fff!important;padding:0 14px!important;font-size:13px!important}
+.s35-native-center .pitch-wrapper{padding:0!important;perspective:none!important}
+.s35-native-center #pitch{max-width:none!important;width:100%!important;aspect-ratio:1.52/1!important;margin:0!important;transform:none!important;border-radius:10px!important;border:1px solid #2b6a36!important;box-shadow:inset 0 0 45px rgba(0,0,0,.28)!important}
+.s35-native-center #pitch .player-slot{transform:translate(-50%,-50%) scale(.82)!important}
+.s35-native-center #pitch .player-slot:hover{transform:translate(-50%,-50%) scale(.88)!important}
+.s35-native-center #pitch .shirt{width:60px!important;height:48px!important;font-size:18px!important}
+.s35-native-center #pitch .player-name{max-width:110px!important;font-size:10px!important;padding:5px 8px!important}
+.s35-native-center .bench-zone{margin-top:12px!important;border-top:1px solid #183424!important;padding-top:12px!important}
+.s35-native-center #playerDetails{margin-top:14px!important}
+.s35-native-squad .full-squad-card{height:100%!important;min-height:640px!important;margin:0!important;border:1px solid #1b3b28!important;border-radius:12px!important;background:linear-gradient(145deg,#06150e,#031008)!important;box-shadow:none!important}
+.s35-native-squad .full-squad-card .start11-card-heading{padding:18px 16px 10px!important}
+.s35-native-squad .full-squad-filters{padding:0 14px 12px!important}
+.s35-native-squad .full-squad-list{max-height:600px!important;overflow:auto!important}
+.s35-native-squad .full-squad-player{cursor:pointer!important}
+.s34-lineup-view{max-width:1680px!important}
+.s34-lineup-view .s34-match-head{padding-right:0!important}
+.s34-lineup-view .s34-lineup-toolbar{display:none!important}
+.s34-match-tabs{height:auto!important;min-height:640px!important}
+.s34-lineup-footer{margin-top:16px!important}
+@media(max-width:1200px){.s35-native-lineup-layout{grid-template-columns:92px minmax(0,1fr)}.s35-native-squad{grid-column:2}.s35-native-squad .full-squad-card{min-height:0!important}}
+
+
+/* =========================================================
+   START11 V36 – STARTOPSTILLING REDESIGN
+   Clean match workspace built around the existing native
+   lineup, bench and squad components.
+========================================================= */
+.s34-lineup-view{max-width:1720px!important;margin:0 auto!important;padding:26px 34px 28px!important}
+.s36-match-head{padding:0 0 18px!important;border-bottom:1px solid rgba(96,255,85,.10)}
+.s36-match-head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}
+.s36-kicker{margin-bottom:9px;color:#58f34e;font-size:9px;font-weight:900;letter-spacing:1.45px}
+.s36-head-hint{width:300px;padding:12px 14px;border:1px solid #173824;border-radius:9px;background:#06130c;display:flex;flex-direction:column;gap:4px}
+.s36-head-hint strong{color:#f2f6f3;font-size:10px;letter-spacing:.5px}.s36-head-hint span{color:#849189;font-size:9px;line-height:1.45}
+.s34-lineup-view .s34-match-title{gap:14px}.s34-lineup-view .s34-match-title img{width:38px;height:38px}.s34-lineup-view .s34-match-title strong{font-size:21px}.s34-lineup-view .s34-match-title span{font-size:12px}
+.s34-lineup-view .s34-match-meta{margin:8px 0 0 52px;gap:18px;font-size:10px}
+.s35-native-lineup-layout{grid-template-columns:92px minmax(620px,1fr) 350px;gap:14px;margin-top:18px}
+.s34-match-tabs{min-height:690px!important;border-color:#173824!important;background:#04100a!important}
+.s34-match-tabs button{height:104px!important;font-size:10px!important;cursor:pointer}.s34-match-tabs button:first-child{background:linear-gradient(90deg,rgba(83,255,70,.14),rgba(83,255,70,.02))!important}
+.s35-native-center .lineup-card{padding:12px!important;border-color:#1d442b!important;background:#04110a!important}
+.s35-native-center .lineup-card-toolbar{min-height:50px!important;margin-bottom:10px!important}
+.s35-native-center .lineup-toolbar-actions{display:grid!important;grid-template-columns:auto 220px!important;align-items:center!important;gap:12px!important;width:auto!important}
+.s35-native-center .formation-inline-label{margin:0!important;color:#6f7c74!important;font-size:8px!important;font-weight:900!important;letter-spacing:1px!important}
+.s35-native-center #formationSelector{min-width:220px!important;width:220px!important;height:38px!important;border-radius:7px!important;background:#07140d!important;font-size:11px!important}
+.s35-native-center #pitch{aspect-ratio:1.58/1!important;border-color:#36713f!important;border-radius:8px!important;background-color:#164e20!important}
+.s35-native-center #pitch .player-slot{transform:translate(-50%,-50%) scale(.76)!important}.s35-native-center #pitch .player-slot:hover{transform:translate(-50%,-50%) scale(.82)!important}
+.s35-native-center .bench-zone{margin-top:10px!important;padding:12px!important;border:1px solid #173824!important;border-radius:8px!important;background:#05120b!important}
+.s35-native-center .bench-zone-header{margin-bottom:8px!important}.s35-native-center .bench-zone-header h3{font-size:11px!important}.s35-native-center .substitute-list-redesign{min-height:72px!important}
+.s35-native-center #playerDetails{display:none!important}
+.s35-native-squad .full-squad-card{min-height:690px!important;max-height:690px!important;display:flex!important;flex-direction:column!important;border-color:#1d442b!important;background:#04110a!important}
+.s35-native-squad .full-squad-card .start11-card-heading{padding:14px 14px 8px!important}.s35-native-squad .full-squad-card .start11-card-heading h2{font-size:13px!important}
+.s35-native-squad #squadSearchInput{margin:0 12px 8px!important;width:calc(100% - 24px)!important;height:36px!important}
+.s35-native-squad .squad-filter-row{padding:0 12px 9px!important;gap:6px!important}.s35-native-squad .squad-filter-row select{height:34px!important;font-size:9px!important}
+.s35-native-squad .full-squad-table-header{padding:0 12px!important;font-size:8px!important}.s35-native-squad .full-squad-list{max-height:none!important;flex:1!important;overflow:auto!important}
+.s35-native-squad #addFullSquadPlayerButton{margin:10px 12px 12px!important;width:calc(100% - 24px)!important}
+.s34-lineup-footer{min-height:58px!important;margin-top:12px!important;padding:10px 14px!important;border:1px solid #173824!important;border-radius:9px!important;background:#05110b!important}
+.s34-lineup-footer button{height:36px!important;border-radius:6px!important}.s34-lineup-footer .share{background:#58f34e!important;color:#031006!important;border-color:#58f34e!important;font-weight:900!important}
+@media(max-width:1350px){.s35-native-lineup-layout{grid-template-columns:78px minmax(0,1fr) 310px}.s36-head-hint{display:none}.s34-lineup-view{padding:22px!important}}
+@media(max-width:1050px){.s35-native-lineup-layout{grid-template-columns:1fr}.s34-match-tabs{min-height:auto!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important}.s34-match-tabs button{height:58px!important}.s35-native-squad{grid-column:auto!important}.s35-native-squad .full-squad-card{min-height:520px!important;max-height:none!important}}
+
+/* =========================================================
+   START11 V37 – LINEUP WORKSPACE FINISH
+   Compact, mockup-aligned sizing. Native interactions remain.
+========================================================= */
+body.s34-active #s34LineupView{
+    width:min(100%,1720px)!important;
+    padding:22px 28px 24px!important;
 }
-html{background:var(--s31-bg)}
-body{
-    background:
-      radial-gradient(circle at 72% 8%,rgba(66,140,50,.10),transparent 28%),
-      linear-gradient(180deg,#020806 0%,#030906 100%)!important;
-    color:var(--s31-text);
+body.s34-active #s34LineupView[hidden]{display:none!important}
+
+body.s34-active .s36-match-head{padding-bottom:14px!important}
+body.s34-active .s34-match-head>button{margin-bottom:18px!important}
+body.s34-active .s36-match-head-row{align-items:center!important}
+body.s34-active .s34-lineup-view .s34-match-title img{width:34px!important;height:34px!important}
+body.s34-active .s34-lineup-view .s34-match-title strong{font-size:20px!important}
+body.s34-active .s34-lineup-view .s34-match-meta{margin:7px 0 0 46px!important}
+
+body.s34-active .s35-native-lineup-layout{
+    grid-template-columns:82px minmax(650px,1fr) 320px!important;
+    gap:12px!important;
+    margin-top:14px!important;
+    align-items:start!important;
 }
-.start11-shell{background:transparent!important;min-height:100vh}
-.start11-global-topbar{
-    min-height:76px!important;height:76px!important;
-    padding:0 28px!important;
-    background:rgba(2,8,6,.92)!important;
-    border-bottom:1px solid rgba(255,255,255,.075)!important;
-    backdrop-filter:blur(18px);
-    position:sticky!important;top:0;z-index:5000;
+body.s34-active .s34-match-tabs{
+    min-height:610px!important;
+    height:610px!important;
 }
-.start11-brand span{
-    color:var(--s31-green)!important;
-    font-size:28px!important;font-weight:1000!important;letter-spacing:-1.2px!important;
+body.s34-active .s34-match-tabs button{
+    height:92px!important;
+    min-height:92px!important;
 }
-.start11-main-nav{gap:8px!important}
-.start11-nav-item{
-    min-height:76px!important;padding:0 16px!important;
-    color:#9ca69f!important;background:transparent!important;border:0!important;
-    border-bottom:2px solid transparent!important;
-    font-size:12px!important;font-weight:800!important;letter-spacing:0!important;
+body.s34-active .s35-native-center .lineup-card{
+    padding:11px!important;
 }
-.start11-nav-item:hover{color:#fff!important}
-.start11-nav-item.active{
-    color:var(--s31-green)!important;border-bottom-color:var(--s31-green)!important;
+body.s34-active .s35-native-center .lineup-card-toolbar{
+    min-height:44px!important;
+    margin-bottom:8px!important;
+}
+body.s34-active .s35-native-center #formationSelector{
+    min-width:220px!important;
+    height:40px!important;
+}
+body.s34-active .s35-native-center #pitch{
+    aspect-ratio:1.72/1!important;
+    min-height:0!important;
+}
+body.s34-active .s35-native-center #pitch .player-slot{
+    transform:translate(-50%,-50%) scale(.72)!important;
+}
+body.s34-active .s35-native-center #pitch .player-slot:hover{
+    transform:translate(-50%,-50%) scale(.78)!important;
+}
+body.s34-active .s35-native-center #pitch .shirt{
+    width:56px!important;
+    height:44px!important;
+    font-size:17px!important;
+}
+body.s34-active .s35-native-center #pitch .player-name{
+    max-width:100px!important;
+    font-size:9px!important;
+    padding:4px 7px!important;
+}
+body.s34-active .s35-native-center .bench-zone{
+    margin-top:9px!important;
+    padding-top:9px!important;
+}
+body.s34-active .s35-native-squad .full-squad-card{
+    min-height:610px!important;
+    height:610px!important;
+    max-height:610px!important;
+}
+body.s34-active .s35-native-squad .full-squad-list{
+    min-height:0!important;
+    max-height:none!important;
+    flex:1!important;
+    overflow:auto!important;
+}
+body.s34-active .s34-lineup-footer{
+    margin-top:10px!important;
+    min-height:54px!important;
+}
+body.s34-active #s34HomeView .s34-lineup{cursor:pointer}
+body.s34-active #s34HomeView .s34-lineup:hover{
+    border-color:#2a6b3a!important;
+    box-shadow:0 0 0 1px rgba(105,240,77,.06) inset!important;
+}
+
+@media(max-width:1350px){
+    body.s34-active .s35-native-lineup-layout{
+        grid-template-columns:72px minmax(560px,1fr) 290px!important;
+    }
+}
+
+/* =========================================================
+   START11 V38 – MODERN SHELL ONLY
+   Legacy dashboard/topbar are now hidden engine containers.
+========================================================= */
+body.s38-modern-only > .start11-shell > .start11-global-topbar,
+body.s38-modern-only .start11-global-topbar,
+body.s38-modern-only > .start11-shell > .start11-dashboard,
+body.s38-modern-only .start11-dashboard{
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+}
+
+body.s38-modern-only #s34App{
+    display:grid!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+}
+
+/* Native pieces moved into the modern lineup page stay visible. */
+body.s38-modern-only #s35NativeCenterHost #lineupSection,
+body.s38-modern-only #s35NativeSquadHost #squadSection{
+    display:block!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+}
+
+/* No legacy page should create document width/height after its useful nodes are mounted. */
+body.s38-modern-only .start11-shell{
+    min-height:0!important;
+}
+
+
+/* =========================================================
+   START11 V41 – MODERN NATIVE PAGES + REAL ACCOUNT/TEAM UI
+========================================================= */
+body.s34-active.s39-modern-only .start11-dashboard,
+body.s34-active.s39-modern-only .start11-global-topbar{
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+}
+
+.s41-top-team-select{
+    position:relative;
+    min-width:190px;
+    height:44px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:0 12px;
+    border:1px solid #1d3b28;
+    border-radius:9px;
+    background:#07110c;
+}
+.s41-top-team-select select{
+    min-width:125px;
+    height:100%;
+    flex:1;
+    appearance:none;
+    -webkit-appearance:none;
+    border:0;
+    outline:0;
+    background:transparent;
+    color:#f4f7f5;
+    font:inherit;
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+    padding-right:20px;
+}
+.s41-top-team-select select option{background:#08110c;color:#fff}
+.s41-select-chevron{position:absolute;right:12px;pointer-events:none;color:#74ef64}
+
+.s41-account-host{position:relative;display:flex;align-items:center}
+.s41-account-host .account-menu{display:block!important;position:relative!important}
+.s41-account-host .account-menu-button{
+    min-width:150px!important;
+    height:48px!important;
+    border:0!important;
+    background:transparent!important;
     box-shadow:none!important;
 }
-.cloud-status,.small-button,.account-menu-button{
-    border-color:var(--s31-line-soft)!important;background:rgba(255,255,255,.025)!important;
-    border-radius:10px!important;
-}
-.start11-dashboard{
-    width:min(1540px,calc(100% - 48px))!important;
-    margin:0 auto!important;padding:30px 0 56px!important;
-    display:grid!important;
-    grid-template-columns:minmax(250px,.86fr) minmax(500px,1.72fr) minmax(260px,.9fr) minmax(260px,.9fr)!important;
-    gap:14px!important;align-items:start!important;
-}
-.s31-home-intro{
-    grid-column:1/-1;
-    padding:6px 2px 12px;
-}
-.s31-page-kicker{
-    display:block;margin-bottom:7px;color:#9ba69f;font-size:12px;font-weight:800;
-}
-.s31-home-intro h1{
-    margin:0;color:#fff;font-size:34px;line-height:1.05;letter-spacing:-1.2px;font-weight:900;
-}
-.s31-home-intro h1 em{font-style:normal;color:var(--s31-green)}
-.s31-home-intro p{margin:10px 0 0;color:var(--s31-muted);font-size:14px}
-.start11-left-column,.start11-center-column,.start11-middle-column,.start11-right-column{
-    min-width:0!important;width:auto!important;display:grid!important;gap:14px!important;
-}
-.start11-card{
-    border:1px solid var(--s31-line-soft)!important;
-    border-radius:var(--s31-radius)!important;
-    background:
-      linear-gradient(145deg,rgba(10,26,17,.96),rgba(3,11,7,.98))!important;
-    box-shadow:var(--s31-shadow)!important;
-    overflow:hidden;
-}
-.start11-card-heading{
-    padding-bottom:10px!important;margin-bottom:10px!important;
-    border-bottom:1px solid rgba(255,255,255,.055)!important;
-}
-.start11-card-heading h2{
-    color:#fff!important;font-size:13px!important;letter-spacing:0!important;font-weight:900!important;
-}
-.start11-primary-action,.start11-primary-button{
-    border:1px solid rgba(130,255,85,.75)!important;border-radius:8px!important;
-    background:linear-gradient(100deg,var(--s31-green),var(--s31-green-2))!important;
-    color:#061006!important;font-weight:950!important;box-shadow:0 8px 24px rgba(100,240,75,.12)!important;
-}
-.start11-secondary-action,.start11-outline-action,.start11-secondary-button{
-    border:1px solid rgba(125,245,83,.25)!important;border-radius:8px!important;
-    background:rgba(8,20,13,.8)!important;color:#dfe8e1!important;
-}
-.start11-secondary-action:hover,.start11-outline-action:hover,.start11-secondary-button:hover{
-    border-color:rgba(125,245,83,.55)!important;color:var(--s31-green)!important;
-}
-.start11-input,.start11-select,#formationSelector{
-    border:1px solid rgba(255,255,255,.10)!important;border-radius:8px!important;
-    background:#050c08!important;color:#eef4ef!important;
-}
-.next-match-card{padding:18px!important}
-.next-match-league{color:var(--s31-muted)!important;font-size:10px!important}
-.next-match-versus{padding:14px 0 8px!important}
-.dashboard-team-logo{width:52px!important;height:52px!important;border-color:rgba(255,255,255,.13)!important}
-.next-match-team strong{font-size:12px!important}
-.next-match-meta{
-    display:grid!important;gap:5px!important;padding:10px 0 13px!important;
-    color:#9ba69f!important;font-size:10px!important;
-}
-.upcoming-card,.dbu-connect-card,.match-squad-card,.full-squad-card,.tactics-card,.coach-card{padding:16px!important}
-
-/* Home: lineup becomes a compact tactical preview */
-body:not(.s31-lineup-mode) #lineupSection .lineup-card{padding:14px!important}
-body:not(.s31-lineup-mode) #lineupSection .lineup-card-toolbar{
-    min-height:48px!important;padding:0 2px 10px!important;
-}
-body:not(.s31-lineup-mode) #lineupSection .match-title-display{font-size:17px!important}
-body:not(.s31-lineup-mode) #lineupSection .pitch-wrapper{
-    border-radius:12px!important;overflow:hidden!important;
-    border:1px solid rgba(130,255,84,.16)!important;
-}
-body:not(.s31-lineup-mode) #lineupSection .pitch{
-    min-height:430px!important;height:430px!important;
-    background:
-      linear-gradient(rgba(7,72,30,.14),rgba(3,34,15,.12)),
-      repeating-linear-gradient(90deg,#123d20 0 12.5%,#174824 12.5% 25%)!important;
-}
-body:not(.s31-lineup-mode) #lineupSection .bench-zone,
-body:not(.s31-lineup-mode) #playerDetails{display:none!important}
-
-/* Keep secondary home columns visually lighter */
-body:not(.s31-lineup-mode) .start11-middle-column .match-squad-card,
-body:not(.s31-lineup-mode) .start11-right-column .full-squad-card{
-    max-height:650px;overflow:auto;
+.s41-account-host .account-dropdown{
+    top:calc(100% + 8px)!important;
+    right:0!important;
+    z-index:5000!important;
 }
 
-/* STARTOPSTILLING workspace */
-body.s31-lineup-mode .s31-home-intro,
-body.s31-lineup-mode #matchesSection,
-body.s31-lineup-mode #squadSection{display:none!important}
-body.s31-lineup-mode .start11-dashboard{
-    width:min(1540px,calc(100% - 56px))!important;
-    grid-template-columns:minmax(0,1fr) 360px!important;
-    gap:18px!important;padding-top:26px!important;
+.s41-page-view{max-width:1500px!important;padding:30px 36px!important}
+.s41-page-head{
+    min-height:100px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+    padding-bottom:22px;
+    margin-bottom:20px;
+    border-bottom:1px solid #173422;
 }
-body.s31-lineup-mode #lineupSection{grid-column:1!important;display:block!important}
-body.s31-lineup-mode .start11-middle-column{grid-column:2!important;grid-row:1!important}
-body.s31-lineup-mode #lineupSection .lineup-card{padding:18px!important}
-body.s31-lineup-mode #lineupSection .lineup-card-toolbar{
-    min-height:70px!important;padding:0 2px 14px!important;
-    border-bottom:1px solid rgba(255,255,255,.06)!important;
+.s41-page-head span{color:#6cff4e;font-size:10px;font-weight:900;letter-spacing:1.4px}
+.s41-page-head h1{margin:6px 0 5px;font-size:30px}
+.s41-page-head p{margin:0;color:#8f9b94;font-size:12px}
+.s41-page-head button{
+    height:38px;padding:0 15px;border:1px solid #294b36;border-radius:7px;
+    background:#07110c;color:#d6dcd8;cursor:pointer
 }
-body.s31-lineup-mode #lineupSection .match-title-display{
-    font-size:24px!important;font-weight:950!important;letter-spacing:-.5px!important;
+.s41-native-page-host{
+    min-height:650px;
+    border:1px solid #173422;
+    border-radius:10px;
+    background:#06120c;
+    padding:18px;
 }
-body.s31-lineup-mode #lineupSection .pitch-wrapper{
-    margin-top:14px!important;border:1px solid rgba(130,255,84,.2)!important;
-    border-radius:14px!important;overflow:hidden!important;
+body.s34-active #s41PlayersHost #squadSection{
+    display:block!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    width:100%!important;
+    max-width:none!important;
 }
-body.s31-lineup-mode #lineupSection .pitch{
-    min-height:650px!important;height:calc(100vh - 260px)!important;max-height:760px!important;
-    background:
-      radial-gradient(circle at 50% 50%,rgba(100,255,100,.055),transparent 38%),
-      repeating-linear-gradient(90deg,#123d20 0 12.5%,#174824 12.5% 25%)!important;
+body.s34-active #s41PlayersHost #squadSection .full-squad-card{
+    width:100%!important;
+    max-width:none!important;
+    min-height:650px!important;
+    height:auto!important;
+    max-height:none!important;
 }
-body.s31-lineup-mode #lineupSection .bench-zone{
-    margin-top:14px!important;border:1px solid rgba(255,255,255,.07)!important;
-    border-radius:12px!important;background:#050d09!important;
-}
-body.s31-lineup-mode #playerDetails{margin-top:14px!important}
-body.s31-lineup-mode .start11-middle-column .match-squad-card{
-    position:sticky!important;top:94px!important;max-height:calc(100vh - 118px)!important;overflow:auto!important;
-}
-body.s31-lineup-mode .start11-segmented-control{
-    background:#040b07!important;border:1px solid rgba(255,255,255,.07)!important;border-radius:10px!important;padding:4px!important;
-}
-body.s31-lineup-mode .squad-view-tab{border-radius:7px!important}
-body.s31-lineup-mode .squad-view-tab.active{background:rgba(100,240,75,.12)!important;color:var(--s31-green)!important}
-
-/* Players / rows / chips */
-.match-squad-overview,.full-squad-list,.upcoming-matches-list{gap:5px!important}
-.match-squad-player,.full-squad-player,.upcoming-match-item{
-    border-color:rgba(255,255,255,.06)!important;background:rgba(255,255,255,.025)!important;border-radius:8px!important;
-}
-.start11-count-badge,.start11-dbu-badge{
-    border-radius:999px!important;background:rgba(102,242,75,.10)!important;color:var(--s31-green)!important;
+body.s34-active #s41PlayersHost #squadSection .full-squad-list{
+    max-height:none!important;
+    min-height:480px!important;
+    overflow:visible!important;
 }
 
-/* Pitch/player polish without changing drag/drop geometry */
-.pitch{box-shadow:inset 0 0 70px rgba(0,0,0,.28)!important}
-.player-card,.player-on-pitch,.pitch-player{
-    filter:drop-shadow(0 8px 9px rgba(0,0,0,.35));
-}
 
-/* Modals + feature surfaces follow same language */
-.modal-content,.start11-account-panel,.s13shell,.s25shell{
-    border-color:rgba(130,255,84,.18)!important;
-    border-radius:16px!important;
-    background:
-      radial-gradient(circle at 70% 0,rgba(80,180,55,.08),transparent 35%),
-      #05100a!important;
-    box-shadow:0 30px 90px rgba(0,0,0,.55)!important;
-}
-.s13top,.s13tabs{border-color:rgba(255,255,255,.07)!important}
-.s13card,.s20card,.s20metric,.s20insight,.s28-card{
-    border-color:rgba(255,255,255,.075)!important;border-radius:12px!important;
-    background:linear-gradient(145deg,rgba(10,25,16,.94),rgba(5,13,8,.96))!important;
-}
-.s18-stage,.s18-timeline{border-radius:12px!important;border-color:rgba(255,255,255,.09)!important}
+/* =========================================================
+   START11 V43 – LIGATABEL / KLUBLOGOER / DBU UNDER MINE HOLD
+========================================================= */
+.s43-league{overflow:hidden}
+.s43-league>h3 b{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+.s43-league-table{margin-top:12px;border:1px solid rgba(255,255,255,.07);border-radius:8px;overflow:hidden;background:rgba(0,0,0,.12)}
+.s43-league-head,.s43-league-row{display:grid;grid-template-columns:22px minmax(0,1fr) 24px 34px 25px;gap:4px;align-items:center;padding:0 6px}
+.s43-league-head{min-height:23px;color:#748078;background:rgba(255,255,255,.025);font-size:7px;font-weight:900;text-transform:uppercase}
+.s43-league-row{min-height:27px;border-top:1px solid rgba(255,255,255,.045);color:#cbd4ce;font-size:8px;text-align:center}
+.s43-league-row.is-own{background:rgba(126,251,99,.09);box-shadow:inset 2px 0 0 var(--v34-green)}
+.s43-league-row>b{color:#fff}
+.s43-league-club{min-width:0;display:flex;align-items:center;gap:5px;text-align:left!important}
+.s43-league-club img,.s43-league-club i{width:18px;height:18px;flex:0 0 18px;object-fit:contain;border-radius:50%}
+.s43-league-club i{display:grid;place-items:center;background:#172119;color:var(--v34-green);font-style:normal;font-size:7px;font-weight:900}
+.s43-league-club strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px}
+.s43-league-empty{padding:24px 10px;color:#7f8b83;text-align:center;font-size:9px;line-height:1.5}
+.s34-activity.s43-activity{grid-template-columns:58px 28px minmax(0,1fr) auto;gap:7px}
+.s43-activity-logo{width:24px;height:24px;display:grid;place-items:center}
+.s43-activity-logo img{width:23px;height:23px;object-fit:contain}
+.s43-activity-logo i{width:21px;height:21px;display:grid;place-items:center;border-radius:50%;background:#162019;color:var(--v34-green);font-style:normal;font-size:8px;font-weight:900}
+.s43-dbu-team-card{margin:12px 0 14px!important;padding:14px!important;border:1px solid rgba(126,251,99,.18)!important;border-radius:10px!important;background:#07130c!important}
+.s43-dbu-team-card .start11-card-heading{display:flex;align-items:center;justify-content:space-between}
+.s43-dbu-team-card .start11-card-heading h2{margin:0;font-size:12px}
+.s43-dbu-team-card p{margin:8px 0 10px;color:#879189;font-size:9px;line-height:1.45}
+.s43-dbu-team-card .start11-inline-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.s43-dbu-team-card .dbu-connection-status{margin-top:8px;font-size:8px;color:var(--v34-green)}
+@media(max-width:1250px){.s43-league{display:block!important}}
 
-/* Responsive */
-@media(max-width:1280px){
-    .start11-dashboard{grid-template-columns:280px minmax(480px,1fr) 300px!important}
-    .start11-right-column{grid-column:1/-1!important}
-    body.s31-lineup-mode .start11-dashboard{grid-template-columns:minmax(0,1fr) 320px!important}
+
+/* =========================================================
+   START11 V44 – LARGER LINEUP PLAYERS
+========================================================= */
+body.s34-active .s35-native-center #pitch .player-slot{
+    transform:translate(-50%,-50%) scale(.92)!important;
 }
-@media(max-width:980px){
-    .start11-global-topbar{padding:0 14px!important}
-    .start11-main-nav{overflow-x:auto!important}
-    .start11-dashboard,
-    body.s31-lineup-mode .start11-dashboard{
-        width:min(100% - 24px,900px)!important;display:block!important;
-    }
-    .start11-left-column,.start11-center-column,.start11-middle-column,.start11-right-column{margin-bottom:14px!important}
-    body.s31-lineup-mode #lineupSection .pitch{height:620px!important;min-height:620px!important}
-    body.s31-lineup-mode .start11-middle-column .match-squad-card{position:static!important;max-height:none!important}
+body.s34-active .s35-native-center #pitch .player-slot:hover{
+    transform:translate(-50%,-50%) scale(.99)!important;
 }
-@media(max-width:680px){
-    .start11-global-topbar{height:auto!important;min-height:68px!important;flex-wrap:wrap!important}
-    .start11-brand span{font-size:22px!important}
-    .start11-nav-item{min-height:52px!important;padding:0 10px!important;font-size:10px!important}
-    .s31-home-intro h1{font-size:28px!important}
-    body:not(.s31-lineup-mode) #lineupSection .pitch,
-    body.s31-lineup-mode #lineupSection .pitch{height:520px!important;min-height:520px!important}
+body.s34-active .s35-native-center #pitch .player-slot.dragging{
+    transform:translate(-50%,-50%) scale(1.03)!important;
+}
+body.s34-active .s35-native-center #pitch .shirt{
+    width:68px!important;
+    height:54px!important;
+    font-size:20px!important;
+}
+body.s34-active .s35-native-center #pitch .player-name{
+    max-width:116px!important;
+    margin-top:3px!important;
+    padding:4px 7px!important;
+    font-size:9.5px!important;
+    line-height:11px!important;
 }

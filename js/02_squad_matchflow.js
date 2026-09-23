@@ -6181,3 +6181,688 @@ if (
 
 }
 
+
+
+/* =========================================================
+   START11 V36 – NEW STARTOPSTILLING PAGE MOUNT
+   Reuses the existing native lineup/squad DOM. No duplicate
+   lineup state is created; drag/drop and existing handlers stay.
+========================================================= */
+(function(){
+    if(window.__START11_V36_LINEUP__) return;
+    window.__START11_V36_LINEUP__ = true;
+
+    function v36ShowLineup(){
+        const home=document.getElementById('s34HomeView');
+        const lineup=document.getElementById('s34LineupView');
+        if(home) home.hidden=true;
+        if(lineup) lineup.hidden=false;
+        v36MountNativeLineup();
+        try{ if(typeof tegnOpstilling==='function') tegnOpstilling(); }catch(e){}
+        try{ if(typeof opdaterUdskiftere==='function') opdaterUdskiftere(); }catch(e){}
+        try{ if(typeof start11RenderSquadUI==='function') start11RenderSquadUI(); }catch(e){}
+    }
+
+    function v36ShowHome(){
+        const home=document.getElementById('s34HomeView');
+        const lineup=document.getElementById('s34LineupView');
+        if(lineup) lineup.hidden=true;
+        if(home) home.hidden=false;
+    }
+
+    function v36MountNativeLineup(){
+        const centerHost=document.getElementById('s35NativeCenterHost');
+        const squadHost=document.getElementById('s35NativeSquadHost');
+        const center=document.getElementById('lineupSection');
+        const squad=document.getElementById('squadSection');
+        if(centerHost && center && center.parentElement!==centerHost) centerHost.appendChild(center);
+        if(squadHost && squad && squad.parentElement!==squadHost) squadHost.appendChild(squad);
+    }
+
+    function v36Bind(){
+        v36MountNativeLineup();
+        ['s34OpenMatch'].forEach(id=>document.getElementById(id)?.addEventListener('click',v36ShowLineup));
+        document.getElementById('s34BackMatches')?.addEventListener('click',v36ShowHome);
+        document.querySelectorAll('[data-s34="matches"]').forEach(btn=>btn.addEventListener('click',v36ShowLineup));
+        document.getElementById('s34SaveLineup')?.addEventListener('click',()=>{try{ if(typeof gemAlt==='function') gemAlt(); }catch(e){}});
+        document.getElementById('s34ResetLineup')?.addEventListener('click',()=>{
+            if(!confirm('Vil du nulstille startopstillingen for kampen?')) return;
+            try{
+                if(Array.isArray(spillere)) for(let i=0;i<spillere.length;i++) spillere[i]=null;
+                if(Array.isArray(udskiftere)) udskiftere.length=0;
+                if(typeof gemAlt==='function') gemAlt();
+                if(typeof tegnOpstilling==='function') tegnOpstilling();
+                if(typeof opdaterUdskiftere==='function') opdaterUdskiftere();
+                if(typeof start11RenderSquadUI==='function') start11RenderSquadUI();
+            }catch(e){ console.warn('START11 V36 reset:',e); }
+        });
+    }
+
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(v36Bind,0));
+    else setTimeout(v36Bind,0);
+    window.start11V36ShowLineup=v36ShowLineup;
+    window.start11V36MountNativeLineup=v36MountNativeLineup;
+})();
+
+/* =========================================================
+   START11 V37 – LINEUP WORKSPACE FINISH
+   Finishes the V36 shell without replacing the native lineup.
+========================================================= */
+(function(){
+    if (window.__START11_V37_LINEUP__) return;
+    window.__START11_V37_LINEUP__ = true;
+
+    function v37Click(id){
+        const el = document.getElementById(id);
+        if (el) el.click();
+    }
+
+    function v37ShowHome(){
+        const home = document.getElementById("s34HomeView");
+        const lineup = document.getElementById("s34LineupView");
+        if (lineup) lineup.hidden = true;
+        if (home) home.hidden = false;
+        window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function v37Bind(){
+        /* Whole home lineup preview is an entry point to the native lineup workspace. */
+        const preview = document.querySelector("#s34HomeView .s34-lineup");
+        if (preview && !preview.dataset.v37Bound){
+            preview.dataset.v37Bound = "1";
+            preview.setAttribute("role","button");
+            preview.setAttribute("tabindex","0");
+            preview.title = "Åbn startopstilling";
+            preview.addEventListener("click", () => v37Click("s34OpenMatch"));
+            preview.addEventListener("keydown", e => {
+                if (e.key === "Enter" || e.key === " "){
+                    e.preventDefault();
+                    v37Click("s34OpenMatch");
+                }
+            });
+        }
+
+        /* Make the two secondary match tabs use the existing native sections. */
+        const tactics = document.getElementById("s35OpenTactics");
+        if (tactics && !tactics.dataset.v37Bound){
+            tactics.dataset.v37Bound = "1";
+            tactics.addEventListener("click", () => {
+                const old = document.querySelector('[data-start11-target="tacticsSection"]');
+                if (old) old.click();
+                else document.getElementById("tacticsSection")?.scrollIntoView({behavior:"smooth"});
+            });
+        }
+
+        const notes = document.getElementById("s35OpenNotes");
+        if (notes && !notes.dataset.v37Bound){
+            notes.dataset.v37Bound = "1";
+            notes.addEventListener("click", () => {
+                const target =
+                    document.getElementById("playerDetails") ||
+                    document.getElementById("matchNotesSection") ||
+                    document.querySelector(".match-notes-card");
+                target?.scrollIntoView({behavior:"smooth", block:"start"});
+            });
+        }
+
+        /* Footer controls call the existing native controls/functions. */
+        const share = document.getElementById("s34ShareLineup");
+        if (share && !share.dataset.v37Bound){
+            share.dataset.v37Bound = "1";
+            share.addEventListener("click", () => {
+                const nativeShare =
+                    document.getElementById("shareLineupButton") ||
+                    document.querySelector('[data-action="share-lineup"]');
+                if (nativeShare) nativeShare.click();
+                else if (typeof window.start11OpenBriefStudio === "function") window.start11OpenBriefStudio("match");
+            });
+        }
+
+        /* Keep the back action deterministic even after native DOM has been moved. */
+        const back = document.getElementById("s34BackMatches");
+        if (back && !back.dataset.v37Extra){
+            back.dataset.v37Extra = "1";
+            back.addEventListener("click", v37ShowHome);
+        }
+    }
+
+    if (document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", () => setTimeout(v37Bind, 250));
+    } else {
+        setTimeout(v37Bind, 250);
+    }
+    setTimeout(v37Bind, 1200);
+})();
+
+/* =========================================================
+   START11 V39 – ONE MATCH UI ONLY
+   The legacy dashboard is no longer a navigation destination.
+   Its native lineup/squad nodes are still reused inside V36.
+========================================================= */
+(function(){
+    if (window.__START11_V39_ONE_MATCH_UI__) return;
+    window.__START11_V39_ONE_MATCH_UI__ = true;
+
+    const $ = id => document.getElementById(id);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    function retireLegacyChrome(){
+        document.body.classList.add("s34-active","s39-modern-only");
+
+        const top = document.querySelector(".start11-global-topbar");
+        const dash = document.querySelector(".start11-dashboard");
+
+        [top,dash].forEach(el=>{
+            if(!el) return;
+            el.hidden = true;
+            el.setAttribute("aria-hidden","true");
+            el.style.setProperty("display","none","important");
+        });
+
+        const app = $("s34App");
+        if(app){
+            app.hidden = false;
+            app.removeAttribute("aria-hidden");
+            app.style.removeProperty("display");
+        }
+    }
+
+    function showHome(){
+        retireLegacyChrome();
+        const home = $("s34HomeView");
+        const lineup = $("s34LineupView");
+        if(lineup) lineup.hidden = true;
+        if(home) home.hidden = false;
+        $$("[data-s34]").forEach(b=>{
+            b.classList.toggle("active", b.dataset.s34 === "home");
+        });
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function showLineup(){
+        retireLegacyChrome();
+
+        if(typeof window.start11V36MountNativeLineup === "function"){
+            window.start11V36MountNativeLineup();
+        }
+
+        const home = $("s34HomeView");
+        const lineup = $("s34LineupView");
+        if(home) home.hidden = true;
+        if(lineup) lineup.hidden = false;
+
+        try{ if(typeof tegnOpstilling === "function") tegnOpstilling(); }catch(e){}
+        try{ if(typeof opdaterUdskiftere === "function") opdaterUdskiftere(); }catch(e){}
+        try{ if(typeof start11RenderSquadUI === "function") start11RenderSquadUI(); }catch(e){}
+
+        $$("[data-s34]").forEach(b=>{
+            b.classList.toggle("active", b.dataset.s34 === "matches");
+        });
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function routeModern(section){
+        if(section === "home") return showHome();
+        if(section === "matches" || section === "lineup") return showLineup();
+
+        const target = document.querySelector(`[data-s34="${section}"]`);
+        if(target) target.click();
+    }
+
+    function captureOldNavigation(e){
+        const oldNav = e.target.closest?.(".start11-nav-item");
+        if(!oldNav) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const target = oldNav.dataset.start11Target || "";
+        if(target === "lineupSection" || target === "matchesSection") return showLineup();
+        if(target === "squadSection") return routeModern("players");
+        if(target === "tacticsSection"){
+            showLineup();
+            setTimeout(()=>$("s35OpenTactics")?.click(),0);
+            return;
+        }
+        showHome();
+    }
+
+    function bind(){
+        retireLegacyChrome();
+
+        /* Old dashboard navigation is intercepted before its original handlers run. */
+        document.addEventListener("click",captureOldNavigation,true);
+
+        /* New sidebar: KAMPE always means the single modern match workspace. */
+        $$('[data-s34="matches"]').forEach(btn=>{
+            if(btn.dataset.v39Bound) return;
+            btn.dataset.v39Bound = "1";
+            btn.addEventListener("click",e=>{
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showLineup();
+            },true);
+        });
+
+        /* All known "open match/startopstilling" entries go to the same workspace. */
+        ["s34OpenMatch","openCurrentMatchButton"].forEach(id=>{
+            const btn=$(id);
+            if(!btn || btn.dataset.v39Bound) return;
+            btn.dataset.v39Bound="1";
+            btn.addEventListener("click",e=>{
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showLineup();
+            },true);
+        });
+
+        const back=$("s34BackMatches");
+        if(back && !back.dataset.v39Bound){
+            back.dataset.v39Bound="1";
+            back.addEventListener("click",e=>{
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showHome();
+            },true);
+        }
+
+        /* No observer: avoid the V38 self-triggering mutation loop/freezes. */
+        setTimeout(retireLegacyChrome,100);
+        setTimeout(retireLegacyChrome,1000);
+    }
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded",bind,{once:true});
+    }else{
+        bind();
+    }
+
+    window.start11ShowHome = showHome;
+    window.start11ShowLineup = showLineup;
+})();
+
+/* =========================================================
+   START11 V41 – REAL MODERN ROUTES
+   No legacy dashboard navigation. Reuse native functionality
+   inside the modern shell.
+========================================================= */
+(function(){
+    if(window.__START11_V41_ROUTES__) return;
+    window.__START11_V41_ROUTES__=true;
+
+    const $=id=>document.getElementById(id);
+    const $$=s=>Array.from(document.querySelectorAll(s));
+
+    function allModernViews(){
+        return ["s34HomeView","s34LineupView","s34PlayersView"]
+            .map($).filter(Boolean);
+    }
+
+    function showOnly(id){
+        document.body.classList.add("s34-active","s39-modern-only");
+        allModernViews().forEach(v=>v.hidden=(v.id!==id));
+        const app=$("s34App");
+        if(app) app.hidden=false;
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function activeNav(name){
+        $$("[data-s34]").forEach(b=>b.classList.toggle("active",b.dataset.s34===name));
+    }
+
+    function showHome(){
+        showOnly("s34HomeView");
+        activeNav("home");
+    }
+
+    function showPlayers(){
+        const host=$("s41PlayersHost");
+        const squad=$("squadSection");
+        if(host && squad && squad.parentElement!==host) host.appendChild(squad);
+        showOnly("s34PlayersView");
+        activeNav("players");
+        try{ if(typeof start11RenderSquadUI==="function") start11RenderSquadUI(); }catch(e){}
+    }
+
+    function showLineup(){
+        if(typeof window.start11ShowLineup==="function" &&
+           window.start11ShowLineup!==showLineup){
+            window.start11ShowLineup();
+        }else{
+            showOnly("s34LineupView");
+        }
+        activeNav("matches");
+    }
+
+    function openTactics(){
+        /* Existing tactics editor/modal – never reveal the old dashboard. */
+        const edit=$("editTacticsBottom");
+        if(edit){ edit.click(); return; }
+        const plan=$("editMatchPlanButton") || $("editMatchPlanShortcut");
+        if(plan) plan.click();
+    }
+
+    function openCalendar(){
+        /* Calendar already has its own shell/modal. Open it directly. */
+        if(typeof window.start11CalendarSetOpen==="function"){
+            window.start11CalendarSetOpen(true);
+            return;
+        }
+        /* Modules initialise slightly later on some loads. */
+        setTimeout(()=>{
+            if(typeof window.start11CalendarSetOpen==="function"){
+                window.start11CalendarSetOpen(true);
+            }
+        },500);
+    }
+
+    function matchPdf(){
+        if(typeof window.genererPDF==="function"){
+            window.genererPDF();
+            return;
+        }
+        $("dashboardPdfButton")?.click();
+    }
+
+    function syncTeamSelector(){
+        const source=$("teamSelector");
+        const modern=$("s41TeamSelector");
+        if(!source || !modern) return;
+
+        modern.innerHTML="";
+        Array.from(source.options).forEach(opt=>{
+            const copy=document.createElement("option");
+            copy.value=opt.value;
+            copy.textContent=opt.textContent;
+            copy.disabled=opt.disabled;
+            modern.appendChild(copy);
+        });
+        modern.value=source.value;
+
+        if(!modern.dataset.v41Bound){
+            modern.dataset.v41Bound="1";
+            modern.addEventListener("change",()=>{
+                source.value=modern.value;
+                source.dispatchEvent(new Event("change",{bubbles:true}));
+                setTimeout(syncTeamSelector,80);
+            });
+        }
+    }
+
+    function mountRealAccountMenu(){
+        const host=$("s41AccountHost");
+        const menu=$("accountMenu");
+        if(host && menu && menu.parentElement!==host){
+            host.appendChild(menu);
+            menu.style.display="";
+        }
+    }
+
+    function capture(el,fn){
+        if(!el || el.dataset.v41Bound) return;
+        el.dataset.v41Bound="1";
+        el.addEventListener("click",e=>{
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            fn();
+        },true);
+    }
+
+    function bind(){
+        mountRealAccountMenu();
+        syncTeamSelector();
+
+        $$('[data-s34="players"]').forEach(x=>capture(x,showPlayers));
+        capture($("s34OpenSquad"),showPlayers);
+        capture($("s41PlayersBack"),showHome);
+
+        capture($("s34OpenCalendar"),openCalendar);
+        capture($("s35OpenTactics"),openTactics);
+
+        $$('[data-s34="share"]').forEach(x=>capture(x,matchPdf));
+        capture($("s34ShareLineup"),matchPdf);
+
+        $$('[data-s34="settings"]').forEach(x=>capture(x,()=>{
+            mountRealAccountMenu();
+            $("accountMenuButton")?.click();
+        }));
+
+        /* Sidebar team button focuses the exact same team selector as the topbar. */
+        capture($("s34TeamSwitch"),()=>{
+            const s=$("s41TeamSelector");
+            if(!s) return;
+            s.focus();
+            try{s.showPicker?.();}catch(e){s.click();}
+        });
+
+        const share=$("s34ShareLineup");
+        if(share) share.textContent="▣ Generer kamp-PDF";
+        $$('[data-s34="share"]').forEach(x=>{
+            const span=x.querySelector("span");
+            if(span) span.textContent="Kamp-PDF";
+        });
+
+        /* Keep the modern selector updated when cloud/team data arrives. */
+        setTimeout(syncTeamSelector,300);
+        setTimeout(syncTeamSelector,1200);
+        setTimeout(mountRealAccountMenu,300);
+    }
+
+    if(document.readyState==="loading"){
+        document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,80),{once:true});
+    }else{
+        setTimeout(bind,80);
+    }
+})();
+
+/* =========================================================
+   START11 V42 – MATCH SQUAD CONTROLS IN MODERN LINEUP
+   The modern lineup's right panel must use KAMPTRUP/TRUP/
+   IKKE UDTAGET, not the passive full-squad card.
+========================================================= */
+(function(){
+    if(window.__START11_V42_MATCH_SQUAD__) return;
+    window.__START11_V42_MATCH_SQUAD__ = true;
+
+    const $ = id => document.getElementById(id);
+
+    function findMatchSquadCard(){
+        const list = $("matchSquadOverview");
+        if(!list) return null;
+
+        /* Find the smallest ancestor that also owns the three squad tabs. */
+        let node = list.parentElement;
+        while(node && node !== document.body){
+            if(node.querySelector?.(".squad-view-tab")) return node;
+            node = node.parentElement;
+        }
+
+        return list.parentElement;
+    }
+
+    function mountCorrectSquadPanels(){
+        const lineupHost = $("s35NativeSquadHost");
+        const playersHost = $("s41PlayersHost");
+        const squadSection = $("squadSection");
+        const matchCard = findMatchSquadCard();
+
+        /*
+          V36 used to move the complete squadSection into the lineup.
+          Put that section on the dedicated Players page instead.
+        */
+        if(playersHost && squadSection && squadSection.parentElement !== playersHost){
+            playersHost.appendChild(squadSection);
+        }
+
+        /*
+          Only the interactive match-squad card belongs beside the pitch.
+          It contains KAMPTRUP / TRUP / IKKE UDTAGET and therefore uses
+          the existing START / BÆNK / × / UDTAG renderer.
+        */
+        if(lineupHost && matchCard && matchCard.parentElement !== lineupHost){
+            lineupHost.appendChild(matchCard);
+        }
+
+        if(matchCard){
+            matchCard.hidden = false;
+            matchCard.style.display = "";
+            matchCard.style.visibility = "visible";
+            matchCard.style.pointerEvents = "auto";
+        }
+
+        try{
+            if(typeof start11RenderMatchSquad === "function"){
+                start11RenderMatchSquad();
+            }
+        }catch(e){
+            console.warn("START11 V42 match squad render:", e);
+        }
+    }
+
+    function bind(){
+        mountCorrectSquadPanels();
+
+        /* V36 can remount squadSection when a match is opened.
+           Correct the mount immediately afterwards. */
+        document.querySelectorAll('[data-s34="matches"], #s34OpenMatch')
+            .forEach(btn=>{
+                if(btn.dataset.v42Bound) return;
+                btn.dataset.v42Bound = "1";
+                btn.addEventListener("click",()=>{
+                    setTimeout(mountCorrectSquadPanels, 0);
+                    setTimeout(mountCorrectSquadPanels, 80);
+                });
+            });
+
+        /* Opening the Players page should keep the full squad there. */
+        document.querySelectorAll('[data-s34="players"], #s34OpenSquad')
+            .forEach(btn=>{
+                if(btn.dataset.v42SquadBound) return;
+                btn.dataset.v42SquadBound = "1";
+                btn.addEventListener("click",()=>setTimeout(mountCorrectSquadPanels,0));
+            });
+
+        /* If an older mount moves squadSection again, repair it. */
+        const host = $("s35NativeSquadHost");
+        if(host && !host.dataset.v42Observed){
+            host.dataset.v42Observed = "1";
+            new MutationObserver(()=>setTimeout(mountCorrectSquadPanels,0))
+                .observe(host,{childList:true});
+        }
+    }
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,120),{once:true});
+    }else{
+        setTimeout(bind,120);
+    }
+
+    setTimeout(mountCorrectSquadPanels,700);
+})();
+
+
+/* =========================================================
+   START11 V43 – DBU LEAGUE CACHE FOR MODERN HOME
+   Henter ligadata fra den eksisterende DBU Edge Function uden
+   at ændre den nuværende DBU-sync eller kamptrup.
+========================================================= */
+(function(){
+    if(window.__START11_V43_LEAGUE_CACHE__) return;
+    window.__START11_V43_LEAGUE_CACHE__ = true;
+
+    const LEAGUE_KEY = "start11DbuLeague";
+
+    async function v43FetchLeague(){
+        const dbuUrl =
+            document.getElementById("dbuTeamUrlInput")?.value?.trim() ||
+            localStorage.getItem(
+                typeof START11_DBU_URL_KEY !== "undefined"
+                    ? START11_DBU_URL_KEY
+                    : "start11DbuTeamUrl"
+            ) ||
+            "";
+
+        if(!dbuUrl) return;
+
+        try{
+            if(typeof ensureSession === "function"){
+                const ok = await ensureSession();
+                if(!ok) return;
+            }
+
+            if(
+                typeof SUPABASE_URL === "undefined" ||
+                typeof SUPABASE_KEY === "undefined"
+            ) return;
+
+            const response = await fetch(
+                `${SUPABASE_URL}/functions/v1/dbu-matches`,
+                {
+                    method:"POST",
+                    headers:{
+                        apikey:SUPABASE_KEY,
+                        Authorization:`Bearer ${session?.access_token || ""}`,
+                        "Content-Type":"application/json"
+                    },
+                    body:JSON.stringify({url:dbuUrl})
+                }
+            );
+
+            if(!response.ok) return;
+
+            const data = await response.json();
+            if(!data?.success || !data?.league) return;
+
+            localStorage.setItem(
+                LEAGUE_KEY,
+                JSON.stringify(data.league)
+            );
+
+            if(
+                typeof activeTeamId !== "undefined" &&
+                activeTeamId &&
+                typeof start11WriteTeamScopedValue === "function"
+            ){
+                start11WriteTeamScopedValue(
+                    LEAGUE_KEY,
+                    JSON.stringify(data.league),
+                    activeTeamId
+                );
+            }
+
+            window.dispatchEvent(
+                new CustomEvent("start11:league-updated")
+            );
+        }catch(error){
+            console.warn("START11 V43 league:", error);
+        }
+    }
+
+    function bind(){
+        const sync = document.getElementById("syncDbuMatchesButton");
+        if(sync && sync.dataset.v43LeagueBound !== "1"){
+            sync.dataset.v43LeagueBound = "1";
+            sync.addEventListener(
+                "click",
+                () => setTimeout(v43FetchLeague, 250)
+            );
+        }
+
+        const myTeams = document.getElementById("myTeamsMenuButton");
+        if(myTeams && myTeams.dataset.v43LeagueBound !== "1"){
+            myTeams.dataset.v43LeagueBound = "1";
+            myTeams.addEventListener(
+                "click",
+                () => setTimeout(v43FetchLeague, 300)
+            );
+        }
+
+        setTimeout(v43FetchLeague, 900);
+    }
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", bind, {once:true});
+    }else{
+        bind();
+    }
+})();

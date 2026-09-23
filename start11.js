@@ -14481,6 +14481,691 @@ if (
 
 }
 
+
+
+/* =========================================================
+   START11 V36 – NEW STARTOPSTILLING PAGE MOUNT
+   Reuses the existing native lineup/squad DOM. No duplicate
+   lineup state is created; drag/drop and existing handlers stay.
+========================================================= */
+(function(){
+    if(window.__START11_V36_LINEUP__) return;
+    window.__START11_V36_LINEUP__ = true;
+
+    function v36ShowLineup(){
+        const home=document.getElementById('s34HomeView');
+        const lineup=document.getElementById('s34LineupView');
+        if(home) home.hidden=true;
+        if(lineup) lineup.hidden=false;
+        v36MountNativeLineup();
+        try{ if(typeof tegnOpstilling==='function') tegnOpstilling(); }catch(e){}
+        try{ if(typeof opdaterUdskiftere==='function') opdaterUdskiftere(); }catch(e){}
+        try{ if(typeof start11RenderSquadUI==='function') start11RenderSquadUI(); }catch(e){}
+    }
+
+    function v36ShowHome(){
+        const home=document.getElementById('s34HomeView');
+        const lineup=document.getElementById('s34LineupView');
+        if(lineup) lineup.hidden=true;
+        if(home) home.hidden=false;
+    }
+
+    function v36MountNativeLineup(){
+        const centerHost=document.getElementById('s35NativeCenterHost');
+        const squadHost=document.getElementById('s35NativeSquadHost');
+        const center=document.getElementById('lineupSection');
+        const squad=document.getElementById('squadSection');
+        if(centerHost && center && center.parentElement!==centerHost) centerHost.appendChild(center);
+        if(squadHost && squad && squad.parentElement!==squadHost) squadHost.appendChild(squad);
+    }
+
+    function v36Bind(){
+        v36MountNativeLineup();
+        ['s34OpenMatch'].forEach(id=>document.getElementById(id)?.addEventListener('click',v36ShowLineup));
+        document.getElementById('s34BackMatches')?.addEventListener('click',v36ShowHome);
+        document.querySelectorAll('[data-s34="matches"]').forEach(btn=>btn.addEventListener('click',v36ShowLineup));
+        document.getElementById('s34SaveLineup')?.addEventListener('click',()=>{try{ if(typeof gemAlt==='function') gemAlt(); }catch(e){}});
+        document.getElementById('s34ResetLineup')?.addEventListener('click',()=>{
+            if(!confirm('Vil du nulstille startopstillingen for kampen?')) return;
+            try{
+                if(Array.isArray(spillere)) for(let i=0;i<spillere.length;i++) spillere[i]=null;
+                if(Array.isArray(udskiftere)) udskiftere.length=0;
+                if(typeof gemAlt==='function') gemAlt();
+                if(typeof tegnOpstilling==='function') tegnOpstilling();
+                if(typeof opdaterUdskiftere==='function') opdaterUdskiftere();
+                if(typeof start11RenderSquadUI==='function') start11RenderSquadUI();
+            }catch(e){ console.warn('START11 V36 reset:',e); }
+        });
+    }
+
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(v36Bind,0));
+    else setTimeout(v36Bind,0);
+    window.start11V36ShowLineup=v36ShowLineup;
+    window.start11V36MountNativeLineup=v36MountNativeLineup;
+})();
+
+/* =========================================================
+   START11 V37 – LINEUP WORKSPACE FINISH
+   Finishes the V36 shell without replacing the native lineup.
+========================================================= */
+(function(){
+    if (window.__START11_V37_LINEUP__) return;
+    window.__START11_V37_LINEUP__ = true;
+
+    function v37Click(id){
+        const el = document.getElementById(id);
+        if (el) el.click();
+    }
+
+    function v37ShowHome(){
+        const home = document.getElementById("s34HomeView");
+        const lineup = document.getElementById("s34LineupView");
+        if (lineup) lineup.hidden = true;
+        if (home) home.hidden = false;
+        window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function v37Bind(){
+        /* Whole home lineup preview is an entry point to the native lineup workspace. */
+        const preview = document.querySelector("#s34HomeView .s34-lineup");
+        if (preview && !preview.dataset.v37Bound){
+            preview.dataset.v37Bound = "1";
+            preview.setAttribute("role","button");
+            preview.setAttribute("tabindex","0");
+            preview.title = "Åbn startopstilling";
+            preview.addEventListener("click", () => v37Click("s34OpenMatch"));
+            preview.addEventListener("keydown", e => {
+                if (e.key === "Enter" || e.key === " "){
+                    e.preventDefault();
+                    v37Click("s34OpenMatch");
+                }
+            });
+        }
+
+        /* Make the two secondary match tabs use the existing native sections. */
+        const tactics = document.getElementById("s35OpenTactics");
+        if (tactics && !tactics.dataset.v37Bound){
+            tactics.dataset.v37Bound = "1";
+            tactics.addEventListener("click", () => {
+                const old = document.querySelector('[data-start11-target="tacticsSection"]');
+                if (old) old.click();
+                else document.getElementById("tacticsSection")?.scrollIntoView({behavior:"smooth"});
+            });
+        }
+
+        const notes = document.getElementById("s35OpenNotes");
+        if (notes && !notes.dataset.v37Bound){
+            notes.dataset.v37Bound = "1";
+            notes.addEventListener("click", () => {
+                const target =
+                    document.getElementById("playerDetails") ||
+                    document.getElementById("matchNotesSection") ||
+                    document.querySelector(".match-notes-card");
+                target?.scrollIntoView({behavior:"smooth", block:"start"});
+            });
+        }
+
+        /* Footer controls call the existing native controls/functions. */
+        const share = document.getElementById("s34ShareLineup");
+        if (share && !share.dataset.v37Bound){
+            share.dataset.v37Bound = "1";
+            share.addEventListener("click", () => {
+                const nativeShare =
+                    document.getElementById("shareLineupButton") ||
+                    document.querySelector('[data-action="share-lineup"]');
+                if (nativeShare) nativeShare.click();
+                else if (typeof window.start11OpenBriefStudio === "function") window.start11OpenBriefStudio("match");
+            });
+        }
+
+        /* Keep the back action deterministic even after native DOM has been moved. */
+        const back = document.getElementById("s34BackMatches");
+        if (back && !back.dataset.v37Extra){
+            back.dataset.v37Extra = "1";
+            back.addEventListener("click", v37ShowHome);
+        }
+    }
+
+    if (document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", () => setTimeout(v37Bind, 250));
+    } else {
+        setTimeout(v37Bind, 250);
+    }
+    setTimeout(v37Bind, 1200);
+})();
+
+/* =========================================================
+   START11 V39 – ONE MATCH UI ONLY
+   The legacy dashboard is no longer a navigation destination.
+   Its native lineup/squad nodes are still reused inside V36.
+========================================================= */
+(function(){
+    if (window.__START11_V39_ONE_MATCH_UI__) return;
+    window.__START11_V39_ONE_MATCH_UI__ = true;
+
+    const $ = id => document.getElementById(id);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    function retireLegacyChrome(){
+        document.body.classList.add("s34-active","s39-modern-only");
+
+        const top = document.querySelector(".start11-global-topbar");
+        const dash = document.querySelector(".start11-dashboard");
+
+        [top,dash].forEach(el=>{
+            if(!el) return;
+            el.hidden = true;
+            el.setAttribute("aria-hidden","true");
+            el.style.setProperty("display","none","important");
+        });
+
+        const app = $("s34App");
+        if(app){
+            app.hidden = false;
+            app.removeAttribute("aria-hidden");
+            app.style.removeProperty("display");
+        }
+    }
+
+    function showHome(){
+        retireLegacyChrome();
+        const home = $("s34HomeView");
+        const lineup = $("s34LineupView");
+        if(lineup) lineup.hidden = true;
+        if(home) home.hidden = false;
+        $$("[data-s34]").forEach(b=>{
+            b.classList.toggle("active", b.dataset.s34 === "home");
+        });
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function showLineup(){
+        retireLegacyChrome();
+
+        if(typeof window.start11V36MountNativeLineup === "function"){
+            window.start11V36MountNativeLineup();
+        }
+
+        const home = $("s34HomeView");
+        const lineup = $("s34LineupView");
+        if(home) home.hidden = true;
+        if(lineup) lineup.hidden = false;
+
+        try{ if(typeof tegnOpstilling === "function") tegnOpstilling(); }catch(e){}
+        try{ if(typeof opdaterUdskiftere === "function") opdaterUdskiftere(); }catch(e){}
+        try{ if(typeof start11RenderSquadUI === "function") start11RenderSquadUI(); }catch(e){}
+
+        $$("[data-s34]").forEach(b=>{
+            b.classList.toggle("active", b.dataset.s34 === "matches");
+        });
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function routeModern(section){
+        if(section === "home") return showHome();
+        if(section === "matches" || section === "lineup") return showLineup();
+
+        const target = document.querySelector(`[data-s34="${section}"]`);
+        if(target) target.click();
+    }
+
+    function captureOldNavigation(e){
+        const oldNav = e.target.closest?.(".start11-nav-item");
+        if(!oldNav) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const target = oldNav.dataset.start11Target || "";
+        if(target === "lineupSection" || target === "matchesSection") return showLineup();
+        if(target === "squadSection") return routeModern("players");
+        if(target === "tacticsSection"){
+            showLineup();
+            setTimeout(()=>$("s35OpenTactics")?.click(),0);
+            return;
+        }
+        showHome();
+    }
+
+    function bind(){
+        retireLegacyChrome();
+
+        /* Old dashboard navigation is intercepted before its original handlers run. */
+        document.addEventListener("click",captureOldNavigation,true);
+
+        /* New sidebar: KAMPE always means the single modern match workspace. */
+        $$('[data-s34="matches"]').forEach(btn=>{
+            if(btn.dataset.v39Bound) return;
+            btn.dataset.v39Bound = "1";
+            btn.addEventListener("click",e=>{
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showLineup();
+            },true);
+        });
+
+        /* All known "open match/startopstilling" entries go to the same workspace. */
+        ["s34OpenMatch","openCurrentMatchButton"].forEach(id=>{
+            const btn=$(id);
+            if(!btn || btn.dataset.v39Bound) return;
+            btn.dataset.v39Bound="1";
+            btn.addEventListener("click",e=>{
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showLineup();
+            },true);
+        });
+
+        const back=$("s34BackMatches");
+        if(back && !back.dataset.v39Bound){
+            back.dataset.v39Bound="1";
+            back.addEventListener("click",e=>{
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showHome();
+            },true);
+        }
+
+        /* No observer: avoid the V38 self-triggering mutation loop/freezes. */
+        setTimeout(retireLegacyChrome,100);
+        setTimeout(retireLegacyChrome,1000);
+    }
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded",bind,{once:true});
+    }else{
+        bind();
+    }
+
+    window.start11ShowHome = showHome;
+    window.start11ShowLineup = showLineup;
+})();
+
+/* =========================================================
+   START11 V41 – REAL MODERN ROUTES
+   No legacy dashboard navigation. Reuse native functionality
+   inside the modern shell.
+========================================================= */
+(function(){
+    if(window.__START11_V41_ROUTES__) return;
+    window.__START11_V41_ROUTES__=true;
+
+    const $=id=>document.getElementById(id);
+    const $$=s=>Array.from(document.querySelectorAll(s));
+
+    function allModernViews(){
+        return ["s34HomeView","s34LineupView","s34PlayersView"]
+            .map($).filter(Boolean);
+    }
+
+    function showOnly(id){
+        document.body.classList.add("s34-active","s39-modern-only");
+        allModernViews().forEach(v=>v.hidden=(v.id!==id));
+        const app=$("s34App");
+        if(app) app.hidden=false;
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function activeNav(name){
+        $$("[data-s34]").forEach(b=>b.classList.toggle("active",b.dataset.s34===name));
+    }
+
+    function showHome(){
+        showOnly("s34HomeView");
+        activeNav("home");
+    }
+
+    function showPlayers(){
+        const host=$("s41PlayersHost");
+        const squad=$("squadSection");
+        if(host && squad && squad.parentElement!==host) host.appendChild(squad);
+        showOnly("s34PlayersView");
+        activeNav("players");
+        try{ if(typeof start11RenderSquadUI==="function") start11RenderSquadUI(); }catch(e){}
+    }
+
+    function showLineup(){
+        if(typeof window.start11ShowLineup==="function" &&
+           window.start11ShowLineup!==showLineup){
+            window.start11ShowLineup();
+        }else{
+            showOnly("s34LineupView");
+        }
+        activeNav("matches");
+    }
+
+    function openTactics(){
+        /* Existing tactics editor/modal – never reveal the old dashboard. */
+        const edit=$("editTacticsBottom");
+        if(edit){ edit.click(); return; }
+        const plan=$("editMatchPlanButton") || $("editMatchPlanShortcut");
+        if(plan) plan.click();
+    }
+
+    function openCalendar(){
+        /* Calendar already has its own shell/modal. Open it directly. */
+        if(typeof window.start11CalendarSetOpen==="function"){
+            window.start11CalendarSetOpen(true);
+            return;
+        }
+        /* Modules initialise slightly later on some loads. */
+        setTimeout(()=>{
+            if(typeof window.start11CalendarSetOpen==="function"){
+                window.start11CalendarSetOpen(true);
+            }
+        },500);
+    }
+
+    function matchPdf(){
+        if(typeof window.genererPDF==="function"){
+            window.genererPDF();
+            return;
+        }
+        $("dashboardPdfButton")?.click();
+    }
+
+    function syncTeamSelector(){
+        const source=$("teamSelector");
+        const modern=$("s41TeamSelector");
+        if(!source || !modern) return;
+
+        modern.innerHTML="";
+        Array.from(source.options).forEach(opt=>{
+            const copy=document.createElement("option");
+            copy.value=opt.value;
+            copy.textContent=opt.textContent;
+            copy.disabled=opt.disabled;
+            modern.appendChild(copy);
+        });
+        modern.value=source.value;
+
+        if(!modern.dataset.v41Bound){
+            modern.dataset.v41Bound="1";
+            modern.addEventListener("change",()=>{
+                source.value=modern.value;
+                source.dispatchEvent(new Event("change",{bubbles:true}));
+                setTimeout(syncTeamSelector,80);
+            });
+        }
+    }
+
+    function mountRealAccountMenu(){
+        const host=$("s41AccountHost");
+        const menu=$("accountMenu");
+        if(host && menu && menu.parentElement!==host){
+            host.appendChild(menu);
+            menu.style.display="";
+        }
+    }
+
+    function capture(el,fn){
+        if(!el || el.dataset.v41Bound) return;
+        el.dataset.v41Bound="1";
+        el.addEventListener("click",e=>{
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            fn();
+        },true);
+    }
+
+    function bind(){
+        mountRealAccountMenu();
+        syncTeamSelector();
+
+        $$('[data-s34="players"]').forEach(x=>capture(x,showPlayers));
+        capture($("s34OpenSquad"),showPlayers);
+        capture($("s41PlayersBack"),showHome);
+
+        capture($("s34OpenCalendar"),openCalendar);
+        capture($("s35OpenTactics"),openTactics);
+
+        $$('[data-s34="share"]').forEach(x=>capture(x,matchPdf));
+        capture($("s34ShareLineup"),matchPdf);
+
+        $$('[data-s34="settings"]').forEach(x=>capture(x,()=>{
+            mountRealAccountMenu();
+            $("accountMenuButton")?.click();
+        }));
+
+        /* Sidebar team button focuses the exact same team selector as the topbar. */
+        capture($("s34TeamSwitch"),()=>{
+            const s=$("s41TeamSelector");
+            if(!s) return;
+            s.focus();
+            try{s.showPicker?.();}catch(e){s.click();}
+        });
+
+        const share=$("s34ShareLineup");
+        if(share) share.textContent="▣ Generer kamp-PDF";
+        $$('[data-s34="share"]').forEach(x=>{
+            const span=x.querySelector("span");
+            if(span) span.textContent="Kamp-PDF";
+        });
+
+        /* Keep the modern selector updated when cloud/team data arrives. */
+        setTimeout(syncTeamSelector,300);
+        setTimeout(syncTeamSelector,1200);
+        setTimeout(mountRealAccountMenu,300);
+    }
+
+    if(document.readyState==="loading"){
+        document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,80),{once:true});
+    }else{
+        setTimeout(bind,80);
+    }
+})();
+
+/* =========================================================
+   START11 V42 – MATCH SQUAD CONTROLS IN MODERN LINEUP
+   The modern lineup's right panel must use KAMPTRUP/TRUP/
+   IKKE UDTAGET, not the passive full-squad card.
+========================================================= */
+(function(){
+    if(window.__START11_V42_MATCH_SQUAD__) return;
+    window.__START11_V42_MATCH_SQUAD__ = true;
+
+    const $ = id => document.getElementById(id);
+
+    function findMatchSquadCard(){
+        const list = $("matchSquadOverview");
+        if(!list) return null;
+
+        /* Find the smallest ancestor that also owns the three squad tabs. */
+        let node = list.parentElement;
+        while(node && node !== document.body){
+            if(node.querySelector?.(".squad-view-tab")) return node;
+            node = node.parentElement;
+        }
+
+        return list.parentElement;
+    }
+
+    function mountCorrectSquadPanels(){
+        const lineupHost = $("s35NativeSquadHost");
+        const playersHost = $("s41PlayersHost");
+        const squadSection = $("squadSection");
+        const matchCard = findMatchSquadCard();
+
+        /*
+          V36 used to move the complete squadSection into the lineup.
+          Put that section on the dedicated Players page instead.
+        */
+        if(playersHost && squadSection && squadSection.parentElement !== playersHost){
+            playersHost.appendChild(squadSection);
+        }
+
+        /*
+          Only the interactive match-squad card belongs beside the pitch.
+          It contains KAMPTRUP / TRUP / IKKE UDTAGET and therefore uses
+          the existing START / BÆNK / × / UDTAG renderer.
+        */
+        if(lineupHost && matchCard && matchCard.parentElement !== lineupHost){
+            lineupHost.appendChild(matchCard);
+        }
+
+        if(matchCard){
+            matchCard.hidden = false;
+            matchCard.style.display = "";
+            matchCard.style.visibility = "visible";
+            matchCard.style.pointerEvents = "auto";
+        }
+
+        try{
+            if(typeof start11RenderMatchSquad === "function"){
+                start11RenderMatchSquad();
+            }
+        }catch(e){
+            console.warn("START11 V42 match squad render:", e);
+        }
+    }
+
+    function bind(){
+        mountCorrectSquadPanels();
+
+        /* V36 can remount squadSection when a match is opened.
+           Correct the mount immediately afterwards. */
+        document.querySelectorAll('[data-s34="matches"], #s34OpenMatch')
+            .forEach(btn=>{
+                if(btn.dataset.v42Bound) return;
+                btn.dataset.v42Bound = "1";
+                btn.addEventListener("click",()=>{
+                    setTimeout(mountCorrectSquadPanels, 0);
+                    setTimeout(mountCorrectSquadPanels, 80);
+                });
+            });
+
+        /* Opening the Players page should keep the full squad there. */
+        document.querySelectorAll('[data-s34="players"], #s34OpenSquad')
+            .forEach(btn=>{
+                if(btn.dataset.v42SquadBound) return;
+                btn.dataset.v42SquadBound = "1";
+                btn.addEventListener("click",()=>setTimeout(mountCorrectSquadPanels,0));
+            });
+
+        /* If an older mount moves squadSection again, repair it. */
+        const host = $("s35NativeSquadHost");
+        if(host && !host.dataset.v42Observed){
+            host.dataset.v42Observed = "1";
+            new MutationObserver(()=>setTimeout(mountCorrectSquadPanels,0))
+                .observe(host,{childList:true});
+        }
+    }
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,120),{once:true});
+    }else{
+        setTimeout(bind,120);
+    }
+
+    setTimeout(mountCorrectSquadPanels,700);
+})();
+
+
+/* =========================================================
+   START11 V43 – DBU LEAGUE CACHE FOR MODERN HOME
+   Henter ligadata fra den eksisterende DBU Edge Function uden
+   at ændre den nuværende DBU-sync eller kamptrup.
+========================================================= */
+(function(){
+    if(window.__START11_V43_LEAGUE_CACHE__) return;
+    window.__START11_V43_LEAGUE_CACHE__ = true;
+
+    const LEAGUE_KEY = "start11DbuLeague";
+
+    async function v43FetchLeague(){
+        const dbuUrl =
+            document.getElementById("dbuTeamUrlInput")?.value?.trim() ||
+            localStorage.getItem(
+                typeof START11_DBU_URL_KEY !== "undefined"
+                    ? START11_DBU_URL_KEY
+                    : "start11DbuTeamUrl"
+            ) ||
+            "";
+
+        if(!dbuUrl) return;
+
+        try{
+            if(typeof ensureSession === "function"){
+                const ok = await ensureSession();
+                if(!ok) return;
+            }
+
+            if(
+                typeof SUPABASE_URL === "undefined" ||
+                typeof SUPABASE_KEY === "undefined"
+            ) return;
+
+            const response = await fetch(
+                `${SUPABASE_URL}/functions/v1/dbu-matches`,
+                {
+                    method:"POST",
+                    headers:{
+                        apikey:SUPABASE_KEY,
+                        Authorization:`Bearer ${session?.access_token || ""}`,
+                        "Content-Type":"application/json"
+                    },
+                    body:JSON.stringify({url:dbuUrl})
+                }
+            );
+
+            if(!response.ok) return;
+
+            const data = await response.json();
+            if(!data?.success || !data?.league) return;
+
+            localStorage.setItem(
+                LEAGUE_KEY,
+                JSON.stringify(data.league)
+            );
+
+            if(
+                typeof activeTeamId !== "undefined" &&
+                activeTeamId &&
+                typeof start11WriteTeamScopedValue === "function"
+            ){
+                start11WriteTeamScopedValue(
+                    LEAGUE_KEY,
+                    JSON.stringify(data.league),
+                    activeTeamId
+                );
+            }
+
+            window.dispatchEvent(
+                new CustomEvent("start11:league-updated")
+            );
+        }catch(error){
+            console.warn("START11 V43 league:", error);
+        }
+    }
+
+    function bind(){
+        const sync = document.getElementById("syncDbuMatchesButton");
+        if(sync && sync.dataset.v43LeagueBound !== "1"){
+            sync.dataset.v43LeagueBound = "1";
+            sync.addEventListener(
+                "click",
+                () => setTimeout(v43FetchLeague, 250)
+            );
+        }
+
+        const myTeams = document.getElementById("myTeamsMenuButton");
+        if(myTeams && myTeams.dataset.v43LeagueBound !== "1"){
+            myTeams.dataset.v43LeagueBound = "1";
+            myTeams.addEventListener(
+                "click",
+                () => setTimeout(v43FetchLeague, 300)
+            );
+        }
+
+        setTimeout(v43FetchLeague, 900);
+    }
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", bind, {once:true});
+    }else{
+        bind();
+    }
+})();
 /* =========================================================
    START11 – DBU CONNECT
    Henter kampene via Supabase Edge Function: dbu-matches
@@ -45670,7 +46355,7 @@ function s18NewProject(){const title=prompt("Navn på analyseprojekt:","Kampanal
 async function s18SetVideo(file){const p=s18Project();if(!p||!file)return;if(!String(file.type||"").startsWith("video/")){visNotification?.("Vælg en videofil.");return}const id=s13Id("matchvideo");try{if(p.matchVideo?.mediaId)await s15DeleteBlob(p.matchVideo.mediaId);await s15StoreBlob(id,file);p.matchVideo={sourceType:"local",mediaId:id,name:file.name,type:file.type,size:file.size,url:""};s18Touch();s18Render(document.getElementById("s13content"))}catch(e){console.error(e);visNotification?.("Kunne ikke gemme kampvideoen lokalt.")}}
 function s18VeoMatchId(url){try{const u=new URL(String(url||"").trim());if(!/(^|\.)veo\.co$/i.test(u.hostname))return"";const m=u.pathname.match(/^\/matches\/([^/?#]+)/i);return m?decodeURIComponent(m[1]):""}catch{return""}}
 function s18VeoApiBase(id){return `https://app.veo.co/api/app/matches/${encodeURIComponent(id)}`}
-async function s18ResolveVeo(url){const id=s18VeoMatchId(url);if(!id)throw new Error("Det er ikke et gyldigt Veo-matchlink.");const endpoint=`/api/veo/resolve?match=${encodeURIComponent(id)}`;const res=await fetch(endpoint,{method:"GET",headers:{Accept:"application/json"},credentials:"same-origin"});if(!res.ok)throw new Error(`Veo svarede ${res.status} på video-endpointet.`);const data=await res.json();if(!Array.isArray(data)||!data.length)throw new Error("Veo returnerede ingen videokilder.");const usable=data.filter(x=>x&&/^https?:\/\//i.test(String(x.url||""))&&String(x.mime_type||"").toLowerCase()!=="video/mp2t");if(!usable.length)throw new Error("Veo returnerede ingen browser-egnede videokilder.");const rank=x=>{const r=String(x.render_type||"").toLowerCase();const mime=String(x.mime_type||"").toLowerCase();let score=Number(x.height||0);if(r.includes("follow"))score+=100000;if(r.includes("directed"))score+=90000;if(r.includes("panorama"))score-=50000;if(mime.includes("mp4"))score+=10000;return score};usable.sort((a,b)=>rank(b)-rank(a));const best=usable[0];return{matchId:id,url:String(best.url),mimeType:String(best.mime_type||"video/mp4"),renderType:String(best.render_type||""),width:Number(best.width||0),height:Number(best.height||0)}}
+async function s18ResolveVeo(url){const id=s18VeoMatchId(url);if(!id)throw new Error("Det er ikke et gyldigt Veo-matchlink.");if(window.location.protocol==="file:")throw new Error("Veo kan ikke hentes, når START11 åbnes direkte som en file://-fil. Åbn den deployede HTTPS-version af START11 for at bruge Veo.");const endpoint=`${window.location.origin}/api/veo/resolve?match=${encodeURIComponent(id)}`;const res=await fetch(endpoint,{method:"GET",headers:{Accept:"application/json"},credentials:"same-origin"});if(!res.ok)throw new Error(`Veo svarede ${res.status} på video-endpointet.`);const data=await res.json();if(!Array.isArray(data)||!data.length)throw new Error("Veo returnerede ingen videokilder.");const usable=data.filter(x=>x&&/^https?:\/\//i.test(String(x.url||""))&&String(x.mime_type||"").toLowerCase()!=="video/mp2t");if(!usable.length)throw new Error("Veo returnerede ingen browser-egnede videokilder.");const rank=x=>{const r=String(x.render_type||"").toLowerCase();const mime=String(x.mime_type||"").toLowerCase();let score=Number(x.height||0);if(r.includes("follow"))score+=100000;if(r.includes("directed"))score+=90000;if(r.includes("panorama"))score-=50000;if(mime.includes("mp4"))score+=10000;return score};usable.sort((a,b)=>rank(b)-rank(a));const best=usable[0];return{matchId:id,url:String(best.url),mimeType:String(best.mime_type||"video/mp4"),renderType:String(best.render_type||""),width:Number(best.width||0),height:Number(best.height||0)}}
 async function s18SetVideoLink(){const p=s18Project();if(!p)return;const url=prompt("Veo-link eller direkte videolink:","https://app.veo.co/matches/");if(!url)return;const clean=url.trim();const veoId=s18VeoMatchId(clean);if(veoId){p.matchVideo={sourceType:"veo",mediaId:"",name:"Veo kampvideo",type:"video",size:0,url:clean,veoMatchId:veoId,directUrl:"",directMime:"",directRenderType:""};s18Touch();if(typeof saveCloudNow==="function")await saveCloudNow();s18Render(document.getElementById("s13content"));return}p.matchVideo={sourceType:"link",mediaId:"",name:"Ekstern kampvideo",type:"video",size:0,url:clean};s18Touch();if(typeof saveCloudNow==="function")await saveCloudNow();s18Render(document.getElementById("s13content"))}
 function s18NewClip(){const p=s18Project(),v=document.getElementById("s18Video");if(!p||!v)return;const a=s18.inSec??Math.max(0,v.currentTime-5),b=s18.outSec??Math.min(v.duration||a+15,a+15);if(b<=a){visNotification?.("OUT skal ligge efter IN.");return}const c={id:s13Id("clip"),title:`Klip ${p.clips.length+1}`,startSec:+a.toFixed(3),endSec:+b.toFixed(3),playerId:"",attributeId:"",phase:"Med bold",outcome:"Udvikling",tags:"",observation:"",coachingQuestion:"",action:"",showInMeeting:true,annotations:[],createdAt:new Date().toISOString()};p.clips.push(c);s18.clipId=c.id;s18.inSec=s18.outSec=null;s18Touch();s18Render(document.getElementById("s13content"));setTimeout(()=>s18Seek(c),50)}
 function s18Seek(c){const v=document.getElementById("s18Video");if(v&&c){v.pause();v.currentTime=s18clamp(c.startSec,0,v.duration||1e9);s18Draw()}}
@@ -45681,7 +46366,7 @@ function s18ClipEditor(c){if(!c)return`<div class="s13mut">Vælg et klip for at 
 
 function s18Render(target){s18EnsureData();if(!s13Data.videoProjects.length){target.innerHTML=`<section class="s13panel"><div style="min-height:460px;display:grid;place-items:center;text-align:center"><div><div style="font-size:48px">▶</div><h2>START11 PRO VIDEO ANALYSIS</h2><p class="s13mut">Importér en hel kamp, lav klip, tegn på videoen og kør analysen som præsentation.</p><button id="s18First" class="s13btn primary">+ OPRET KAMPANALYSE</button></div></div></section>`;document.getElementById("s18First").onclick=()=>{s18NewProject();s18Render(target)};return}const p=s18Project(),c=s18Clip();target.innerHTML=`<div class="s18-toolbar"><button id="s18NewProject" class="s13btn primary">+ KAMP</button><button id="s18Upload" class="s13btn">${p?.matchVideo?"SKIFT KAMPVIDEO":"IMPORTÉR KAMPVIDEO"}</button><button id="s18Link" class="s13btn">VEO / VIDEO-LINK</button><button id="s18Present" class="s13btn" ${p?.clips?.length?"":"disabled"}>PRÆSENTATION</button><button id="s18Export" class="s13btn">EKSPORTÉR JSON</button><input id="s18UploadFile" type="file" accept="video/*" hidden></div><div class="s18-layout"><aside class="s18-side"><section class="s13panel"><div class="s13head"><strong>KAMPANALYSER</strong></div><div id="s18ProjectList">${s18ProjectsHtml()}</div><button id="s18DeleteProject" class="s13btn" style="width:100%;margin-top:8px">SLET PROJEKT</button></section><section class="s13panel" style="margin-top:10px"><div class="s13head"><strong>KLIP</strong></div><div id="s18ClipList">${s18ClipsHtml(p)}</div></section></aside><main><section class="s13panel"><div class="s13head"><div><strong>${s13Esc(p?.title||"VIDEO")}</strong><div class="s13mut">${s13Esc(p?.opponent||"")}${p?.date?` · ${s13Date(p.date)}`:""}</div></div><button id="s18EditProject" class="s13btn">REDIGER PROJEKT</button></div><div id="s18Stage" class="s18-stage"></div><div class="s18-controls"><button id="s18Back5" class="s18-tool">-5</button><button id="s18PrevFrame" class="s18-tool">◀|</button><button id="s18Play" class="s18-tool">PLAY</button><button id="s18NextFrame" class="s18-tool">|▶</button><button id="s18Forward5" class="s18-tool">+5</button><button id="s18In" class="s18-tool">IN</button><button id="s18Out" class="s18-tool">OUT</button><select id="s18Speed" class="s13sel" style="width:76px"><option value=".25">0.25x</option><option value=".5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select><span id="s18Time" class="s18-time">00:00 / 00:00</span></div><div id="s18Timeline" class="s18-timeline"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><div class="s13mut">IN: <strong id="s18InLabel">${s18.inSec==null?"—":s18fmt(s18.inSec)}</strong> · OUT: <strong id="s18OutLabel">${s18.outSec==null?"—":s18fmt(s18.outSec)}</strong></div><button id="s18CreateClip" class="s13btn primary">+ OPRET KLIP</button></div></section><section class="s13panel" style="margin-top:10px"><div class="s13head"><strong>TEGNEVÆRKTØJER</strong></div><div class="s18-toolbar">${[["select","VÆLG"],["arrow","PIL"],["line","LINJE"],["rect","FIRKANT"],["circle","CIRKEL"],["spotlight","SPOT"],["free","TEGN"],["text","TEKST"]].map(([id,l])=>`<button class="s18-tool ${s18.tool===id?"active":""}" data-tool="${id}">${l}</button>`).join("")}<input id="s18Color" type="color" value="${s18.color}" style="width:38px;height:34px"><select id="s18Width" class="s13sel" style="width:80px">${[2,4,6,8,12].map(w=>`<option value="${w}" ${w===s18.width?"selected":""}>${w}px</option>`).join("")}</select><button id="s18Undo" class="s18-tool">↶</button><button id="s18Redo" class="s18-tool">↷</button></div><div class="s13mut">Shortcuts: SPACE play/pause · I/O IN/OUT · ←/→ frame · J/L ±5 sek · A pil · R firkant · C cirkel · S spotlight</div></section></main><aside class="s18-side"><section id="s18ClipEditor" class="s13panel">${s18ClipEditor(c)}</section></aside></div>`;s18Bind();s18LoadVideo();s18RenderAnnList()}
 
-async function s18LoadVideo(){const p=s18Project(),stage=document.getElementById("s18Stage");if(!p||!stage)return;if(s18.objectUrl){URL.revokeObjectURL(s18.objectUrl);s18.objectUrl=""}if(!p.matchVideo){stage.innerHTML=`<div id="s18Drop" class="s18-drop"><div><strong>DROP HELE KAMPVIDEOEN HER</strong><div>MP4 / WebM / MOV · gemmes lokalt i browseren</div></div><input id="s18DropFile" type="file" accept="video/*" hidden></div>`;const d=document.getElementById("s18Drop"),f=document.getElementById("s18DropFile");d.onclick=()=>f.click();d.ondragover=e=>{e.preventDefault();d.classList.add("dragover")};d.ondragleave=()=>d.classList.remove("dragover");d.ondrop=e=>{e.preventDefault();d.classList.remove("dragover");if(e.dataTransfer.files[0])s18SetVideo(e.dataTransfer.files[0])};f.onchange=e=>e.target.files[0]&&s18SetVideo(e.target.files[0]);return}let src="";if(p.matchVideo.sourceType==="local"){const x=await s15GetBlob(p.matchVideo.mediaId);if(!x?.blob){stage.innerHTML=`<div class="s18-drop">Den lokale kampvideo findes ikke på denne enhed.</div>`;return}src=URL.createObjectURL(x.blob);s18.objectUrl=src}else if(p.matchVideo.sourceType==="veo"){stage.innerHTML=`<div class="s18-drop"><div><strong>HENTER VEO-VIDEO…</strong><div style="margin-top:6px">START11 forsøger at hente Follow-cam-kilden direkte fra Veo.</div></div></div>`;try{const resolved=await s18ResolveVeo(p.matchVideo.url);src=resolved.url;p.matchVideo.directUrl=resolved.url;p.matchVideo.directMime=resolved.mimeType;p.matchVideo.directRenderType=resolved.renderType;p.matchVideo.directHeight=resolved.height;p.matchVideo.directResolvedAt=new Date().toISOString();s18Touch()}catch(err){console.error("START11 Veo direct resolve failed",err);stage.innerHTML=`<div class="s18-drop"><div><strong>VEO DIREKTE TEST BLEV BLOKERET</strong><div style="margin-top:7px;max-width:520px">${s13Esc(err?.message||"Kunne ikke hente Veo-videokilden.")}</div><div style="margin-top:7px">Hvis browserens CORS-regler blokerer Veo-API'et, kræver næste løsning en lille resolver på START11-serveren.</div><button id="s18VeoOpen" class="s13btn primary" style="margin-top:12px">ÅBN VEO</button></div></div>`;document.getElementById("s18VeoOpen")?.addEventListener("click",()=>window.open(p.matchVideo.url,"_blank","noopener"));return}}else src=p.matchVideo.url||"";stage.innerHTML=`<video id="s18Video" src="${s13Esc(src)}" preload="metadata" playsinline crossorigin="anonymous"></video><canvas id="s18Canvas"></canvas>`;const v=document.getElementById("s18Video");if(v&&p.matchVideo.sourceType==="veo")v.onerror=()=>{console.error("START11 Veo video element error",v.error);stage.innerHTML=`<div class="s18-drop"><div><strong>VEO-KILDEN BLEV FUNDET, MEN VIDEOEN KUNNE IKKE AFSPILLES</strong><div style="margin-top:7px">Det peger på adgang/CORS på selve videofilen. Næste test er server-resolver/proxy-header-løsningen.</div><button id="s18VeoOpen" class="s13btn primary" style="margin-top:12px">ÅBN VEO</button></div></div>`;document.getElementById("s18VeoOpen")?.addEventListener("click",()=>window.open(p.matchVideo.url,"_blank","noopener"))};s18BindVideo()}
+async function s18LoadVideo(){const p=s18Project(),stage=document.getElementById("s18Stage");if(!p||!stage)return;if(s18.objectUrl){URL.revokeObjectURL(s18.objectUrl);s18.objectUrl=""}if(!p.matchVideo){stage.innerHTML=`<div id="s18Drop" class="s18-drop"><div><strong>DROP HELE KAMPVIDEOEN HER</strong><div>MP4 / WebM / MOV · gemmes lokalt i browseren</div></div><input id="s18DropFile" type="file" accept="video/*" hidden></div>`;const d=document.getElementById("s18Drop"),f=document.getElementById("s18DropFile");d.onclick=()=>f.click();d.ondragover=e=>{e.preventDefault();d.classList.add("dragover")};d.ondragleave=()=>d.classList.remove("dragover");d.ondrop=e=>{e.preventDefault();d.classList.remove("dragover");if(e.dataTransfer.files[0])s18SetVideo(e.dataTransfer.files[0])};f.onchange=e=>e.target.files[0]&&s18SetVideo(e.target.files[0]);return}let src="";if(p.matchVideo.sourceType==="local"){const x=await s15GetBlob(p.matchVideo.mediaId);if(!x?.blob){stage.innerHTML=`<div class="s18-drop">Den lokale kampvideo findes ikke på denne enhed.</div>`;return}src=URL.createObjectURL(x.blob);s18.objectUrl=src}else if(p.matchVideo.sourceType==="veo"){stage.innerHTML=`<div class="s18-drop"><div><strong>HENTER VEO-VIDEO…</strong><div style="margin-top:6px">START11 forsøger at hente Follow-cam-kilden direkte fra Veo.</div></div></div>`;try{const resolved=await s18ResolveVeo(p.matchVideo.url);src=resolved.url;p.matchVideo.directUrl=resolved.url;p.matchVideo.directMime=resolved.mimeType;p.matchVideo.directRenderType=resolved.renderType;p.matchVideo.directHeight=resolved.height;p.matchVideo.directResolvedAt=new Date().toISOString();s18Touch()}catch(err){console.error("START11 Veo direct resolve failed",err);stage.innerHTML=`<div class="s18-drop"><div><strong>VEO DIREKTE TEST BLEV BLOKERET</strong><div style="margin-top:7px;max-width:520px">${s13Esc(err?.message||"Kunne ikke hente Veo-videokilden.")}</div><div style="margin-top:7px">Veo-resolveren kræver, at START11 kører via HTTP/HTTPS. Den virker derfor ikke fra en direkte file://-åbning.</div><button id="s18VeoOpen" class="s13btn primary" style="margin-top:12px">ÅBN VEO</button></div></div>`;document.getElementById("s18VeoOpen")?.addEventListener("click",()=>window.open(p.matchVideo.url,"_blank","noopener"));return}}else src=p.matchVideo.url||"";stage.innerHTML=`<video id="s18Video" src="${s13Esc(src)}" preload="metadata" playsinline crossorigin="anonymous"></video><canvas id="s18Canvas"></canvas>`;const v=document.getElementById("s18Video");if(v&&p.matchVideo.sourceType==="veo")v.onerror=()=>{console.error("START11 Veo video element error",v.error);stage.innerHTML=`<div class="s18-drop"><div><strong>VEO-KILDEN BLEV FUNDET, MEN VIDEOEN KUNNE IKKE AFSPILLES</strong><div style="margin-top:7px">Det peger på adgang/CORS på selve videofilen. Næste test er server-resolver/proxy-header-løsningen.</div><button id="s18VeoOpen" class="s13btn primary" style="margin-top:12px">ÅBN VEO</button></div></div>`;document.getElementById("s18VeoOpen")?.addEventListener("click",()=>window.open(p.matchVideo.url,"_blank","noopener"))};s18BindVideo()}
 
 function s18BindVideo(){const v=document.getElementById("s18Video"),cv=document.getElementById("s18Canvas");if(!v||!cv)return;v.onloadedmetadata=()=>{const c=s18Clip();if(c)v.currentTime=c.startSec;s18RenderTimeline();s18UpdateTime();s18Draw()};v.ontimeupdate=()=>{s18UpdateTime();s18UpdatePlayhead();s18Draw();const c=s18Clip();if(c&&v.currentTime>c.endSec&&v.currentTime<c.endSec+.4){v.pause();v.currentTime=c.endSec}};v.onplay=()=>document.getElementById("s18Play")&&(document.getElementById("s18Play").textContent="PAUSE");v.onpause=()=>document.getElementById("s18Play")&&(document.getElementById("s18Play").textContent="PLAY");s18BindCanvas()}
 function s18UpdateTime(){const v=document.getElementById("s18Video"),el=document.getElementById("s18Time");if(v&&el)el.textContent=`${s18fmt(v.currentTime)} / ${s18fmt(v.duration||0)}`}
@@ -68065,80 +68750,55 @@ function init(){ensure();styles();if(!installHub())setTimeout(init,500)}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,4500));else setTimeout(init,4500);
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
 /* =========================================================
-   START11 V31.1 – PREMIUM SHELL / HOME + LINEUP MODES
-   Visual navigation layer only. Existing data/functions remain source of truth.
+   START11 V35 – MOCKUP SHELL + ORIGINAL INTERACTIVE LINEUP
 ========================================================= */
-(function start11V31PremiumShell(){
+(function start11V35(){
   "use strict";
-  if(window.__START11_V31_PREMIUM_SHELL__) return;
-  window.__START11_V31_PREMIUM_SHELL__=true;
-
-  const HOME="matchesSection";
-  const LINEUP="lineupSection";
-
-  function navButtons(){
-    return [...document.querySelectorAll(".start11-nav-item[data-start11-target]")];
+  if(window.__START11_V35__)return; window.__START11_V35__=true;
+  window.START11_BUILD="V35-NATIVE-INTERACTIVE-LINEUP";
+  const $=id=>document.getElementById(id), esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+  let nativeCenterOrigin=null,nativeSquadOrigin=null,coachingReturn=false,currentView="home";
+  const getPlayers=()=>{try{if(typeof start11FullSquad!=="undefined"&&Array.isArray(start11FullSquad))return start11FullSquad;if(typeof spillere!=="undefined"&&Array.isArray(spillere))return spillere}catch(_){}return[]};
+  const getData=()=>{try{return typeof s13Data!=="undefined"&&s13Data?s13Data:{}}catch(_){return{}}};
+  const teamName=()=>{try{const m=typeof start11V8GetActiveMeta==="function"?start11V8GetActiveMeta():null;return m?.teamName||m?.clubName||$("accountDisplayName")?.textContent||"FC THY U14"}catch(_){return"FC THY U14"}};
+  function setText(id,v){const e=$(id);if(e)e.textContent=v??"—"}
+  function moveNode(node,host,key){if(!node||!host||node.parentNode===host)return key;if(!key)key={parent:node.parentNode,next:node.nextSibling};host.appendChild(node);return key}
+  function restoreNode(key,selector){if(!key)return null;const node=document.querySelector(selector);if(node&&key.parent){key.parent.insertBefore(node,key.next&&key.next.parentNode===key.parent?key.next:null)}return null}
+  function restoreNative(){nativeCenterOrigin=restoreNode(nativeCenterOrigin,'.start11-center-column');nativeSquadOrigin=restoreNode(nativeSquadOrigin,'.start11-right-column')}
+  function activate(view="home"){
+    if(view!=="lineup")restoreNative(); currentView=view; document.body.classList.add("s34-active");
+    $("s34HomeView").hidden=view!=="home"; $("s34LineupView").hidden=view!=="lineup";
+    document.querySelectorAll("[data-s34]").forEach(x=>x.classList.toggle("active",x.dataset.s34===view));
+    if(view==="home")refreshHome(); if(view==="lineup")openNativeLineup(); window.scrollTo(0,0);
   }
-
-  function setMode(target, scroll=true){
-    const lineup=target===LINEUP;
-    document.body.classList.toggle("s31-lineup-mode",lineup);
-    document.body.classList.toggle("s31-home-mode",!lineup);
-
-    navButtons().forEach(btn=>{
-      const active=btn.dataset.start11Target===target;
-      btn.classList.toggle("active",active);
-      btn.setAttribute("aria-current",active?"page":"false");
-    });
-
-    if(scroll){
-      window.scrollTo({top:0,behavior:"smooth"});
-    }
+  function leave(){restoreNative();document.body.classList.remove("s34-active")}
+  function native(target){leave();const b=document.querySelector(`.start11-nav-item[data-start11-target="${target}"]`);b?.click()}
+  function openCoach(tab){coachingReturn=true;leave();if(typeof s13Open==="function"){s13Open();if(tab&&typeof s13Tab!=="undefined")s13Tab=tab;if(typeof s13Render==="function")s13Render()}}
+  function installCoachReturn(){if(typeof s13Close!=="function"||s13Close.__v35)return;const old=s13Close;s13Close=function(...a){const r=old.apply(this,a);if(coachingReturn){coachingReturn=false;activate("home")}return r};s13Close.__v35=true}
+  function openCalendar(){leave();const b=$("s15CalendarNav")||[...document.querySelectorAll("button")].find(x=>/KALENDER/i.test(x.textContent||""));b?.click()}
+  function logos(){const h=$("dashboardHomeLogo")?.src||"",a=$("dashboardAwayLogo")?.src||"";[["s34HomeLogo",h],["s34AwayLogo",a],["s34LineHomeLogo",h],["s34LineAwayLogo",a]].forEach(([id,src])=>{const e=$(id);if(e){if(src)e.src=src;else e.removeAttribute("src")}})}
+  function refreshHome(){const tn=teamName();["s34SideTeam","s34TopTeam","s34ProfileTeam"].forEach(id=>setText(id,tn));setText("s34HomeTeam",$("dashboardHomeTeam")?.textContent?.trim()||"—");setText("s34AwayTeam",$("dashboardAwayTeam")?.textContent?.trim()||"—");const d=$("dashboardMatchDate")?.textContent?.trim()||"",t=$("dashboardMatchTime")?.textContent?.trim()||"";setText("s34MatchDate",[d,t].filter(Boolean).join(" · ")||"—");setText("s34MatchPlace",$("dashboardMatchPlace")?.textContent?.trim()||"—");logos();setText("s34Formation",$("formationSelector")?.selectedOptions?.[0]?.textContent||"—");const ps=getPlayers(),rendered=parseInt($("fullSquadCount")?.textContent||"0",10)||0,total=ps.length||rendered;setText("s34PlayerCount",total);const limited=ps.filter(p=>/skade|begrænset|ukendt|fravær|ikke/i.test(String(p?.status||""))).length;setText("s34Available",ps.length?Math.max(0,total-limited):total);setText("s34Limited",limited);refreshTraining();refreshFocus();refreshLeague();refreshActivities();refreshPreview()}
+  function refreshTraining(){const d=getData();let ss=Array.isArray(d.sessions)?d.sessions.slice():[];const today=new Date().toISOString().slice(0,10);ss=ss.filter(x=>String(x.date||x.sessionDate||"")>=today).sort((a,b)=>String(a.date||a.sessionDate||"").localeCompare(String(b.date||b.sessionDate||"")));const x=ss[0];if(!x){setText("s34TrainingDate","Ingen planlagt træning");setText("s34TrainingTitle","—");$("s34TrainingMeta").innerHTML="";return}setText("s34TrainingDate",[x.date||x.sessionDate,x.time].filter(Boolean).join(" · "));setText("s34TrainingTitle",x.title||x.theme||x.name||"Træning");let items=[];if(Array.isArray(x.blocks))items=x.blocks.slice(0,3).map(b=>b.title||b.name).filter(Boolean);if(!items.length)items=[x.focus,x.note].filter(Boolean).slice(0,3);$("s34TrainingMeta").innerHTML=items.map(v=>`<span>${esc(v)}</span>`).join("")}
+  function refreshFocus(){const h=$("s34FocusList");if(!h)return;let p=(getData().principles||[]).slice(0,3);h.innerHTML=p.length?p.map((x,i)=>`<div class="s34-focus-item"><i>${i+1}</i><div><strong>${esc(x.title||x.name||x.principle||"Princip")}</strong><small>${esc(x.coachingPoints||x.description||x.note||"")}</small></div></div>`).join(""):`<div style="color:#8e9992;font-size:11px">Tilføj principper i Coaching Hub.</div>`}
+  function s43LeagueData(){try{const d=JSON.parse(localStorage.getItem("start11DbuLeague")||"{}");return d&&typeof d==="object"?d:{}}catch(_){return {}}}
+  function s43Logo(team,league){const key=String(team||"").trim().toLowerCase();if(!key)return "";const pool=[...(Array.isArray(league?.teams)?league.teams:[]),...(Array.isArray(league?.standings)?league.standings:[])];const exact=pool.find(x=>String(x?.name||x?.team||"").trim().toLowerCase()===key);if(exact?.logo)return exact.logo;const loose=pool.find(x=>{const n=String(x?.name||x?.team||"").trim().toLowerCase();return n&&(n.includes(key)||key.includes(n))});return loose?.logo||""}
+  function refreshLeague(){const h=$("s43LeagueTable");if(!h)return;const league=s43LeagueData(),rows=Array.isArray(league?.standings)?league.standings:[],title=$("s43LeagueName");if(title)title.textContent=league?.name||"DBU";if(!rows.length){h.innerHTML=`<div class="s43-league-empty">Synkronisér DBU under Mine hold for at hente tabellen.</div>`;return}const own=teamName().trim().toLowerCase();h.innerHTML=`<div class="s43-league-head"><span>#</span><span>Hold</span><span>K</span><span>M</span><span>P</span></div>`+rows.map((r,i)=>{const n=String(r.team||r.name||r.teamName||"—"),norm=n.trim().toLowerCase(),mine=own&&(norm===own||norm.includes(own)||own.includes(norm)),logo=r.logo||s43Logo(n,league),pos=r.position??r.pos??r.rank??r.place??(i+1),played=r.played??r.matches??r.games??r.kampe??"—",goals=r.goals??r.goalDifference??r.score??r.maal??"",pts=r.points??r.pts??r.point??"—";return `<div class="s43-league-row${mine?" is-own":""}"><span>${esc(pos)}</span><span class="s43-league-club">${logo?`<img src="${esc(logo)}" alt="">`:`<i>${esc(n.slice(0,1))}</i>`}<strong>${esc(n)}</strong></span><span>${esc(played)}</span><span>${esc(goals)}</span><b>${esc(pts)}</b></div>`}).join("")}
+  function refreshActivities(){const h=$("s34Activities");if(!h)return;let ms=[];try{if(typeof start11CalendarAllMatches==="function")ms=start11CalendarAllMatches()||[]}catch(_){}const today=new Date().toISOString().slice(0,10),league=s43LeagueData(),own=teamName().trim().toLowerCase();ms=ms.filter(m=>String(m.date||m.matchDate||"")>=today).slice(0,4);h.innerHTML=ms.map(m=>{const raw=String(m.date||m.matchDate||""),ds=raw.match(/^\d{4}-(\d\d)-(\d\d)$/),date=ds?`${ds[2]}. ${["","jan.","feb.","mar.","apr.","maj","jun.","jul.","aug.","sep.","okt.","nov.","dec."][+ds[1]]}`:raw,home=String(m.home||m.homeTeam||""),away=String(m.away||m.awayTeam||""),hn=home.toLowerCase(),isHome=own?(hn===own||hn.includes(own)||own.includes(hn)):hn.includes("thy"),opp=isHome?away:home,logo=(isHome?m.awayLogo:m.homeLogo)||s43Logo(opp,league);return `<div class="s34-activity s43-activity"><time>${esc(date)}</time><span class="s43-activity-logo">${logo?`<img src="${esc(logo)}" alt="">`:`<i>${esc(opp.slice(0,1)||"•")}</i>`}</span><strong>${esc(opp)} (${isHome?"H":"U"})</strong><span>${esc(m.time||m.matchTime||"")}</span></div>`}).join("")||`<div style="padding:30px 0;color:#8e9992;font-size:11px">Ingen kommende aktiviteter.</div>`}
+  function refreshPreview(){const h=$("s34PitchPreview"),p=$("pitch");if(!h||!p||currentView==="lineup")return;const c=p.cloneNode(true);c.removeAttribute("id");c.querySelectorAll("[id]").forEach(x=>x.removeAttribute("id"));c.style.pointerEvents="none";h.replaceChildren(c)}
+  function openNativeLineup(){setText("s34LineHome",$("dashboardHomeTeam")?.textContent?.trim()||"—");setText("s34LineAway",$("dashboardAwayTeam")?.textContent?.trim()||"—");setText("s34LineDate",$("dashboardMatchDate")?.textContent?.trim()||"—");setText("s34LineTime",$("dashboardMatchTime")?.textContent?.trim()||"—");setText("s34LinePlace",$("dashboardMatchPlace")?.textContent?.trim()||"—");logos();nativeCenterOrigin=moveNode(document.querySelector('.start11-center-column'),$("s35NativeCenterHost"),nativeCenterOrigin);nativeSquadOrigin=moveNode(document.querySelector('.start11-right-column'),$("s35NativeSquadHost"),nativeSquadOrigin)}
+  function bind(){
+    document.querySelectorAll("[data-s34]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.s34;if(a==="home")activate("home");else if(a==="matches")openCalendar();else if(a==="training")openCoach("training");else if(a==="players")native("squadSection");else if(a==="analysis")openCoach("matches");else if(a==="video")openCoach("videos");else if(a==="share"){if(typeof start11OpenBriefStudio==="function")start11OpenBriefStudio("match");else openCoach()}else if(a==="settings")$("accountMenuButton")?.click()}));
+    $("s34Search")?.addEventListener("click",()=>typeof start11CommandPalette==="function"&&start11CommandPalette());
+    $("s34OpenMatch")?.addEventListener("click",()=>activate("lineup")); $("s34PitchPreview")?.addEventListener("click",()=>activate("lineup"));
+    $("s34OpenTraining")?.addEventListener("click",()=>openCoach("training")); $("s34OpenSquad")?.addEventListener("click",()=>native("squadSection")); $("s34OpenCoaching")?.addEventListener("click",()=>openCoach("principles")); $("s34OpenCalendar")?.addEventListener("click",openCalendar);
+    $("s34BackMatches")?.addEventListener("click",()=>activate("home")); $("s34TeamSwitch")?.addEventListener("click",()=>{leave();$("myTeamsMenuButton")?.click()}); $("s34ProfileButton")?.addEventListener("click",()=>{leave();$("accountMenuButton")?.click()});
+    $("s34ResetLineup")?.addEventListener("click",()=>{const b=[...document.querySelectorAll("button")].find(x=>/NULSTIL/i.test(x.textContent||""));b?.click()}); $("s34SaveLineup")?.addEventListener("click",()=>$("saveButton")?.click()); $("s34ShareLineup")?.addEventListener("click",()=>typeof start11OpenBriefStudio==="function"&&start11OpenBriefStudio("match"));
+    $("s35OpenTactics")?.addEventListener("click",()=>native("tacticsSection")); $("s35OpenNotes")?.addEventListener("click",()=>openCoach("matches"));
+    // Old top navigation can no longer expose a second lineup UI: route it into V35.
+    document.querySelectorAll('.start11-nav-item[data-start11-target="lineupSection"]').forEach(b=>b.addEventListener("click",e=>{if(!document.body.classList.contains("s34-active")){e.preventDefault();e.stopImmediatePropagation();activate("lineup")}},true));
   }
-
-  function installNavigation(){
-    navButtons().forEach(btn=>{
-      if(btn.dataset.s31Bound==="1") return;
-      btn.dataset.s31Bound="1";
-      btn.addEventListener("click",()=>{
-        const target=btn.dataset.start11Target;
-        if(target===HOME || target===LINEUP){
-          setMode(target,true);
-        }else{
-          document.body.classList.remove("s31-lineup-mode","s31-home-mode");
-        }
-      },true);
-    });
-  }
-
-  function polishLabels(){
-    const home=navButtons().find(b=>b.dataset.start11Target===HOME);
-    const lineup=navButtons().find(b=>b.dataset.start11Target===LINEUP);
-    if(home && home.textContent!=="HJEM") home.textContent="HJEM";
-    if(lineup && lineup.textContent!=="STARTOPSTILLING") lineup.textContent="STARTOPSTILLING";
-
-    const formation=document.querySelector(".formation-inline-label");
-    if(formation && formation.textContent!=="FORMATION") formation.textContent="FORMATION";
-  }
-
-  function boot(){
-    polishLabels();
-    installNavigation();
-    setMode(HOME,false);
-
-    // Dynamic navigation is extended by later START11 modules.
-    const observer=new MutationObserver(()=>{
-      polishLabels();
-      installNavigation();
-    });
-    const top=document.querySelector(".start11-global-topbar");
-    if(top) observer.observe(top,{childList:true,subtree:true});
-  }
-
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",boot,{once:true});
-  }else{
-    boot();
-  }
+  function boot(){if(!$("s34App"))return;installCoachReturn();bind();activate("home");setInterval(()=>{if(document.body.classList.contains("s34-active")&&currentView==="home")refreshHome()},2500)}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 })();

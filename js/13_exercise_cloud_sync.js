@@ -653,80 +653,55 @@ function init(){ensure();styles();if(!installHub())setTimeout(init,500)}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,4500));else setTimeout(init,4500);
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
 /* =========================================================
-   START11 V31.1 – PREMIUM SHELL / HOME + LINEUP MODES
-   Visual navigation layer only. Existing data/functions remain source of truth.
+   START11 V35 – MOCKUP SHELL + ORIGINAL INTERACTIVE LINEUP
 ========================================================= */
-(function start11V31PremiumShell(){
+(function start11V35(){
   "use strict";
-  if(window.__START11_V31_PREMIUM_SHELL__) return;
-  window.__START11_V31_PREMIUM_SHELL__=true;
-
-  const HOME="matchesSection";
-  const LINEUP="lineupSection";
-
-  function navButtons(){
-    return [...document.querySelectorAll(".start11-nav-item[data-start11-target]")];
+  if(window.__START11_V35__)return; window.__START11_V35__=true;
+  window.START11_BUILD="V35-NATIVE-INTERACTIVE-LINEUP";
+  const $=id=>document.getElementById(id), esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+  let nativeCenterOrigin=null,nativeSquadOrigin=null,coachingReturn=false,currentView="home";
+  const getPlayers=()=>{try{if(typeof start11FullSquad!=="undefined"&&Array.isArray(start11FullSquad))return start11FullSquad;if(typeof spillere!=="undefined"&&Array.isArray(spillere))return spillere}catch(_){}return[]};
+  const getData=()=>{try{return typeof s13Data!=="undefined"&&s13Data?s13Data:{}}catch(_){return{}}};
+  const teamName=()=>{try{const m=typeof start11V8GetActiveMeta==="function"?start11V8GetActiveMeta():null;return m?.teamName||m?.clubName||$("accountDisplayName")?.textContent||"FC THY U14"}catch(_){return"FC THY U14"}};
+  function setText(id,v){const e=$(id);if(e)e.textContent=v??"—"}
+  function moveNode(node,host,key){if(!node||!host||node.parentNode===host)return key;if(!key)key={parent:node.parentNode,next:node.nextSibling};host.appendChild(node);return key}
+  function restoreNode(key,selector){if(!key)return null;const node=document.querySelector(selector);if(node&&key.parent){key.parent.insertBefore(node,key.next&&key.next.parentNode===key.parent?key.next:null)}return null}
+  function restoreNative(){nativeCenterOrigin=restoreNode(nativeCenterOrigin,'.start11-center-column');nativeSquadOrigin=restoreNode(nativeSquadOrigin,'.start11-right-column')}
+  function activate(view="home"){
+    if(view!=="lineup")restoreNative(); currentView=view; document.body.classList.add("s34-active");
+    $("s34HomeView").hidden=view!=="home"; $("s34LineupView").hidden=view!=="lineup";
+    document.querySelectorAll("[data-s34]").forEach(x=>x.classList.toggle("active",x.dataset.s34===view));
+    if(view==="home")refreshHome(); if(view==="lineup")openNativeLineup(); window.scrollTo(0,0);
   }
-
-  function setMode(target, scroll=true){
-    const lineup=target===LINEUP;
-    document.body.classList.toggle("s31-lineup-mode",lineup);
-    document.body.classList.toggle("s31-home-mode",!lineup);
-
-    navButtons().forEach(btn=>{
-      const active=btn.dataset.start11Target===target;
-      btn.classList.toggle("active",active);
-      btn.setAttribute("aria-current",active?"page":"false");
-    });
-
-    if(scroll){
-      window.scrollTo({top:0,behavior:"smooth"});
-    }
+  function leave(){restoreNative();document.body.classList.remove("s34-active")}
+  function native(target){leave();const b=document.querySelector(`.start11-nav-item[data-start11-target="${target}"]`);b?.click()}
+  function openCoach(tab){coachingReturn=true;leave();if(typeof s13Open==="function"){s13Open();if(tab&&typeof s13Tab!=="undefined")s13Tab=tab;if(typeof s13Render==="function")s13Render()}}
+  function installCoachReturn(){if(typeof s13Close!=="function"||s13Close.__v35)return;const old=s13Close;s13Close=function(...a){const r=old.apply(this,a);if(coachingReturn){coachingReturn=false;activate("home")}return r};s13Close.__v35=true}
+  function openCalendar(){leave();const b=$("s15CalendarNav")||[...document.querySelectorAll("button")].find(x=>/KALENDER/i.test(x.textContent||""));b?.click()}
+  function logos(){const h=$("dashboardHomeLogo")?.src||"",a=$("dashboardAwayLogo")?.src||"";[["s34HomeLogo",h],["s34AwayLogo",a],["s34LineHomeLogo",h],["s34LineAwayLogo",a]].forEach(([id,src])=>{const e=$(id);if(e){if(src)e.src=src;else e.removeAttribute("src")}})}
+  function refreshHome(){const tn=teamName();["s34SideTeam","s34TopTeam","s34ProfileTeam"].forEach(id=>setText(id,tn));setText("s34HomeTeam",$("dashboardHomeTeam")?.textContent?.trim()||"—");setText("s34AwayTeam",$("dashboardAwayTeam")?.textContent?.trim()||"—");const d=$("dashboardMatchDate")?.textContent?.trim()||"",t=$("dashboardMatchTime")?.textContent?.trim()||"";setText("s34MatchDate",[d,t].filter(Boolean).join(" · ")||"—");setText("s34MatchPlace",$("dashboardMatchPlace")?.textContent?.trim()||"—");logos();setText("s34Formation",$("formationSelector")?.selectedOptions?.[0]?.textContent||"—");const ps=getPlayers(),rendered=parseInt($("fullSquadCount")?.textContent||"0",10)||0,total=ps.length||rendered;setText("s34PlayerCount",total);const limited=ps.filter(p=>/skade|begrænset|ukendt|fravær|ikke/i.test(String(p?.status||""))).length;setText("s34Available",ps.length?Math.max(0,total-limited):total);setText("s34Limited",limited);refreshTraining();refreshFocus();refreshLeague();refreshActivities();refreshPreview()}
+  function refreshTraining(){const d=getData();let ss=Array.isArray(d.sessions)?d.sessions.slice():[];const today=new Date().toISOString().slice(0,10);ss=ss.filter(x=>String(x.date||x.sessionDate||"")>=today).sort((a,b)=>String(a.date||a.sessionDate||"").localeCompare(String(b.date||b.sessionDate||"")));const x=ss[0];if(!x){setText("s34TrainingDate","Ingen planlagt træning");setText("s34TrainingTitle","—");$("s34TrainingMeta").innerHTML="";return}setText("s34TrainingDate",[x.date||x.sessionDate,x.time].filter(Boolean).join(" · "));setText("s34TrainingTitle",x.title||x.theme||x.name||"Træning");let items=[];if(Array.isArray(x.blocks))items=x.blocks.slice(0,3).map(b=>b.title||b.name).filter(Boolean);if(!items.length)items=[x.focus,x.note].filter(Boolean).slice(0,3);$("s34TrainingMeta").innerHTML=items.map(v=>`<span>${esc(v)}</span>`).join("")}
+  function refreshFocus(){const h=$("s34FocusList");if(!h)return;let p=(getData().principles||[]).slice(0,3);h.innerHTML=p.length?p.map((x,i)=>`<div class="s34-focus-item"><i>${i+1}</i><div><strong>${esc(x.title||x.name||x.principle||"Princip")}</strong><small>${esc(x.coachingPoints||x.description||x.note||"")}</small></div></div>`).join(""):`<div style="color:#8e9992;font-size:11px">Tilføj principper i Coaching Hub.</div>`}
+  function s43LeagueData(){try{const d=JSON.parse(localStorage.getItem("start11DbuLeague")||"{}");return d&&typeof d==="object"?d:{}}catch(_){return {}}}
+  function s43Logo(team,league){const key=String(team||"").trim().toLowerCase();if(!key)return "";const pool=[...(Array.isArray(league?.teams)?league.teams:[]),...(Array.isArray(league?.standings)?league.standings:[])];const exact=pool.find(x=>String(x?.name||x?.team||"").trim().toLowerCase()===key);if(exact?.logo)return exact.logo;const loose=pool.find(x=>{const n=String(x?.name||x?.team||"").trim().toLowerCase();return n&&(n.includes(key)||key.includes(n))});return loose?.logo||""}
+  function refreshLeague(){const h=$("s43LeagueTable");if(!h)return;const league=s43LeagueData(),rows=Array.isArray(league?.standings)?league.standings:[],title=$("s43LeagueName");if(title)title.textContent=league?.name||"DBU";if(!rows.length){h.innerHTML=`<div class="s43-league-empty">Synkronisér DBU under Mine hold for at hente tabellen.</div>`;return}const own=teamName().trim().toLowerCase();h.innerHTML=`<div class="s43-league-head"><span>#</span><span>Hold</span><span>K</span><span>M</span><span>P</span></div>`+rows.map((r,i)=>{const n=String(r.team||r.name||r.teamName||"—"),norm=n.trim().toLowerCase(),mine=own&&(norm===own||norm.includes(own)||own.includes(norm)),logo=r.logo||s43Logo(n,league),pos=r.position??r.pos??r.rank??r.place??(i+1),played=r.played??r.matches??r.games??r.kampe??"—",goals=r.goals??r.goalDifference??r.score??r.maal??"",pts=r.points??r.pts??r.point??"—";return `<div class="s43-league-row${mine?" is-own":""}"><span>${esc(pos)}</span><span class="s43-league-club">${logo?`<img src="${esc(logo)}" alt="">`:`<i>${esc(n.slice(0,1))}</i>`}<strong>${esc(n)}</strong></span><span>${esc(played)}</span><span>${esc(goals)}</span><b>${esc(pts)}</b></div>`}).join("")}
+  function refreshActivities(){const h=$("s34Activities");if(!h)return;let ms=[];try{if(typeof start11CalendarAllMatches==="function")ms=start11CalendarAllMatches()||[]}catch(_){}const today=new Date().toISOString().slice(0,10),league=s43LeagueData(),own=teamName().trim().toLowerCase();ms=ms.filter(m=>String(m.date||m.matchDate||"")>=today).slice(0,4);h.innerHTML=ms.map(m=>{const raw=String(m.date||m.matchDate||""),ds=raw.match(/^\d{4}-(\d\d)-(\d\d)$/),date=ds?`${ds[2]}. ${["","jan.","feb.","mar.","apr.","maj","jun.","jul.","aug.","sep.","okt.","nov.","dec."][+ds[1]]}`:raw,home=String(m.home||m.homeTeam||""),away=String(m.away||m.awayTeam||""),hn=home.toLowerCase(),isHome=own?(hn===own||hn.includes(own)||own.includes(hn)):hn.includes("thy"),opp=isHome?away:home,logo=(isHome?m.awayLogo:m.homeLogo)||s43Logo(opp,league);return `<div class="s34-activity s43-activity"><time>${esc(date)}</time><span class="s43-activity-logo">${logo?`<img src="${esc(logo)}" alt="">`:`<i>${esc(opp.slice(0,1)||"•")}</i>`}</span><strong>${esc(opp)} (${isHome?"H":"U"})</strong><span>${esc(m.time||m.matchTime||"")}</span></div>`}).join("")||`<div style="padding:30px 0;color:#8e9992;font-size:11px">Ingen kommende aktiviteter.</div>`}
+  function refreshPreview(){const h=$("s34PitchPreview"),p=$("pitch");if(!h||!p||currentView==="lineup")return;const c=p.cloneNode(true);c.removeAttribute("id");c.querySelectorAll("[id]").forEach(x=>x.removeAttribute("id"));c.style.pointerEvents="none";h.replaceChildren(c)}
+  function openNativeLineup(){setText("s34LineHome",$("dashboardHomeTeam")?.textContent?.trim()||"—");setText("s34LineAway",$("dashboardAwayTeam")?.textContent?.trim()||"—");setText("s34LineDate",$("dashboardMatchDate")?.textContent?.trim()||"—");setText("s34LineTime",$("dashboardMatchTime")?.textContent?.trim()||"—");setText("s34LinePlace",$("dashboardMatchPlace")?.textContent?.trim()||"—");logos();nativeCenterOrigin=moveNode(document.querySelector('.start11-center-column'),$("s35NativeCenterHost"),nativeCenterOrigin);nativeSquadOrigin=moveNode(document.querySelector('.start11-right-column'),$("s35NativeSquadHost"),nativeSquadOrigin)}
+  function bind(){
+    document.querySelectorAll("[data-s34]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.s34;if(a==="home")activate("home");else if(a==="matches")openCalendar();else if(a==="training")openCoach("training");else if(a==="players")native("squadSection");else if(a==="analysis")openCoach("matches");else if(a==="video")openCoach("videos");else if(a==="share"){if(typeof start11OpenBriefStudio==="function")start11OpenBriefStudio("match");else openCoach()}else if(a==="settings")$("accountMenuButton")?.click()}));
+    $("s34Search")?.addEventListener("click",()=>typeof start11CommandPalette==="function"&&start11CommandPalette());
+    $("s34OpenMatch")?.addEventListener("click",()=>activate("lineup")); $("s34PitchPreview")?.addEventListener("click",()=>activate("lineup"));
+    $("s34OpenTraining")?.addEventListener("click",()=>openCoach("training")); $("s34OpenSquad")?.addEventListener("click",()=>native("squadSection")); $("s34OpenCoaching")?.addEventListener("click",()=>openCoach("principles")); $("s34OpenCalendar")?.addEventListener("click",openCalendar);
+    $("s34BackMatches")?.addEventListener("click",()=>activate("home")); $("s34TeamSwitch")?.addEventListener("click",()=>{leave();$("myTeamsMenuButton")?.click()}); $("s34ProfileButton")?.addEventListener("click",()=>{leave();$("accountMenuButton")?.click()});
+    $("s34ResetLineup")?.addEventListener("click",()=>{const b=[...document.querySelectorAll("button")].find(x=>/NULSTIL/i.test(x.textContent||""));b?.click()}); $("s34SaveLineup")?.addEventListener("click",()=>$("saveButton")?.click()); $("s34ShareLineup")?.addEventListener("click",()=>typeof start11OpenBriefStudio==="function"&&start11OpenBriefStudio("match"));
+    $("s35OpenTactics")?.addEventListener("click",()=>native("tacticsSection")); $("s35OpenNotes")?.addEventListener("click",()=>openCoach("matches"));
+    // Old top navigation can no longer expose a second lineup UI: route it into V35.
+    document.querySelectorAll('.start11-nav-item[data-start11-target="lineupSection"]').forEach(b=>b.addEventListener("click",e=>{if(!document.body.classList.contains("s34-active")){e.preventDefault();e.stopImmediatePropagation();activate("lineup")}},true));
   }
-
-  function installNavigation(){
-    navButtons().forEach(btn=>{
-      if(btn.dataset.s31Bound==="1") return;
-      btn.dataset.s31Bound="1";
-      btn.addEventListener("click",()=>{
-        const target=btn.dataset.start11Target;
-        if(target===HOME || target===LINEUP){
-          setMode(target,true);
-        }else{
-          document.body.classList.remove("s31-lineup-mode","s31-home-mode");
-        }
-      },true);
-    });
-  }
-
-  function polishLabels(){
-    const home=navButtons().find(b=>b.dataset.start11Target===HOME);
-    const lineup=navButtons().find(b=>b.dataset.start11Target===LINEUP);
-    if(home && home.textContent!=="HJEM") home.textContent="HJEM";
-    if(lineup && lineup.textContent!=="STARTOPSTILLING") lineup.textContent="STARTOPSTILLING";
-
-    const formation=document.querySelector(".formation-inline-label");
-    if(formation && formation.textContent!=="FORMATION") formation.textContent="FORMATION";
-  }
-
-  function boot(){
-    polishLabels();
-    installNavigation();
-    setMode(HOME,false);
-
-    // Dynamic navigation is extended by later START11 modules.
-    const observer=new MutationObserver(()=>{
-      polishLabels();
-      installNavigation();
-    });
-    const top=document.querySelector(".start11-global-topbar");
-    if(top) observer.observe(top,{childList:true,subtree:true});
-  }
-
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",boot,{once:true});
-  }else{
-    boot();
-  }
+  function boot(){if(!$("s34App"))return;installCoachReturn();bind();activate("home");setInterval(()=>{if(document.body.classList.contains("s34-active")&&currentView==="home")refreshHome()},2500)}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 })();
