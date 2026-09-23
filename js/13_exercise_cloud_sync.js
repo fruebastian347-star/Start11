@@ -495,3 +495,142 @@ console.info("START11 loaded:", window.START11_BUILD);
   setTimeout(mountLeagueButton29,1000);setTimeout(mountLeagueButton29,3500);
   console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+   START11 V30 – DEVELOPMENT CYCLE + BRIEF STUDIO
+   Observation -> Fokus -> Træning -> Kamp -> Video -> Evaluering
+   + Kampbrief / Træningsbrief / Udviklingsrapport
+========================================================= */
+(() => {
+"use strict";
+if(window.__START11_V30__) return;
+window.__START11_V30__=true;
+window.START11_BUILD="V30-DEVELOPMENT-CYCLE-BRIEF-STUDIO";
+
+const E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const D=()=>typeof s13Data==="object"&&s13Data?s13Data:{};
+const P=()=>typeof start11FullSquad!=="undefined"&&Array.isArray(start11FullSquad)?start11FullSquad:[];
+const id=(p="id")=>typeof s13Id==="function"?s13Id(p):`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
+const save=()=>{try{typeof s13Save==="function"?s13Save():scheduleCloudSave?.()}catch(e){console.warn("V30 save",e)}};
+const fmt=v=>{if(!v)return"—";try{return new Intl.DateTimeFormat("da-DK",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(v+"T12:00:00"))}catch{return v}};
+const meta=()=>typeof s13Meta==="function"?s13Meta():({clubName:"START11",teamName:""});
+let activeCycle=null;
+
+function ensure(){
+ const d=D();
+ if(!Array.isArray(d.developmentCycles))d.developmentCycles=[];
+ d.developmentCycles.forEach(c=>{
+  c.scope=c.scope||"team";c.playerId=c.playerId||"";c.title=c.title||"Udviklingsforløb";
+  c.observation=c.observation||"";c.focus=c.focus||"";c.sessionIds=Array.isArray(c.sessionIds)?c.sessionIds:[];
+  c.matchIds=Array.isArray(c.matchIds)?c.matchIds:[];c.videoRefs=Array.isArray(c.videoRefs)?c.videoRefs:[];
+  c.evaluation=c.evaluation||"";c.nextFocus=c.nextFocus||"";c.status=c.status||"active";
+  c.createdAt=c.createdAt||new Date().toISOString();c.updatedAt=c.updatedAt||c.createdAt;
+ });
+}
+if(typeof s13Norm==="function"&&!s13Norm.__v30){
+ const old=s13Norm;
+ const wrapped=function(raw={}){const x=old(raw);x.developmentCycles=Array.isArray(raw.developmentCycles)?raw.developmentCycles:[];return x};
+ wrapped.__v30=true;s13Norm=wrapped;
+}
+
+function styles(){
+ if(document.getElementById("s30styles"))return;
+ const s=document.createElement("style");s.id="s30styles";s.textContent=`
+ .s30hero{padding:16px;border:1px solid var(--s11-border-strong);border-radius:10px;background:linear-gradient(115deg,var(--s11-theme-glow-soft),transparent),#071009}
+ .s30flow{display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));gap:7px;overflow:auto;margin:12px 0}.s30step{min-height:82px;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:#08100a}.s30step b{display:block;color:var(--s11-primary);font-size:8px;margin-bottom:6px}.s30step span{font-size:8px;line-height:1.45;color:#d8e0da}
+ .s30cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.s30card{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:#071009}.s30bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.s30field{display:grid;gap:5px;margin-top:9px}.s30field label{font-size:7px;font-weight:950;color:#8e9a91;text-transform:uppercase}.s30field input,.s30field textarea,.s30field select{box-sizing:border-box;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:#050a06;color:#fff;padding:9px;font:inherit;font-size:9px}.s30field textarea{min-height:75px;resize:vertical}
+ #s30overlay{position:fixed;inset:0;z-index:2147483300;display:none;align-items:flex-start;justify-content:center;padding:4vh 16px;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);overflow:auto}#s30overlay.open{display:flex}.s30modal{width:min(1050px,96vw);background:#101612;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:17px;box-shadow:0 30px 90px rgba(0,0,0,.5)}
+ .s30preview{margin-top:12px;padding:28px;background:#fff;color:#111;border-radius:10px;font-family:Arial,sans-serif}.s30preview h1,.s30preview h2,.s30preview h3{margin:0 0 8px}.s30preview .muted{color:#666;font-size:12px}.s30preview .box{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0}.s30preview ul{padding-left:18px}
+ @media(max-width:850px){.s30cards{grid-template-columns:1fr}.s30flow{grid-template-columns:repeat(7,140px)}}
+ @media print{body>*{display:none!important}#s30overlay{display:block!important;position:static!important;background:white!important;padding:0!important}#s30overlay>*:not(.s30modal){display:none!important}.s30modal{display:block!important;width:100%!important;border:0!important;box-shadow:none!important;padding:0!important}.s30modal>*:not(.s30preview){display:none!important}.s30preview{display:block!important;margin:0!important;padding:12mm!important}}
+ `;document.head.appendChild(s);
+}
+
+function playerName(c){return c.scope==="player"?(P().find(p=>String(p.id)===String(c.playerId))?.name||"Spiller"):"Holdet"}
+function cycleProgress(c){return [c.observation,c.focus,c.sessionIds.length,c.matchIds.length,c.videoRefs.length,c.evaluation,c.nextFocus].filter(x=>Array.isArray(x)?x.length:!!String(x||"").trim()).length}
+function selectOptions(arr,selected,label){
+ return arr.map(x=>`<option value="${E(x.id)}" ${selected.includes(String(x.id))?"selected":""}>${E(label(x))}</option>`).join("");
+}
+function clips(){
+ const out=[];(D().videoProjects||[]).forEach(p=>(p.clips||[]).forEach(c=>out.push({id:`${p.id}::${c.id}`,title:`${p.title||"Video"} · ${c.title||"Klip"}`})));return out;
+}
+function renderCycle(t){
+ ensure();
+ const all=D().developmentCycles;
+ const c=all.find(x=>x.id===activeCycle)||null;
+ if(!c){
+  t.innerHTML=`<div class="s30hero"><div class="s13head"><div><strong>DEVELOPMENT CYCLE</strong><div class="s13mut">Observation → fokus → træning → kamp → video → evaluering → næste fokus.</div></div><button id="s30new" class="s13btn primary">+ NYT FORLØB</button></div>
+  <div class="s30cards">${all.map(x=>`<div class="s30card"><div class="s30bar" style="justify-content:space-between"><div><div class="s13title">${E(x.title)}</div><div class="s13mut">${E(playerName(x))} · ${x.status==="done"?"AFSLUTTET":"AKTIV"} · ${cycleProgress(x)}/7 trin</div></div><button class="s13btn" data-cycle="${E(x.id)}">ÅBN</button></div><div class="s20progress" style="margin-top:10px"><span style="width:${cycleProgress(x)/7*100}%"></span></div><div class="s13mut" style="margin-top:8px">${E(x.focus||x.observation||"Tilføj observation og fokus.")}</div></div>`).join("")||`<div class="s13mut">Ingen udviklingsforløb endnu. Opret det første fra en observation.</div>`}</div></div>`;
+  t.querySelector("#s30new")?.addEventListener("click",()=>{const n={id:id("cycle"),scope:"team",playerId:"",title:"Nyt udviklingsforløb",observation:"",focus:"",sessionIds:[],matchIds:[],videoRefs:[],evaluation:"",nextFocus:"",status:"active",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};all.unshift(n);activeCycle=n.id;save();renderCycle(t)});
+  t.querySelectorAll("[data-cycle]").forEach(b=>b.onclick=()=>{activeCycle=b.dataset.cycle;renderCycle(t)});
+  return;
+ }
+ const sessions=D().sessions||[],matches=D().matches||[],cs=clips();
+ t.innerHTML=`<div class="s30hero"><div class="s13head"><div><strong>DEVELOPMENT CYCLE</strong><div class="s13mut">${E(playerName(c))} · ${cycleProgress(c)}/7 trin udfyldt</div></div><div class="s30bar"><button id="s30back" class="s13btn">← ALLE</button><button id="s30report" class="s13btn">UDVIKLINGSRAPPORT</button><button id="s30save" class="s13btn primary">GEM</button></div></div>
+ <div class="s30flow">${[["1 · OBSERVATION",c.observation],["2 · FOKUS",c.focus],["3 · TRÆNING",c.sessionIds.length?`${c.sessionIds.length} valgt`:"Ikke koblet"],["4 · KAMP",c.matchIds.length?`${c.matchIds.length} valgt`:"Ikke koblet"],["5 · VIDEO",c.videoRefs.length?`${c.videoRefs.length} klip`:"Ikke koblet"],["6 · EVALUERING",c.evaluation],["7 · NÆSTE FOKUS",c.nextFocus]].map(([a,b])=>`<div class="s30step"><b>${a}</b><span>${E(b||"Mangler")}</span></div>`).join("")}</div></div>
+ <div class="s30cards" style="margin-top:10px">
+ <div class="s30card"><div class="s30field"><label>Titel</label><input id="s30title" value="${E(c.title)}"></div><div class="s30field"><label>Forløb for</label><select id="s30scope"><option value="team" ${c.scope==="team"?"selected":""}>Holdet</option><option value="player" ${c.scope==="player"?"selected":""}>Spiller</option></select></div><div class="s30field"><label>Spiller</label><select id="s30player"><option value="">Vælg spiller</option>${P().map(p=>`<option value="${E(p.id)}" ${String(p.id)===String(c.playerId)?"selected":""}>${E(p.name)}</option>`).join("")}</select></div><div class="s30field"><label>Observation</label><textarea id="s30obs">${E(c.observation)}</textarea></div><div class="s30field"><label>Fokus</label><textarea id="s30focus">${E(c.focus)}</textarea></div></div>
+ <div class="s30card"><div class="s30field"><label>Kobl træninger (Ctrl/Cmd for flere)</label><select id="s30sessions" multiple size="5">${selectOptions(sessions,c.sessionIds.map(String),x=>`${fmt(x.date)} · ${x.title||x.theme||"Træning"}`)}</select></div><div class="s30field"><label>Kobl kampe</label><select id="s30matches" multiple size="5">${selectOptions(matches,c.matchIds.map(String),x=>`${fmt(x.date)} · ${x.opponent||x.title||"Kamp"}`)}</select></div><div class="s30field"><label>Kobl videoklip</label><select id="s30clips" multiple size="5">${cs.map(x=>`<option value="${E(x.id)}" ${c.videoRefs.includes(x.id)?"selected":""}>${E(x.title)}</option>`).join("")}</select></div></div>
+ <div class="s30card"><div class="s30field"><label>Evaluering – hvad så vi?</label><textarea id="s30eval">${E(c.evaluation)}</textarea></div><div class="s30field"><label>Næste fokus</label><textarea id="s30next">${E(c.nextFocus)}</textarea></div></div>
+ <div class="s30card"><div class="s13title">STATUS</div><div class="s13mut" style="margin-top:6px">Afslut først forløbet når evaluering og næste fokus er klar.</div><div class="s30bar" style="margin-top:12px"><button id="s30done" class="s13btn">${c.status==="done"?"GENÅBN":"MARKÉR AFSLUTTET"}</button><button id="s30delete" class="s13btn">SLET</button></div></div></div>`;
+ const sync=()=>{c.title=t.querySelector("#s30title").value.trim()||"Udviklingsforløb";c.scope=t.querySelector("#s30scope").value;c.playerId=t.querySelector("#s30player").value;c.observation=t.querySelector("#s30obs").value.trim();c.focus=t.querySelector("#s30focus").value.trim();c.sessionIds=[...t.querySelector("#s30sessions").selectedOptions].map(o=>o.value);c.matchIds=[...t.querySelector("#s30matches").selectedOptions].map(o=>o.value);c.videoRefs=[...t.querySelector("#s30clips").selectedOptions].map(o=>o.value);c.evaluation=t.querySelector("#s30eval").value.trim();c.nextFocus=t.querySelector("#s30next").value.trim();c.updatedAt=new Date().toISOString()};
+ t.querySelector("#s30back").onclick=()=>{activeCycle=null;renderCycle(t)};
+ t.querySelector("#s30save").onclick=()=>{sync();save();visNotification?.("Development Cycle gemt.");renderCycle(t)};
+ t.querySelector("#s30done").onclick=()=>{sync();c.status=c.status==="done"?"active":"done";save();renderCycle(t)};
+ t.querySelector("#s30delete").onclick=()=>{if(confirm("Slet udviklingsforløbet?")){D().developmentCycles=D().developmentCycles.filter(x=>x.id!==c.id);activeCycle=null;save();renderCycle(t)}};
+ t.querySelector("#s30report").onclick=()=>{sync();openBrief("development",c)};
+}
+
+function overlay(){let o=document.getElementById("s30overlay");if(!o){o=document.createElement("div");o.id="s30overlay";document.body.appendChild(o);o.onclick=e=>{if(e.target===o)o.classList.remove("open")}}return o}
+function nextMatch(){
+ try{if(typeof s20NextMatch==="function")return s20NextMatch()}catch{}
+ try{return typeof start11CalendarAllMatches==="function"?start11CalendarAllMatches().find(x=>String(x.date||"")>=new Date().toISOString().slice(0,10)):null}catch{return null}
+}
+function nextSession(){return [...(D().sessions||[])].filter(x=>String(x.date||"")>=new Date().toISOString().slice(0,10)).sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0]||[...(D().sessions||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0]}
+function opponent(m){try{return typeof s20Opponent==="function"?s20Opponent(m):(m?.opponent||m?.away||m?.home||"Modstander")}catch{return m?.opponent||"Modstander"}}
+function bullets(v){return String(v||"").split(/\n|•|;/).map(x=>x.trim()).filter(Boolean)}
+function selectedValues(o,names){const out={};names.forEach(n=>out[n]=o.querySelector(`[name="${n}"]`)?.checked!==false);return out}
+
+function buildPreview(type,obj,flags){
+ const M=meta(),d=D();
+ if(type==="training"){
+  const s=obj||nextSession();if(!s)return`<h1>Træningsbrief</h1><p>Ingen træning fundet.</p>`;
+  const blocks=s.blocks||[];
+  return `<h1>TRÆNINGSBRIEF</h1><div class="muted">${E(M.clubName)} · ${E(M.teamName)} · ${E(fmt(s.date))}</div><div class="box"><h2>${E(s.title||s.theme||"Træning")}</h2>${s.theme?`<b>Tema:</b> ${E(s.theme)}`:""}</div>${flags.plan?`<div class="box"><h3>PLAN</h3>${blocks.length?blocks.map(b=>`<p><b>${E(b.duration||0)} min · ${E(b.title||b.name||"Blok")}</b>${b.note||b.description?`<br>${E(b.note||b.description)}`:""}</p>`).join(""):"<p>Ingen blokke oprettet.</p>"}</div>`:""}${flags.notes&&s.note?`<div class="box"><h3>COACHING / NOTER</h3><p>${E(s.note).replace(/\n/g,"<br>")}</p></div>`:""}`;
+ }
+ if(type==="development"){
+  const c=obj;return `<h1>UDVIKLINGSRAPPORT</h1><div class="muted">${E(M.clubName)} · ${E(M.teamName)} · ${E(playerName(c))}</div><div class="box"><h2>${E(c.title)}</h2><b>Fokus:</b> ${E(c.focus||"—")}</div>${flags.observation?`<div class="box"><h3>OBSERVATION</h3><p>${E(c.observation||"—")}</p></div>`:""}${flags.evaluation?`<div class="box"><h3>EVALUERING</h3><p>${E(c.evaluation||"—")}</p></div>`:""}${flags.next?`<div class="box"><h3>NÆSTE FOKUS</h3><p>${E(c.nextFocus||"—")}</p></div>`:""}`;
+ }
+ const m=obj||nextMatch(),opp=opponent(m),lineup=m&&typeof s19MatchLineupRecord==="function"?s19MatchLineupRecord(typeof s19MatchKey==="function"?s19MatchKey(m):m.id):null;
+ const scout=(d.opponentProfiles||[]).find(x=>String(x.name||"").toLowerCase()===String(opp||"").toLowerCase());
+ const principles=(d.principles||[]).slice(0,5);
+ return `<h1>KAMPBRIEF</h1><div class="muted">${E(M.clubName)} · ${E(M.teamName)}</div><div class="box"><h2>${E(opp||"Modstander")}</h2><p>${E(fmt(m?.date))}${m?.time?` · ${E(m.time)}`:""}${m?.place||m?.venue?` · ${E(m.place||m.venue)}`:""}</p></div>${flags.principles?`<div class="box"><h3>VORES PRINCIPPER</h3>${principles.length?`<ul>${principles.map(p=>`<li><b>${E(p.title||p.name||"Princip")}</b>${p.coachingPoints?` – ${E(p.coachingPoints)}`:""}</li>`).join("")}</ul>`:"<p>Ingen principper valgt.</p>"}</div>`:""}${flags.lineup?`<div class="box"><h3>START11</h3><p>${lineup?`Formation: <b>${E(lineup.formation||"—")}</b>`:"Ingen gemt kampopstilling endnu."}</p></div>`:""}${flags.scouting&&scout?`<div class="box"><h3>MODSTANDER</h3><p>${E(scout.notes||scout.note||scout.strengths||"Scoutingprofil er oprettet.")}</p></div>`:""}`;
+}
+
+function openBrief(type="match",obj=null){
+ styles();const o=overlay();const isDev=type==="development";
+ const defs=type==="training"?[["plan","Træningsplan"],["notes","Coaching/noter"]]:isDev?[["observation","Observation"],["evaluation","Evaluering"],["next","Næste fokus"]]:[["principles","Principper"],["lineup","Startopstilling"],["scouting","Modstander/scouting"]];
+ o.innerHTML=`<div class="s30modal"><div class="s13head"><div><strong>BRIEF STUDIO</strong><div class="s13mut">Preview før eksport. Interne noter deles kun, hvis du aktivt vælger dem.</div></div><button id="s30close" class="s13btn">LUK</button></div><div class="s30bar">${defs.map(([n,l])=>`<label class="s13btn"><input type="checkbox" name="${n}" checked> ${l}</label>`).join("")}<button id="s30print" class="s13btn primary">PDF / PRINT</button></div><div id="s30preview" class="s30preview"></div></div>`;
+ o.classList.add("open");const names=defs.map(x=>x[0]),render=()=>o.querySelector("#s30preview").innerHTML=buildPreview(type,obj,selectedValues(o,names));render();
+ o.querySelectorAll('input[type="checkbox"]').forEach(x=>x.onchange=render);
+ o.querySelector("#s30close").onclick=()=>o.classList.remove("open");
+ o.querySelector("#s30print").onclick=()=>window.print();
+}
+window.start11OpenBriefStudio=openBrief;
+
+function installHub(){
+ if(typeof s13Render!=="function"||s13Render.__v30)return false;
+ const old=s13Render;
+ const wrapped=function(...a){const r=old.apply(this,a);setTimeout(()=>{
+  const tabs=document.getElementById("s13tabs");if(tabs&&!tabs.querySelector('[data-t="cycle"]')){const b=document.createElement("button");b.className=`s13tab ${s13Tab==="cycle"?"active":""}`;b.dataset.t="cycle";b.textContent="DEVELOPMENT CYCLE";b.onclick=()=>{s13Tab="cycle";s13Render()};tabs.appendChild(b)}
+  const top=document.getElementById("s13top");if(top&&!document.getElementById("s30brief")){const holder=top.lastElementChild||top;const b=document.createElement("button");b.id="s30brief";b.className="s13btn";b.textContent="DEL / EKSPORT";b.onclick=()=>openBrief("match");holder.insertBefore(b,holder.lastElementChild)}
+  if(s13Tab==="cycle"){const t=document.getElementById("s13content");if(t)renderCycle(t)}
+ },0);return r};
+ wrapped.__v30=true;s13Render=wrapped;return true;
+}
+function init(){ensure();styles();if(!installHub())setTimeout(init,500)}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,4500));else setTimeout(init,4500);
+console.info("START11 loaded:",window.START11_BUILD);
+})();
+
