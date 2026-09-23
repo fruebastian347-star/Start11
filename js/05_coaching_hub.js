@@ -62,7 +62,9 @@ function s13Nav(){
 }
 function s13Modal(){
  if(document.getElementById("s13modal"))return;
- const m=document.createElement("div");m.id="s13modal";m.className="modal";m.innerHTML=`<div class="modal-content s13shell"><div id="s13top" class="s13top"></div><div id="s13tabs" class="s13tabs"></div><div id="s13content" class="s13content"></div></div>`;document.body.appendChild(m);m.addEventListener("mousedown",e=>{if(e.target===m)s13Close()})
+ const m=document.createElement("div");m.id="s13modal";m.className="modal";m.innerHTML=`<div class="modal-content s13shell"><div id="s13top" class="s13top"></div><div id="s13tabs" class="s13tabs"></div><div id="s13content" class="s13content"></div></div>`;document.body.appendChild(m);
+ /* V27.5: Coaching Hub må kun lukkes via en eksplicit LUK-handling.
+    Klik på backdrop eller indhold lukker derfor ikke hubben. */
 }
 function s13Open(){s13Modal();s13Tab="dashboard";s13Render();document.getElementById("s13modal").style.display="flex"}
 function s13Close(){const m=document.getElementById("s13modal");if(m)m.style.display="none"}

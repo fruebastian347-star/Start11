@@ -615,55 +615,22 @@ function s21ProtectPrincipEditor(){
   const content = document.getElementById("s13content");
   if(!content || s13Tab !== "principles") return;
 
-  content.querySelectorAll("[data-p]").forEach(card=>{
-    if(card.dataset.s21Protected === "1") return;
-    card.dataset.s21Protected = "1";
-
-    [
-      "mousedown",
-      "pointerdown",
-      "click",
-      "change",
-      "input",
-      "focusin"
-    ].forEach(type=>{
-      card.addEventListener(type, e=>{
-        e.stopPropagation();
-      });
-    });
-
-    card.querySelectorAll("button").forEach(btn=>{
-      if(!btn.getAttribute("type")) btn.type = "button";
-    });
+  /* V27.5 FIX:
+     Lad alle normale events nå deres rigtige controls. Den tidligere
+     stopPropagation-beskyttelse kunne gøre editoren skrøbelig og er ikke
+     nødvendig, når Coaching Hub ikke længere lukker på backdrop-klik. */
+  content.querySelectorAll("[data-p] button").forEach(btn=>{
+    if(!btn.getAttribute("type")) btn.type = "button";
   });
 
   const add = document.getElementById("s20addpr");
   if(add && !add.getAttribute("type")) add.type = "button";
 }
 
-/* Mere robust modal-close:
-   Kun et reelt klik på selve backdrop må lukke Coaching Hub.
-   Interaktion med native select/options må aldrig gøre det. */
 function s21ProtectHubModal(){
-  const modal = document.getElementById("s13modal");
-  const shell = modal?.querySelector(".s13shell");
-  if(!modal || !shell || modal.dataset.s21ModalProtected === "1") return;
-
-  modal.dataset.s21ModalProtected = "1";
-
-  shell.addEventListener("mousedown", e=>e.stopPropagation());
-  shell.addEventListener("pointerdown", e=>e.stopPropagation());
-  shell.addEventListener("click", e=>e.stopPropagation());
-
-  /* V21.1 FIX:
-     Brug IKKE en capture-listener med stopImmediatePropagation her.
-     Den gamle løsning stoppede eventet på modal-niveau, før klik inde i
-     PRINCIPPER nåede input/select/button og fik derfor hubben til at
-     opføre sig som om interaktionen blev afbrudt.
-
-     Den oprindelige s13Modal-handler lukker allerede kun når
-     e.target === modal, så klik inde i .s13shell må bare få lov
-     til at fortsætte normalt. */
+  /* V27.5 FIX:
+     Ingen click/mousedown/pointerdown interception her.
+     Lukning styres kun af de eksplicitte LUK-handlinger i Coaching Hub. */
 }
 
 function s21HubRefresh(){
@@ -6090,3 +6057,4 @@ if(
     );
 
 }
+
