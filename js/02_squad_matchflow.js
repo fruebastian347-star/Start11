@@ -6367,12 +6367,20 @@ if (
         }
     }
 
+    /* V50.9 – one visibility rule for the old V39 entry points too.
+       V39 still owns some match-entry buttons, so it must hide the exact
+       same modern views as the V41 router. */
+    function v509ShowOnly(id){
+        ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView"]
+            .map($).filter(Boolean)
+            .forEach(v=>v.hidden=(v.id!==id));
+        const app=$("s34App");
+        if(app) app.hidden=false;
+    }
+
     function showHome(){
         retireLegacyChrome();
-        const home = $("s34HomeView");
-        const lineup = $("s34LineupView");
-        if(lineup) lineup.hidden = true;
-        if(home) home.hidden = false;
+        v509ShowOnly("s34HomeView");
         $$("[data-s34]").forEach(b=>{
             b.classList.toggle("active", b.dataset.s34 === "home");
         });
@@ -6382,14 +6390,16 @@ if (
     function showLineup(){
         retireLegacyChrome();
 
+        /* Hide Home, Players and Training BEFORE the native lineup mount.
+           This is the important part for Players/Training -> Kampe. */
+        v509ShowOnly("s34LineupView");
+
         if(typeof window.start11V36MountNativeLineup === "function"){
             window.start11V36MountNativeLineup();
         }
 
-        const home = $("s34HomeView");
-        const lineup = $("s34LineupView");
-        if(home) home.hidden = true;
-        if(lineup) lineup.hidden = false;
+        /* Some native mount code can touch visibility; enforce the route once more. */
+        v509ShowOnly("s34LineupView");
 
         try{ if(typeof tegnOpstilling === "function") tegnOpstilling(); }catch(e){}
         try{ if(typeof opdaterUdskiftere === "function") opdaterUdskiftere(); }catch(e){}
@@ -6494,7 +6504,10 @@ if (
     const $$=s=>Array.from(document.querySelectorAll(s));
 
     function allModernViews(){
-        return ["s34HomeView","s34LineupView","s34PlayersView"]
+        /* V50.7: Exercise Bank is also a top-level modern view.
+           It must be part of the central router, otherwise HOME can be shown
+           while Træning remains visible underneath it. */
+        return ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView"]
             .map($).filter(Boolean);
     }
 
@@ -6525,11 +6538,16 @@ if (
     }
 
     function showLineup(){
+        /* V50.8:
+           KAMPE previously delegated to the older V39 start11ShowLineup()
+           before V41's central showOnly() got a chance to hide Players and
+           Exercise Bank. Hide all modern views here first, then let the
+           existing match renderer do its normal work. */
+        showOnly("s34LineupView");
+
         if(typeof window.start11ShowLineup==="function" &&
            window.start11ShowLineup!==showLineup){
             window.start11ShowLineup();
-        }else{
-            showOnly("s34LineupView");
         }
         activeNav("matches");
     }
@@ -6611,6 +6629,31 @@ if (
     function bind(){
         mountRealAccountMenu();
         syncTeamSelector();
+
+        /* V50.9: the sidebar itself is routed centrally at document capture level.
+           Document capture runs before target-level V39/V41 listeners, so there is
+           no race between generations of the router anymore. */
+        if(!document.documentElement.dataset.v509MainRouter){
+            document.documentElement.dataset.v509MainRouter="1";
+            document.addEventListener("click",e=>{
+                const btn=e.target.closest?.("[data-s34]");
+                if(!btn) return;
+                const route=btn.dataset.s34;
+                if(!["home","players","matches"].includes(route)) return;
+
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                if(route==="home") return showHome();
+                if(route==="players") return showPlayers();
+                if(route==="matches") return showLineup();
+            },true);
+        }
+
+        /* V50.5: bind HOME explicitly.
+           "Tilbage til hjem" already called showHome(), but the sidebar HOME
+           button was never bound by the V41 router. */
+        $$('[data-s34="home"]').forEach(x=>capture(x,showHome));
 
         $$('[data-s34="players"]').forEach(x=>capture(x,showPlayers));
         capture($("s34OpenSquad"),showPlayers);

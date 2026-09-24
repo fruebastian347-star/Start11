@@ -231,8 +231,7 @@
 
     <main id="s34HomeView" class="s34-view s34-home-view">
       <section class="s34-hero">
-        <div class="s34-hero-copy"><span>Hjem</span><h1>God eftermiddag, <em id="s34CoachName">Christopher</em></h1><p>“Små detaljer skaber stor udvikling.”<br><small>– START11</small></p></div>
-        <div class="s34-hero-art"><div class="s34-silhouette one"></div><div class="s34-silhouette two"></div><div class="s34-silhouette three"></div><div class="s34-handwriting">Same Team<br>Higher<br>Standards</div></div>
+        <div class="s34-hero-copy"><span>Hjem</span><h1>Velkommen, <em id="s34CoachName">Bruger</em></h1></div>
       </section>
       <section class="s34-home-grid top">
         <article class="s34-panel"><h3>▣ <span>Næste kamp</span><b>→</b></h3><div class="s34-sub" id="s34MatchDate">—</div><div class="s34-versus"><div><img id="s34HomeLogo" alt=""><strong id="s34HomeTeam">—</strong></div><span>VS</span><div><img id="s34AwayLogo" alt=""><strong id="s34AwayTeam">—</strong></div></div><div class="s34-location" id="s34MatchPlace">—</div><button class="s34-primary" id="s34OpenMatch">Åbn kamp →</button></article>
@@ -257,6 +256,67 @@
         <button id="s41PlayersBack" type="button">← Tilbage til hjem</button>
       </div>
       <section id="s41PlayersHost" class="s41-native-page-host"></section>
+    </main>
+
+    <main id="s45ExerciseBankView" class="s34-view s45-bank-view" hidden>
+      <div class="s45-bank-shell">
+        <aside class="s45-bank-side">
+          <button id="s45NewExercise" class="s45-new-exercise" type="button">＋ Opret øvelse</button>
+          <nav class="s45-bank-nav">
+            <button class="active" data-s45-filter="all" type="button"><span>▦</span> Alle øvelser <b id="s45CountAll">0</b></button>
+            <button data-s45-filter="favorites" type="button"><span>♡</span> Favoritter <b id="s45CountFav">0</b></button>
+            <button data-s45-filter="mine" type="button"><span>♙</span> Mine øvelser <b id="s45CountMine">0</b></button>
+          </nav>
+
+          <div class="s45-side-title">KATEGORIER</div>
+          <div id="s45Categories" class="s45-category-list"></div>
+
+          <div class="s45-side-title">VARIGHED</div>
+          <div class="s45-duration-filter">
+            <button type="button" data-s45-duration="0-10">0–10 min</button>
+            <button type="button" data-s45-duration="11-20">11–20 min</button>
+            <button type="button" data-s45-duration="21-40">21–40 min</button>
+            <button type="button" data-s45-duration="40+">40+ min</button>
+          </div>
+
+          <div class="s45-legacy-box">
+            <strong>GAMMEL LØSNING</strong>
+            <span>Beholdt som sikkerhedsnet under overgangen.</span>
+            <button id="s45OpenOldBank" type="button">Åbn gammel øvelsesbank</button>
+            <button id="s45OpenOldPlanner" type="button">Åbn træningsplanlægning</button>
+          </div>
+        </aside>
+
+        <section class="s45-bank-main">
+          <header class="s45-bank-head">
+            <div>
+              <span>TRÆNING · ØVELSESBANK V2</span>
+              <h1>Øvelsesbank</h1>
+            </div>
+            <label class="s45-bank-search">
+              <span>⌕</span>
+              <input id="s45ExerciseSearch" type="search" placeholder="Søg øvelser, temaer eller fokus...">
+            </label>
+          </header>
+
+          <div class="s45-bank-toolbar">
+            <div id="s45ActiveFilter">Alle øvelser</div>
+            <span id="s45ResultCount">0 øvelser</span>
+          </div>
+
+          <div class="s45-bank-content">
+            <section id="s45ExerciseGrid" class="s45-exercise-grid"></section>
+
+            <aside id="s45ExerciseDetail" class="s45-detail">
+              <div class="s45-empty-detail">
+                <span>▦</span>
+                <strong>Vælg en øvelse</strong>
+                <p>Se opsætning, coachingpunkter, progression og animation.</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
     </main>
 
     <main id="s34LineupView" class="s34-view s34-lineup-view" hidden>

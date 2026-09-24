@@ -1667,3 +1667,495 @@
 })();
 
 
+
+
+/* =========================================================
+   START11 V45 – DEDICATED EXERCISE BANK V2
+   Reads the existing exercise library. Does not migrate/delete it.
+========================================================= */
+(function start11V45ExerciseBank(){
+    "use strict";
+    if(window.__START11_V45_EXERCISE_BANK__) return;
+    window.__START11_V45_EXERCISE_BANK__=true;
+
+    const $=id=>document.getElementById(id);
+    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d"};
+    const FAV_KEY="start11.v45.exerciseFavorites";
+
+    function esc(v){
+        const d=document.createElement("div"); d.textContent=v==null?"":String(v); return d.innerHTML;
+    }
+    function exercises(){
+        try{
+            if(typeof s13Data !== "undefined" && Array.isArray(s13Data?.exercises)){
+                return s13Data.exercises;
+            }
+        }catch(_){}
+        return Array.isArray(window.s13Data?.exercises) ? window.s13Data.exercises : [];
+    }
+    function favs(){
+        try{return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||"[]").map(String));}catch(_){return new Set();}
+    }
+    function saveFavs(set){ localStorage.setItem(FAV_KEY,JSON.stringify([...set])); }
+    function norm(v){return String(v||"").trim().toLocaleLowerCase("da-DK");}
+    function category(ex){return String(ex.theme||ex.focus||"Andet").trim()||"Andet";}
+    function durationMatch(ex){
+        if(!state.duration)return true;
+        const n=Number(ex.duration||0);
+        return state.duration==="0-10"?n<=10:
+               state.duration==="11-20"?n>=11&&n<=20:
+               state.duration==="21-40"?n>=21&&n<=40:n>40;
+    }
+    function visibleExercises(){
+        const f=favs(), q=norm(state.search);
+        return exercises().filter(ex=>{
+            if(state.filter==="favorites"&&!f.has(String(ex.id)))return false;
+            if(state.category&&category(ex)!==state.category)return false;
+            if(!durationMatch(ex))return false;
+            if(q){
+                const hay=norm([ex.title,ex.theme,ex.coaching,ex.progression,ex.regression,ex.players].join(" "));
+                if(!hay.includes(q))return false;
+            }
+            return true;
+        });
+    }
+    function svgFor(ex){
+        try{
+            const frame=ex?.diagram?.frames?.[0];
+            if(frame&&typeof s19PitchSvg==="function")return s19PitchSvg(ex.diagram.pitch||"plain",frame,0);
+        }catch(_){}
+        return '<div class="s45-card-fallback">⚽</div>';
+    }
+    function showOnlyBank(){
+        ["s34HomeView","s34PlayersView","s34LineupView","s45ExerciseBankView"].forEach(id=>{
+            const el=$(id); if(el) el.hidden=id!=="s45ExerciseBankView";
+        });
+        $("s34App")?.removeAttribute("hidden");
+        document.body.classList.add("s34-active","s39-modern-only");
+        document.querySelectorAll(".s34-nav [data-s34]").forEach(b=>b.classList.toggle("active",b.dataset.s34==="training"));
+        render();
+        window.scrollTo({top:0,behavior:"smooth"});
+    }
+    function openLegacy(tab){
+        if(typeof s13Open!=="function")return;
+        s13Open();
+        try{s13Tab=tab;s13Render();}catch(_){}
+    }
+    function editorExercise(id){
+        return exercises().find(x=>String(x.id)===String(id)) || null;
+    }
+
+    function closeEditor(){
+        document.getElementById("s46ExerciseEditor")?.remove();
+    }
+
+    function openV2Editor(id=""){
+        closeEditor();
+
+        const existing=editorExercise(id);
+        const clone=value=>{
+            try{return structuredClone(value);}catch(_){return JSON.parse(JSON.stringify(value));}
+        };
+        const draft=existing ? clone(existing) : {
+            id:"",
+            title:"",
+            theme:"",
+            duration:15,
+            players:"",
+            coaching:"",
+            progression:"",
+            regression:"",
+            diagram:(typeof s19DefaultDiagram==="function" ? s19DefaultDiagram() : null)
+        };
+
+        if(!draft.diagram && typeof s19DefaultDiagram==="function"){
+            draft.diagram=s19DefaultDiagram();
+        }
+        if(draft.diagram && typeof s19NormalizeDiagram==="function"){
+            draft.diagram=s19NormalizeDiagram(draft.diagram);
+        }
+
+        const overlay=document.createElement("div");
+        overlay.id="s46ExerciseEditor";
+        overlay.className="s46-editor-overlay s48-visual-editor-overlay";
+        overlay.innerHTML=`
+          <section class="s46-editor s48-visual-editor">
+            <header class="s46-editor-head s48-editor-head">
+              <div>
+                <span>TRÆNING · VISUAL EXERCISE DESIGNER</span>
+                <h2>${existing?"Rediger øvelse":"Opret ny øvelse"}</h2>
+                <p>Tegn øvelsen direkte på banen. Alt gemmes i samme øvelsesformat som din gamle bank.</p>
+              </div>
+              <button id="s46CloseEditor" type="button">×</button>
+            </header>
+
+            <div class="s48-editor-body">
+              <main class="s48-canvas-column">
+                <div id="s19DiagramHost" class="s48-diagram-host"></div>
+              </main>
+
+              <aside class="s48-meta-panel">
+                <div class="s48-panel-kicker">ØVELSE</div>
+                <label>Øvelsens navn
+                  <input id="s46Title" value="${esc(draft.title||"")}" placeholder="Fx 1v1 fejlvendt">
+                </label>
+
+                <div class="s48-two">
+                  <label>Tema
+                    <input id="s46Theme" value="${esc(draft.theme||"")}" placeholder="Fx 1v1">
+                  </label>
+                  <label>Varighed
+                    <div class="s46-input-unit"><input id="s46Duration" type="number" min="1" max="180" value="${Number(draft.duration||15)}"><span>min</span></div>
+                  </label>
+                </div>
+
+                <label>Antal spillere
+                  <input id="s46Players" value="${esc(draft.players||"")}" placeholder="Fx 8–12">
+                </label>
+
+                <div class="s48-panel-kicker">COACHING</div>
+                <label>Coachingpunkter
+                  <textarea id="s46Coaching" placeholder="Hvad skal træneren coache på?">${esc(draft.coaching||"")}</textarea>
+                </label>
+                <label>Progression
+                  <textarea id="s46Progression" placeholder="Hvordan gør du øvelsen sværere?">${esc(draft.progression||"")}</textarea>
+                </label>
+                <label>Regression
+                  <textarea id="s46Regression" placeholder="Hvordan gør du øvelsen lettere?">${esc(draft.regression||"")}</textarea>
+                </label>
+              </aside>
+            </div>
+
+            <footer class="s46-editor-foot s48-editor-foot">
+              <div class="s48-save-note">Ændringer på banen gemmes først permanent, når du trykker Gem.</div>
+              <div>
+                <button id="s46CancelEditor" type="button">Annuller</button>
+                <button id="s46SaveExercise" class="primary" type="button">${existing?"Gem ændringer":"Opret øvelse"}</button>
+              </div>
+            </footer>
+          </section>`;
+
+        document.body.appendChild(overlay);
+
+        const close=()=>closeEditor();
+        $("s46CloseEditor").onclick=close;
+        $("s46CancelEditor").onclick=close;
+
+        /* Reuse the complete existing START11 visual designer engine. */
+        try{
+            if(typeof s19RenderDiagramBoard==="function"){
+                s19RenderDiagramBoard(draft);
+            }else{
+                $("s19DiagramHost").innerHTML='<div class="s48-designer-error">Den visuelle designer kunne ikke indlæses.</div>';
+            }
+        }catch(error){
+            console.error("START11 V48 visual designer:",error);
+            $("s19DiagramHost").innerHTML='<div class="s48-designer-error">Der opstod en fejl ved indlæsning af banedesigneren.</div>';
+        }
+
+        $("s46SaveExercise").onclick=()=>{
+            draft.title=$("s46Title").value.trim() || "Ny øvelse";
+            draft.theme=$("s46Theme").value.trim();
+            draft.duration=Math.max(1,Number($("s46Duration").value||15));
+            draft.players=$("s46Players").value.trim();
+            draft.coaching=$("s46Coaching").value.trim();
+            draft.progression=$("s46Progression").value.trim();
+            draft.regression=$("s46Regression").value.trim();
+            draft.id=existing?.id || draft.id || (typeof s13Id==="function"?s13Id("ex"):`ex_${Date.now()}`);
+
+            const value=clone(draft);
+            const index=exercises().findIndex(x=>String(x.id)===String(value.id));
+            if(index<0) exercises().push(value);
+            else exercises()[index]=value;
+
+            try{ if(typeof s13Save==="function") s13Save(); }catch(_){}
+            state.selected=String(value.id);
+            closeEditor();
+            render();
+        };
+
+        setTimeout(()=>$("s46Title")?.focus(),30);
+    }
+    function editExercise(id){ openV2Editor(id); }
+    function newExercise(){ openV2Editor(""); }
+    function categories(){
+        const map=new Map();
+        exercises().forEach(ex=>map.set(category(ex),(map.get(category(ex))||0)+1));
+        return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0],"da"));
+    }
+    function renderSide(){
+        $("s45CountAll")&&( $("s45CountAll").textContent=exercises().length );
+        $("s45CountMine")&&( $("s45CountMine").textContent=exercises().length );
+        $("s45CountFav")&&( $("s45CountFav").textContent=favs().size );
+        document.querySelectorAll("[data-s45-filter]").forEach(b=>b.classList.toggle("active",b.dataset.s45Filter===state.filter));
+        const host=$("s45Categories");
+        if(host)host.innerHTML=categories().map(([name,count])=>`
+            <button type="button" class="${state.category===name?"active":""}" data-s45-category="${esc(name)}">
+                <span>◉</span><span>${esc(name)}</span><b>${count}</b>
+            </button>`).join("") || '<div style="padding:8px;color:#68756c;font-size:8px">Ingen kategorier endnu.</div>';
+        host?.querySelectorAll("[data-s45-category]").forEach(b=>b.onclick=()=>{
+            state.category=state.category===b.dataset.s45Category?"":b.dataset.s45Category; render();
+        });
+        document.querySelectorAll("[data-s45-duration]").forEach(b=>b.classList.toggle("active",b.dataset.s45Duration===state.duration));
+    }
+    function renderGrid(){
+        const list=visibleExercises(), host=$("s45ExerciseGrid"), f=favs();
+        if($("s45ResultCount"))$("s45ResultCount").textContent=`${list.length} øvelse${list.length===1?"":"r"}`;
+        if($("s45ActiveFilter"))$("s45ActiveFilter").textContent=state.category||({all:"Alle øvelser",favorites:"Favoritter",mine:"Mine øvelser"}[state.filter]);
+        if(!host)return;
+        host.innerHTML=list.length?list.map(ex=>`
+          <article class="s45-card ${String(ex.id)===String(state.selected)?"active":""}" data-s45-exercise="${esc(ex.id)}">
+            <div class="s45-card-thumb">${svgFor(ex)}</div>
+            <div class="s45-card-body">
+              <div class="s45-card-title"><strong>${esc(ex.title||"Øvelse")}</strong><button class="s45-fav ${f.has(String(ex.id))?"on":""}" data-s45-fav="${esc(ex.id)}" type="button">${f.has(String(ex.id))?"♥":"♡"}</button></div>
+              <div class="s45-tags"><span class="s45-tag">${esc(category(ex))}</span>${ex.players?`<span class="s45-tag">${esc(ex.players)} spillere</span>`:""}</div>
+              <div class="s45-card-meta"><span>◷ ${Number(ex.duration||0)} min</span><span>${ex.diagram?.frames?.length||1} trin</span></div>
+            </div>
+          </article>`).join(""):'<div class="s45-no-results">Ingen øvelser matcher filtrene.</div>';
+        host.querySelectorAll("[data-s45-exercise]").forEach(card=>card.onclick=e=>{
+            if(e.target.closest("[data-s45-fav]"))return;
+            state.selected=card.dataset.s45Exercise; state.view="2d"; render();
+        });
+        host.querySelectorAll("[data-s45-fav]").forEach(btn=>btn.onclick=e=>{
+            e.stopPropagation();const set=favs(),id=String(btn.dataset.s45Fav);
+            set.has(id)?set.delete(id):set.add(id);saveFavs(set);render();
+        });
+    }
+
+    /* =========================================================
+       START11 V49 – REAL WEBGL EXERCISE VIEW
+       Same diagram.frames data, rendered as actual 3D geometry.
+    ========================================================= */
+    let s49ThreeRuntime=null;
+
+    function s49DisposeThree(){
+        const r=s49ThreeRuntime;
+        if(!r)return;
+        try{ cancelAnimationFrame(r.raf); }catch(_){}
+        try{ r.resize?.disconnect?.(); }catch(_){}
+        try{
+            r.scene?.traverse?.(o=>{
+                o.geometry?.dispose?.();
+                if(Array.isArray(o.material))o.material.forEach(m=>m?.dispose?.());
+                else o.material?.dispose?.();
+                o.material?.map?.dispose?.();
+            });
+            r.renderer?.dispose?.();
+        }catch(_){}
+        s49ThreeRuntime=null;
+    }
+
+    function s49InjectStyles(){
+        if(document.getElementById("s49ThreeStyles"))return;
+        const st=document.createElement("style");
+        st.id="s49ThreeStyles";
+        st.textContent=`
+          .s45-stage.s49-real3d{background:#020805!important;overflow:hidden!important}
+          .s45-stage.s49-real3d .s45-stage-inner{width:100%;height:100%;transform:none!important;perspective:none!important}
+          .s49-three-stage{position:relative;width:100%;height:100%;min-height:285px;background:linear-gradient(#06130a,#020704);overflow:hidden}
+          .s49-three-stage canvas{display:block;width:100%!important;height:100%!important;cursor:grab}
+          .s49-three-stage canvas:active{cursor:grabbing}
+          .s49-three-loading{position:absolute;inset:0;display:grid;place-items:center;color:#7f9184;font-size:8px;letter-spacing:.5px}
+          .s49-camera-bar{display:flex;align-items:center;gap:5px;padding:7px 8px;border:1px solid rgba(255,255,255,.07);border-top:0;background:#050d07}
+          .s49-camera-bar span{margin-right:3px;color:#70ff52;font-size:6px;font-weight:950;letter-spacing:1px}
+          .s49-camera-bar button{height:25px;padding:0 8px;border:1px solid rgba(255,255,255,.1);border-radius:4px;background:#09120b;color:#c9d2cb;font:inherit;font-size:6px;font-weight:900;cursor:pointer}
+          .s49-camera-bar button:hover{border-color:#70ff52;color:#70ff52}
+          .s49-camera-bar small{margin-left:auto;color:#657168;font-size:6px}
+        `;
+        document.head.appendChild(st);
+    }
+
+    function s49Color(type){
+        return type==="player-red"?0xef4d4d:
+               type==="player-yellow"?0xf5ce3e:
+               type==="player-green"?0x58c96d:0x2f7cf6;
+    }
+    function s49XZ(x,y){return {x:(Number(x??.5)-.5)*105,z:(Number(y??.5)-.5)*68};}
+
+    function s49Mat(color,rough=.72,metal=.02){
+        return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
+    }
+    function s49Shadow(mesh){
+        mesh.castShadow=true; mesh.receiveShadow=true; return mesh;
+    }
+    function s49GroupAt(x,y){
+        const p=s49XZ(x,y),g=new THREE.Group();g.position.set(p.x,0,p.z);return g;
+    }
+    function s49AddPlayer(scene,e){
+        const g=s49GroupAt(e.x,e.y), c=s49Color(e.type), kit=s49Mat(c,.62,.03), skin=s49Mat(0xd6a077,.82,0), dark=s49Mat(0x101713,.8,0);
+        const torso=s49Shadow(new THREE.Mesh(new THREE.CapsuleGeometry(.62,1.05,5,10),kit)); torso.scale.set(1.05,1,.68);torso.position.y=2.55;g.add(torso);
+        const head=s49Shadow(new THREE.Mesh(new THREE.SphereGeometry(.48,18,14),skin));head.position.y=3.75;g.add(head);
+        [-.33,.33].forEach(x=>{
+            const leg=s49Shadow(new THREE.Mesh(new THREE.CapsuleGeometry(.15,.82,4,8),dark));leg.position.set(x,1.05,0);g.add(leg);
+            const sock=s49Shadow(new THREE.Mesh(new THREE.CapsuleGeometry(.12,.42,4,8),kit));sock.position.set(x,.35,0);g.add(sock);
+        });
+        [-.8,.8].forEach(x=>{const arm=s49Shadow(new THREE.Mesh(new THREE.CapsuleGeometry(.12,.72,4,8),skin));arm.position.set(x,2.45,0);arm.rotation.z=x>0?-.18:.18;g.add(arm);});
+        const ring=new THREE.Mesh(new THREE.RingGeometry(.72,.82,32),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.035;g.add(ring);
+        scene.add(g);
+    }
+    function s49AddCone(scene,e){
+        const g=s49GroupAt(e.x,e.y),m=s49Shadow(new THREE.Mesh(new THREE.ConeGeometry(.34,.72,18),s49Mat(0xff8a19,.7,0)));m.position.y=.36;g.add(m);scene.add(g);
+    }
+    function s49AddBall(scene,e){
+        const g=s49GroupAt(e.x,e.y),m=s49Shadow(new THREE.Mesh(new THREE.SphereGeometry(.28,20,16),s49Mat(0xf4f4ec,.58,.02)));m.position.y=.3;g.add(m);scene.add(g);
+    }
+    function s49AddMannequin(scene,e){
+        const g=s49GroupAt(e.x,e.y),mat=s49Mat(0xffc629,.65,.02);
+        const body=s49Shadow(new THREE.Mesh(new THREE.BoxGeometry(.7,2.1,.18),mat));body.position.y=1.55;g.add(body);
+        const head=s49Shadow(new THREE.Mesh(new THREE.SphereGeometry(.36,16,12),mat));head.position.y=2.95;g.add(head);
+        const pole=s49Shadow(new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,1.0,10),s49Mat(0x242b26)));pole.position.y=.5;g.add(pole);scene.add(g);
+    }
+    function s49Goal(scene,e,mini=false){
+        const g=s49GroupAt(e.x,e.y),w=mini?2.6:5.8,h=mini?1.25:2.35,d=mini?1.1:2.0,white=s49Mat(0xf4f7f2,.42,.15);
+        const cyl=(len,r=.07)=>s49Shadow(new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,10),white));
+        const l=cyl(h);l.position.set(-w/2,h/2,0);g.add(l);const r=cyl(h);r.position.set(w/2,h/2,0);g.add(r);
+        const bar=cyl(w);bar.rotation.z=Math.PI/2;bar.position.set(0,h,0);g.add(bar);
+        const net=new THREE.LineBasicMaterial({color:0xc8d4cb,transparent:true,opacity:.28});
+        for(let i=0;i<=6;i++){const x=-w/2+w*i/6;const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,0,0),new THREE.Vector3(x,0,d),new THREE.Vector3(x,h,d),new THREE.Vector3(x,h,0)]);g.add(new THREE.Line(geo,net));}
+        scene.add(g);
+    }
+    function s49Arrow(scene,a){
+        const p1=s49XZ(a.x1,a.y1),p2=s49XZ(a.x2,a.y2),start=new THREE.Vector3(p1.x,.14,p1.z),end=new THREE.Vector3(p2.x,.14,p2.z),dir=end.clone().sub(start),len=dir.length();
+        if(len<.05)return;dir.normalize();
+        const col=new THREE.Color(a.color||"#ffffff");
+        const ar=new THREE.ArrowHelper(dir,start,Math.max(.1,len),col.getHex(),Math.min(1.7,len*.18),.65);scene.add(ar);
+    }
+    function s49Zone(scene,z){
+        const a=s49XZ(z.x1,z.y1),b=s49XZ(z.x2,z.y2),w=Math.abs(b.x-a.x),d=Math.abs(b.z-a.z);
+        const mat=new THREE.MeshStandardMaterial({color:new THREE.Color(z.color||"#70ff52"),transparent:true,opacity:.20,roughness:.85,side:THREE.DoubleSide,depthWrite:false});
+        const m=new THREE.Mesh(new THREE.PlaneGeometry(Math.max(.1,w),Math.max(.1,d)),mat);m.rotation.x=-Math.PI/2;m.position.set((a.x+b.x)/2,.055,(a.z+b.z)/2);scene.add(m);
+    }
+    function s49Pitch(scene,pitch){
+        const outer=s49Shadow(new THREE.Mesh(new THREE.PlaneGeometry(145,100),s49Mat(0x07170c,.96,0)));outer.rotation.x=-Math.PI/2;outer.position.y=-.025;scene.add(outer);
+        const grass=s49Shadow(new THREE.Mesh(new THREE.PlaneGeometry(105,68),s49Mat(0x176d35,.94,0)));grass.rotation.x=-Math.PI/2;scene.add(grass);
+        for(let i=0;i<10;i++){const stripe=new THREE.Mesh(new THREE.PlaneGeometry(10.5,68),new THREE.MeshBasicMaterial({color:i%2?0x1c753a:0x176b34,transparent:true,opacity:.48}));stripe.rotation.x=-Math.PI/2;stripe.position.set(-47.25+i*10.5,.012,0);scene.add(stripe);}
+        if(pitch==="plain")return;
+        const lineMat=new THREE.MeshBasicMaterial({color:0xe8f1e9,transparent:true,opacity:.88});
+        const line=(w,d,x,z)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),lineMat);m.rotation.x=-Math.PI/2;m.position.set(x,.025,z);scene.add(m);};
+        line(105,.12,0,-34);line(105,.12,0,34);line(.12,68,-52.5,0);line(.12,68,52.5,0);line(.12,68,0,0);
+        const circle=new THREE.Mesh(new THREE.RingGeometry(9.15,9.27,64),lineMat);circle.rotation.x=-Math.PI/2;circle.position.y=.026;scene.add(circle);
+        // penalty boxes
+        [-1,1].forEach(s=>{const x=s*44.25;line(16.5,.12,x,-20.16);line(16.5,.12,x,20.16);line(.12,40.32,s*36,0);});
+    }
+
+    function s49RenderThreeExercise(ex){
+        s49DisposeThree(); s49InjectStyles();
+        const host=document.getElementById("s49ThreeStage"); if(!host)return;
+        if(!window.THREE){host.innerHTML='<div class="s49-three-loading">Three.js kunne ikke indlæses. Kontrollér internetforbindelsen.</div>';return;}
+        host.innerHTML="";
+        const scene=new THREE.Scene();scene.background=new THREE.Color(0x020805);scene.fog=new THREE.Fog(0x020805,85,170);
+        const camera=new THREE.PerspectiveCamera(42,1,.1,400);
+        const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+        renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
+        host.appendChild(renderer.domElement);
+        scene.add(new THREE.HemisphereLight(0xcce9d1,0x071008,1.45));
+        const sun=new THREE.DirectionalLight(0xffffff,2.15);sun.position.set(-35,58,24);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-70;sun.shadow.camera.right=70;sun.shadow.camera.top=55;sun.shadow.camera.bottom=-55;scene.add(sun);
+        const frame=ex?.diagram?.frames?.[Math.max(0,Math.min(Number(ex?.diagram?.activeFrame||0),(ex?.diagram?.frames?.length||1)-1))]||{};
+        s49Pitch(scene,ex?.diagram?.pitch||"plain");
+        (frame.zones||[]).forEach(z=>s49Zone(scene,z));
+        (frame.arrows||[]).forEach(a=>s49Arrow(scene,a));
+        (frame.elements||[]).forEach(e=>{
+            if(String(e.type).startsWith("player-"))s49AddPlayer(scene,e);
+            else if(e.type==="cone")s49AddCone(scene,e);
+            else if(e.type==="ball")s49AddBall(scene,e);
+            else if(e.type==="mannequin")s49AddMannequin(scene,e);
+            else if(e.type==="goal")s49Goal(scene,e,false);
+            else if(e.type==="minigoal")s49Goal(scene,e,true);
+        });
+
+        const target=new THREE.Vector3(0,0,0);
+        let radius=94,theta=0,phi=.92;
+        function setCamera(mode){
+            if(mode==="top"){radius=92;theta=0;phi=.06;}
+            else if(mode==="sideline"){radius=92;theta=Math.PI/2;phi=1.02;}
+            else if(mode==="goal"){radius=100;theta=0;phi=1.05;}
+            else {radius=88;theta=-.58;phi=.86;}
+            updateCamera();
+        }
+        function updateCamera(){
+            phi=Math.max(.06,Math.min(1.42,phi));radius=Math.max(38,Math.min(155,radius));
+            camera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta),target.y+radius*Math.cos(phi),target.z+radius*Math.sin(phi)*Math.cos(theta));
+            camera.lookAt(target);
+        }
+        setCamera("tactical");
+
+        let dragging=false,lastX=0,lastY=0;
+        const canvas=renderer.domElement;
+        canvas.addEventListener("pointerdown",e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture?.(e.pointerId);});
+        canvas.addEventListener("pointerup",()=>dragging=false);
+        canvas.addEventListener("pointercancel",()=>dragging=false);
+        canvas.addEventListener("pointermove",e=>{if(!dragging)return;theta-=(e.clientX-lastX)*.008;phi-=(e.clientY-lastY)*.006;lastX=e.clientX;lastY=e.clientY;updateCamera();});
+        canvas.addEventListener("wheel",e=>{e.preventDefault();radius*=e.deltaY>0?1.08:.92;updateCamera();},{passive:false});
+        document.querySelectorAll("[data-s49-camera]").forEach(b=>b.onclick=()=>setCamera(b.dataset.s49Camera));
+
+        function resize(){
+            const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+        }
+        const ro=new ResizeObserver(resize);ro.observe(host);resize();
+        const runtime={scene,camera,renderer,resize:ro,raf:0};s49ThreeRuntime=runtime;
+        const tick=()=>{if(s49ThreeRuntime!==runtime)return;renderer.render(scene,camera);runtime.raf=requestAnimationFrame(tick);};tick();
+    }
+
+    function renderDetail(){
+        s49DisposeThree();
+        const host=$("s45ExerciseDetail"); if(!host)return;
+        const ex=exercises().find(x=>String(x.id)===String(state.selected));
+        if(!ex){host.innerHTML='<div class="s45-empty-detail"><span>▦</span><strong>Vælg en øvelse</strong><p>Se opsætning, coachingpunkter, progression og animation.</p></div>';return;}
+        host.innerHTML=`
+          <div class="s45-detail-head">
+            <small>${esc(category(ex).toUpperCase())}</small>
+            <h2>${esc(ex.title||"Øvelse")}</h2>
+            <div class="s45-detail-actions">
+              <button class="primary" id="s45EditSelected" type="button">Rediger øvelse</button>
+              <button id="s45AnimateSelected" type="button">▶ Animation</button>
+            </div>
+          </div>
+          <div class="s45-stage ${state.view==="3d"?"s49-real3d":""}"><div class="s45-stage-inner">${state.view==="3d"?`<div id="s49ThreeStage" class="s49-three-stage"><div class="s49-three-loading">Indlæser 3D…</div></div>`:svgFor(ex)}</div></div>
+          <div class="s45-view-toggle"><button class="${state.view==="2d"?"active":""}" data-view="2d">▦ 2D</button><button class="${state.view==="3d"?"active":""}" data-view="3d">◇ 3D</button></div>
+          ${state.view==="3d"?`<div class="s49-camera-bar"><span>KAMERA</span><button data-s49-camera="tactical">Taktisk</button><button data-s49-camera="top">Top</button><button data-s49-camera="sideline">Sidelinje</button><button data-s49-camera="goal">Bag mål</button><small>Træk for at rotere · scroll for zoom</small></div>`:""}
+          <div class="s45-detail-tabs"><button class="active">Beskrivelse</button><button>Variationer</button><button>Fokus</button></div>
+          <div class="s45-detail-copy">
+            <h4>Coachingpunkter</h4><p>${esc(ex.coaching||"Ingen coachingpunkter tilføjet endnu.")}</p>
+            <h4>Progression</h4><p>${esc(ex.progression||"Ingen progression tilføjet endnu.")}</p>
+            <h4>Regression</h4><p>${esc(ex.regression||"Ingen regression tilføjet endnu.")}</p>
+            <div class="s45-detail-stats"><div><span>Varighed</span><b>${Number(ex.duration||0)} min</b></div><div><span>Spillere</span><b>${esc(ex.players||"—")}</b></div><div><span>Trin</span><b>${ex.diagram?.frames?.length||1}</b></div></div>
+          </div>`;
+        $("s45EditSelected").onclick=()=>editExercise(ex.id);
+        $("s45AnimateSelected").onclick=()=>{
+            if(typeof window.s24OpenAnimation==="function"&&ex.diagram?.frames?.length)window.s24OpenAnimation(ex);
+            else editExercise(ex.id);
+        };
+        host.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{state.view=b.dataset.view;renderDetail();});
+        if(state.view==="3d") setTimeout(()=>s49RenderThreeExercise(ex),0);
+    }
+    function render(){renderSide();renderGrid();renderDetail();}
+    function bind(){
+        /* V50.6:
+           Exercise Bank is its own modern view. When another sidebar route is
+           chosen, hide it immediately before that route's own handler runs.
+           This prevents Træning from remaining visible underneath Home/Players. */
+        document.querySelectorAll('[data-s34]').forEach(btn=>{
+            if(btn.dataset.s34==="training" || btn.dataset.s45LeaveBound) return;
+            btn.dataset.s45LeaveBound="1";
+            btn.addEventListener("click",()=>{
+                const bank=$("s45ExerciseBankView");
+                if(bank) bank.hidden=true;
+            },true);
+        });
+
+        document.querySelectorAll('[data-s34="training"]').forEach(btn=>{
+            if(btn.dataset.s45Bound)return;btn.dataset.s45Bound="1";
+            btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnlyBank();},true);
+        });
+        $("s45NewExercise")?.addEventListener("click",newExercise);
+        $("s45OpenOldBank")?.addEventListener("click",()=>openLegacy("exercises"));
+        $("s45OpenOldPlanner")?.addEventListener("click",()=>openLegacy("training"));
+        $("s45ExerciseSearch")?.addEventListener("input",e=>{state.search=e.target.value;render();});
+        document.querySelectorAll("[data-s45-filter]").forEach(b=>b.onclick=()=>{state.filter=b.dataset.s45Filter;state.category="";render();});
+        document.querySelectorAll("[data-s45-duration]").forEach(b=>b.onclick=()=>{state.duration=state.duration===b.dataset.s45Duration?"":b.dataset.s45Duration;render();});
+        window.start11ShowExerciseBank=showOnlyBank;
+    }
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,250),{once:true});
+    else setTimeout(bind,250);
+})();

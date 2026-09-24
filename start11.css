@@ -6705,3 +6705,414 @@ body.s34-active .s35-native-center #pitch .player-name{
     font-size:9.5px!important;
     line-height:11px!important;
 }
+
+
+/* =========================================================
+   START11 V45 – DEDICATED EXERCISE BANK V2
+========================================================= */
+.s45-bank-view{padding:0!important;min-height:calc(100vh - 54px);background:#020a05}
+.s45-bank-shell{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:calc(100vh - 54px)}
+.s45-bank-side{padding:16px 12px;border-right:1px solid rgba(118,255,80,.14);background:linear-gradient(180deg,#06110a,#030805);overflow:auto}
+.s45-new-exercise{width:100%;height:42px;border:0;border-radius:7px;background:linear-gradient(135deg,#91ff65,#52df68);color:#041008;font-weight:900;font-size:11px;cursor:pointer;box-shadow:0 8px 25px rgba(94,255,101,.12)}
+.s45-bank-nav{display:grid;gap:3px;margin:14px 0 18px}
+.s45-bank-nav button,.s45-category-list button,.s45-duration-filter button{width:100%;min-height:34px;display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:5px;padding:0 8px;border:1px solid transparent;border-radius:5px;background:transparent;color:#9eaaa2;text-align:left;font:inherit;font-size:9px;cursor:pointer}
+.s45-bank-nav button:hover,.s45-category-list button:hover,.s45-duration-filter button:hover{background:rgba(255,255,255,.035);color:#fff}
+.s45-bank-nav button.active,.s45-category-list button.active,.s45-duration-filter button.active{border-color:rgba(112,255,82,.18);background:rgba(112,255,82,.09);color:#8dff67}
+.s45-bank-nav b,.s45-category-list b{font-size:8px;color:#6f7d73}
+.s45-side-title{margin:16px 7px 6px;color:#72e95d;font-size:7px;font-weight:900;letter-spacing:1.2px}
+.s45-category-list{display:grid;gap:2px}
+.s45-duration-filter{display:grid;gap:2px}
+.s45-duration-filter button{grid-template-columns:18px 1fr}
+.s45-duration-filter button:before{content:"";width:10px;height:10px;border:1px solid #536158;border-radius:2px}
+.s45-duration-filter button.active:before{background:#76f65d;border-color:#76f65d;box-shadow:inset 0 0 0 2px #071009}
+.s45-legacy-box{margin-top:20px;padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:#071009}
+.s45-legacy-box strong{display:block;color:#7c8a80;font-size:7px;letter-spacing:.8px}
+.s45-legacy-box span{display:block;margin:5px 0 9px;color:#66736a;font-size:7px;line-height:1.45}
+.s45-legacy-box button{width:100%;min-height:30px;margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:5px;background:#0b160d;color:#aeb9b1;font:inherit;font-size:7px;font-weight:800;cursor:pointer}
+.s45-legacy-box button:hover{border-color:rgba(112,255,82,.3);color:#fff}
+.s45-bank-main{min-width:0;padding:17px 18px 24px}
+.s45-bank-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:0 2px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.s45-bank-head>div>span{color:#72ee5b;font-size:7px;font-weight:900;letter-spacing:1.2px}
+.s45-bank-head h1{margin:4px 0 0;font-size:26px;letter-spacing:-.7px}
+.s45-bank-search{width:min(430px,45vw);height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid rgba(255,255,255,.11);border-radius:7px;background:#061009;color:#708077}
+.s45-bank-search input{width:100%;border:0;outline:0;background:transparent;color:#fff;font:inherit;font-size:9px}
+.s45-bank-toolbar{height:42px;display:flex;align-items:center;justify-content:space-between;color:#7e8b82;font-size:8px}
+#s45ActiveFilter{color:#d8e1da;font-weight:900}
+.s45-bank-content{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;align-items:start}
+.s45-exercise-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.s45-card{position:relative;min-width:0;overflow:hidden;border:1px solid rgba(255,255,255,.075);border-radius:8px;background:#071009;cursor:pointer;transition:.16s ease}
+.s45-card:hover,.s45-card.active{transform:translateY(-1px);border-color:rgba(115,255,80,.35);box-shadow:0 10px 28px rgba(0,0,0,.25)}
+.s45-card.active{box-shadow:inset 0 0 0 1px rgba(115,255,80,.15),0 10px 28px rgba(0,0,0,.25)}
+.s45-card-thumb{height:145px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#155f31,#0b3f21)}
+.s45-card-thumb svg{width:100%;height:100%;display:block}
+.s45-card-fallback{font-size:34px;opacity:.28}
+.s45-card-body{padding:10px 11px 11px}
+.s45-card-title{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.s45-card-title strong{min-width:0;color:#f2f5f3;font-size:11px;line-height:1.25}
+.s45-fav{width:25px;height:25px;flex:0 0 25px;border:0;border-radius:50%;background:#0c170e;color:#718078;cursor:pointer}
+.s45-fav.on{color:#ff5362}
+.s45-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.s45-tag{padding:3px 6px;border-radius:999px;background:#102419;color:#9eb0a2;font-size:6.5px;font-weight:800}
+.s45-card-meta{display:flex;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.055);color:#718077;font-size:7px}
+.s45-no-results{grid-column:1/-1;padding:50px 20px;border:1px dashed rgba(255,255,255,.1);border-radius:8px;color:#758179;text-align:center;font-size:9px}
+.s45-detail{position:sticky;top:12px;min-height:560px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:#061009;overflow:hidden}
+.s45-empty-detail{min-height:560px;display:grid;place-content:center;text-align:center;padding:30px;color:#748078}
+.s45-empty-detail>span{font-size:28px;color:#4e6253}.s45-empty-detail strong{margin-top:9px;color:#cdd6cf;font-size:11px}.s45-empty-detail p{max-width:220px;font-size:8px;line-height:1.5}
+.s45-detail-head{padding:14px 14px 11px;border-bottom:1px solid rgba(255,255,255,.065)}
+.s45-detail-head small{color:#70f05b;font-size:7px;font-weight:900;letter-spacing:.8px}
+.s45-detail-head h2{margin:5px 0 8px;font-size:18px;line-height:1.15}
+.s45-detail-actions{display:flex;gap:6px}.s45-detail-actions button{height:30px;padding:0 9px;border:1px solid rgba(255,255,255,.1);border-radius:5px;background:#0b160d;color:#c9d2cb;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s45-detail-actions button.primary{background:#73ee60;color:#061008;border-color:#73ee60}
+.s45-stage{position:relative;margin:12px;aspect-ratio:16/10;border:1px solid rgba(113,255,82,.18);border-radius:8px;background:#104f29;overflow:hidden;perspective:900px}
+.s45-stage-inner{width:100%;height:100%;transition:transform .35s ease;transform-origin:center center}
+.s45-stage-inner svg{width:100%;height:100%;display:block}
+.s45-stage.mode3d{overflow:visible;background:radial-gradient(circle at 50% 75%,#153c21,#050b07 72%)}
+.s45-stage.mode3d .s45-stage-inner{transform:rotateX(55deg) rotateZ(-2deg) scale(.86);box-shadow:0 28px 45px rgba(0,0,0,.55)}
+.s45-view-toggle{display:flex;gap:5px;margin:0 12px 12px}
+.s45-view-toggle button{flex:1;height:30px;border:1px solid rgba(255,255,255,.08);border-radius:5px;background:#09140b;color:#89968d;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s45-view-toggle button.active{border-color:#6ff05a;color:#78f463;background:rgba(111,240,90,.08)}
+.s45-detail-tabs{display:flex;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.s45-detail-tabs button{flex:1;height:34px;border:0;border-bottom:2px solid transparent;background:transparent;color:#77847b;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s45-detail-tabs button.active{color:#fff;border-color:#71ef5d}
+.s45-detail-copy{padding:13px 15px 18px;max-height:310px;overflow:auto}
+.s45-detail-copy h4{margin:10px 0 5px;color:#fff;font-size:8px}.s45-detail-copy h4:first-child{margin-top:0}.s45-detail-copy p{margin:0;color:#aeb9b1;font-size:8px;line-height:1.55;white-space:pre-wrap}
+.s45-detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px}.s45-detail-stats div{padding:7px;border:1px solid rgba(255,255,255,.06);border-radius:5px;background:#08140a}.s45-detail-stats span{display:block;color:#647168;font-size:6px}.s45-detail-stats b{display:block;margin-top:3px;color:#dbe3dd;font-size:8px}
+@media(max-width:1250px){.s45-bank-content{grid-template-columns:minmax(0,1fr) 310px}.s45-exercise-grid{grid-template-columns:1fr}}
+@media(max-width:950px){.s45-bank-shell{grid-template-columns:180px minmax(0,1fr)}.s45-bank-content{grid-template-columns:1fr}.s45-detail{position:relative;top:auto}.s45-exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.s45-bank-shell{grid-template-columns:1fr}.s45-bank-side{display:none}.s45-bank-main{padding:12px}.s45-bank-head{align-items:flex-start;flex-direction:column}.s45-bank-search{width:100%}.s45-exercise-grid{grid-template-columns:1fr}}
+
+
+/* =========================================================
+   START11 V46 – NATIVE V2 EXERCISE CREATE / EDIT
+========================================================= */
+.s46-editor-overlay{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:22px;background:rgba(0,5,2,.78);backdrop-filter:blur(8px)}
+.s46-editor{width:min(1120px,calc(100vw - 44px));max-height:calc(100vh - 44px);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;border:1px solid rgba(115,255,82,.2);border-radius:12px;background:#051008;box-shadow:0 28px 90px rgba(0,0,0,.62);color:#eef4ef}
+.s46-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:20px 22px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.s46-editor-head span,.s46-preview-label{color:#78f462;font-size:7px;font-weight:950;letter-spacing:1.2px}
+.s46-editor-head h2{margin:4px 0 3px;font-size:24px;letter-spacing:-.5px}.s46-editor-head p{margin:0;color:#718078;font-size:8px}
+#s46CloseEditor{width:34px;height:34px;border:1px solid rgba(255,255,255,.08);border-radius:6px;background:#09150c;color:#9caaa0;font-size:19px;cursor:pointer}
+.s46-editor-body{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:0;overflow:auto}
+.s46-editor-form{padding:20px 22px;border-right:1px solid rgba(255,255,255,.065)}
+.s46-form-grid{display:grid;grid-template-columns:1fr 150px 150px;gap:10px;margin-bottom:11px}.s46-form-grid .wide{grid-column:1/-1}
+.s46-editor label{display:grid;gap:6px;margin-bottom:11px;color:#7f8d83;font-size:7px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}
+.s46-editor input,.s46-editor textarea{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.1);border-radius:6px;outline:0;background:#08150b;color:#eef4ef;font:inherit;font-size:9px;text-transform:none;letter-spacing:0}
+.s46-editor input{height:38px;padding:0 10px}.s46-editor textarea{min-height:82px;padding:10px;resize:vertical;line-height:1.5}
+.s46-editor input:focus,.s46-editor textarea:focus{border-color:rgba(119,244,98,.5);box-shadow:0 0 0 2px rgba(119,244,98,.06)}
+.s46-input-unit{position:relative}.s46-input-unit input{padding-right:38px}.s46-input-unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#617067;font-size:7px;text-transform:none}
+.s46-editor-preview{padding:20px;background:#040c06}.s46-preview-pitch{margin-top:8px;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(117,255,83,.16);border-radius:8px;background:#124f29}.s46-preview-pitch svg{width:100%;height:100%;display:block}
+.s46-new-pitch{height:100%;display:grid;place-content:center;padding:25px;text-align:center;background:linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.08)),repeating-linear-gradient(0deg,#145d30 0,#145d30 28px,#12552c 28px,#12552c 56px)}
+.s46-new-pitch span{font-size:30px;color:#89f66a}.s46-new-pitch strong{margin-top:8px;font-size:10px}.s46-new-pitch small{max-width:240px;margin-top:6px;color:#a1b0a5;font-size:7px;line-height:1.5}
+.s46-preview-note{margin-top:12px;padding:11px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:#07120a}.s46-preview-note strong{font-size:8px}.s46-preview-note p{margin:5px 0 0;color:#758279;font-size:7px;line-height:1.5}
+.s46-editor-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 22px;border-top:1px solid rgba(255,255,255,.07);background:#050d07}.s46-editor-foot>div{display:flex;gap:7px}
+.s46-editor-foot button{height:35px;padding:0 13px;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:#0a160c;color:#b9c4bc;font:inherit;font-size:8px;font-weight:900;cursor:pointer}.s46-editor-foot button.primary{border-color:#77f462;background:#77f462;color:#041007}.s46-editor-foot button.danger{border-color:rgba(255,87,87,.2);color:#ff7b7b;background:rgba(255,70,70,.05)}
+@media(max-width:850px){.s46-editor-body{grid-template-columns:1fr}.s46-editor-form{border-right:0}.s46-form-grid{grid-template-columns:1fr 1fr}.s46-form-grid .wide{grid-column:1/-1}.s46-editor-preview{border-top:1px solid rgba(255,255,255,.06)}}
+
+
+/* =========================================================
+   START11 V48 – FULL VISUAL EXERCISE DESIGNER
+========================================================= */
+.s48-visual-editor-overlay{padding:12px}
+.s48-visual-editor{width:min(1540px,calc(100vw - 24px));height:min(930px,calc(100vh - 24px));max-height:calc(100vh - 24px)}
+.s48-editor-head{padding:14px 18px 12px}
+.s48-editor-head h2{font-size:21px}
+.s48-editor-body{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 310px;overflow:hidden}
+.s48-canvas-column{min-width:0;min-height:0;padding:14px 16px 16px;overflow:auto;background:#030b05}
+.s48-meta-panel{min-height:0;padding:16px;border-left:1px solid rgba(255,255,255,.07);overflow:auto;background:#050f07}
+.s48-meta-panel label{margin-bottom:10px}
+.s48-meta-panel textarea{min-height:74px}
+.s48-two{display:grid;grid-template-columns:minmax(0,1fr) 105px;gap:8px}
+.s48-panel-kicker{margin:3px 0 10px;color:#75f260;font-size:7px;font-weight:950;letter-spacing:1.15px}
+.s48-panel-kicker:not(:first-child){margin-top:18px}
+.s48-diagram-host{width:100%}
+.s48-diagram-host .s19-diagram-top{margin-bottom:9px}
+.s48-diagram-host .s19-diagram-tools{gap:5px;flex-wrap:wrap}
+.s48-diagram-host .s19-dtool{min-height:30px}
+.s48-diagram-host .s19-board-wrap{width:100%;min-height:0;aspect-ratio:16/9;border-radius:8px;overflow:hidden;box-shadow:0 16px 45px rgba(0,0,0,.3)}
+.s48-diagram-host .s19-frame-bar{margin-top:9px;flex-wrap:wrap}
+.s48-diagram-host .s19-board-property{margin-top:9px}
+.s48-diagram-host .s19-board-hint{margin-top:8px}
+.s48-editor-foot{padding:10px 18px}
+.s48-save-note{color:#69766d;font-size:7px}
+.s48-designer-error{min-height:500px;display:grid;place-items:center;border:1px dashed rgba(255,255,255,.12);border-radius:8px;color:#ff8585;font-size:9px}
+@media(max-width:1050px){
+  .s48-editor-body{grid-template-columns:1fr}
+  .s48-meta-panel{border-left:0;border-top:1px solid rgba(255,255,255,.07)}
+  .s48-visual-editor{height:calc(100vh - 24px)}
+}
+
+
+/* =========================================================
+   START11 V54 – CLEAN ACCOUNT SETTINGS + COMPACT HOME HERO
+========================================================= */
+
+/* ---------- Kontoindstillinger ---------- */
+#accountSettingsModal.start11-account-modal{
+    padding:24px !important;
+    background:rgba(0,4,2,.82) !important;
+    backdrop-filter:blur(12px);
+}
+
+#accountSettingsModal .start11-settings-panel{
+    width:min(720px,calc(100vw - 40px)) !important;
+    max-height:88vh !important;
+    padding:26px !important;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    overflow-y:auto;
+    border:1px solid rgba(121,239,96,.18) !important;
+    border-radius:16px !important;
+    background:
+        radial-gradient(circle at 88% 0%,rgba(99,255,86,.07),transparent 28%),
+        linear-gradient(145deg,#09110c 0%,#050906 70%,#030504 100%) !important;
+    box-shadow:0 28px 90px rgba(0,0,0,.72) !important;
+}
+
+#accountSettingsModal .start11-modal-heading{
+    grid-column:1/-1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+    padding:0 48px 18px 0;
+    margin-bottom:2px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+}
+
+#accountSettingsModal .start11-eyebrow{
+    display:block;
+    margin-bottom:6px;
+    color:#72ef55;
+    font-size:8px;
+    font-weight:900;
+    letter-spacing:1.25px;
+}
+
+#accountSettingsModal .start11-modal-heading h2{
+    margin:0 0 6px !important;
+    color:#fff;
+    font-size:24px !important;
+    line-height:1;
+    letter-spacing:-.5px;
+}
+
+#accountSettingsModal .start11-modal-heading p{
+    margin:0;
+    color:#78827b;
+    font-size:10px;
+    line-height:1.45;
+}
+
+#accountSettingsModal .start11-heading-badge{
+    display:none;
+}
+
+#accountSettingsModal .account-settings-profile{
+    grid-column:1/-1;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    min-height:66px;
+    padding:11px 13px;
+    border:1px solid rgba(255,255,255,.065);
+    border-radius:10px;
+    background:rgba(255,255,255,.018);
+}
+
+#accountSettingsModal .settings-avatar{
+    width:42px;
+    height:42px;
+    flex:0 0 42px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(115,239,91,.30);
+    border-radius:50%;
+    color:#dffff0;
+    background:linear-gradient(145deg,#1e5428,#0b2412);
+    font-size:12px;
+    font-weight:900;
+}
+
+#accountSettingsModal .account-settings-profile strong{
+    display:block;
+    color:#f5f8f5;
+    font-size:11px;
+}
+
+#accountSettingsModal .account-settings-profile span{
+    display:block;
+    margin-top:3px;
+    color:#6f7971;
+    font-size:9px;
+}
+
+#accountSettingsModal .settings-section-card{
+    min-width:0;
+    padding:15px;
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    border:1px solid rgba(255,255,255,.065);
+    border-radius:10px;
+    background:rgba(255,255,255,.014);
+}
+
+#accountSettingsModal .settings-section-card:first-of-type{
+    grid-row:3 / span 2;
+}
+
+#accountSettingsModal .settings-section-title{
+    margin-bottom:3px;
+    color:#7cef5a;
+    font-size:8px;
+    font-weight:900;
+    letter-spacing:1px;
+}
+
+#accountSettingsModal .settings-section-card label{
+    display:block;
+    margin:3px 0 0;
+    color:#747e76;
+    font-size:8px;
+    font-weight:800;
+}
+
+#accountSettingsModal .settings-section-card input{
+    width:100%;
+    height:38px;
+    min-height:38px;
+    padding:0 11px;
+    border:1px solid #213026 !important;
+    border-radius:7px !important;
+    outline:none;
+    color:#eef4ef !important;
+    background:#030705 !important;
+    font-size:10px;
+}
+
+#accountSettingsModal .settings-section-card input:focus{
+    border-color:rgba(116,239,91,.48) !important;
+    box-shadow:0 0 0 3px rgba(116,239,91,.045);
+}
+
+#accountSettingsModal .settings-section-card input[readonly]{
+    color:#8c958e !important;
+}
+
+#accountSettingsModal .settings-field-note{
+    margin:-1px 0 2px;
+    color:#58615a;
+    font-size:7.5px;
+}
+
+#accountSettingsModal .password-grid{
+    display:grid;
+    gap:7px;
+}
+
+#accountSettingsModal .settings-wide-button{
+    width:100%;
+    min-height:36px !important;
+    margin-top:4px;
+    border-radius:7px !important;
+    font-size:8px !important;
+    font-weight:900 !important;
+}
+
+#accountSettingsModal #saveAccountProfileButton{
+    color:#071006;
+    border:1px solid #75eb52;
+    background:linear-gradient(90deg,#82f45c,#69df49);
+}
+
+#accountSettingsModal #saveAccountProfileButton:hover{
+    background:linear-gradient(90deg,#91ff68,#75ec51);
+}
+
+#accountSettingsModal #changePasswordButton{
+    color:#8cf46b;
+    border:1px solid rgba(118,238,91,.25);
+    background:rgba(118,238,91,.045);
+}
+
+#accountSettingsModal .settings-danger-card{
+    border-color:rgba(226,89,80,.10);
+}
+
+#accountSettingsModal #settingsLogoutButton{
+    width:100%;
+    color:#dc827c;
+    border:1px solid rgba(226,89,80,.20);
+    background:rgba(226,89,80,.035);
+}
+
+#accountSettingsModal .close-button{
+    top:17px !important;
+    right:17px !important;
+    width:34px !important;
+    height:34px !important;
+    border-radius:50% !important;
+    color:#aeb7b0 !important;
+    background:rgba(255,255,255,.025) !important;
+}
+
+/* ---------- Elegant, kompakt velkomstområde ---------- */
+body.s34-active .s34-home-view .s34-hero{
+    height:112px;
+    min-height:112px;
+    margin:-28px -34px 0;
+    padding:18px 34px 16px;
+    align-items:center;
+    background:
+        radial-gradient(ellipse at 72% 85%,rgba(49,118,61,.18),transparent 34%),
+        linear-gradient(90deg,#030c08 0%,#06120c 55%,#04100a 100%);
+}
+
+body.s34-active .s34-home-view .s34-hero:after{
+    background:linear-gradient(90deg,rgba(1,7,4,.55),transparent 48%,rgba(1,7,4,.30));
+}
+
+body.s34-active .s34-home-view .s34-hero-copy>span{
+    color:#78827c;
+    font-size:10px;
+}
+
+body.s34-active .s34-home-view .s34-hero h1{
+    margin:8px 0 0;
+    font-size:30px;
+    line-height:1;
+    letter-spacing:-1px;
+}
+
+body.s34-active .s34-home-view .s34-hero h1 em{
+    color:#5ff04d;
+}
+
+@media(max-width:760px){
+    #accountSettingsModal.start11-account-modal{
+        padding:10px !important;
+    }
+
+    #accountSettingsModal .start11-settings-panel{
+        width:calc(100vw - 20px) !important;
+        padding:18px !important;
+        grid-template-columns:1fr;
+    }
+
+    #accountSettingsModal .start11-modal-heading,
+    #accountSettingsModal .account-settings-profile{
+        grid-column:1;
+    }
+
+    #accountSettingsModal .settings-section-card:first-of-type{
+        grid-row:auto;
+    }
+
+    body.s34-active .s34-home-view .s34-hero{
+        height:96px;
+        min-height:96px;
+        margin:-20px -14px 0;
+        padding:16px 14px;
+    }
+
+    body.s34-active .s34-home-view .s34-hero h1{
+        font-size:25px;
+    }
+}
