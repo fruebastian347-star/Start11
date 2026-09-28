@@ -66736,7 +66736,7 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
     window.__START11_V45_EXERCISE_BANK__=true;
 
     const $=id=>document.getElementById(id);
-    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d"};
+    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d",folder:"all"};
     const FAV_KEY="start11.v45.exerciseFavorites";
 
     function esc(v){
@@ -66756,6 +66756,75 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
     function saveFavs(set){ localStorage.setItem(FAV_KEY,JSON.stringify([...set])); }
     function norm(v){return String(v||"").trim().toLocaleLowerCase("da-DK");}
     function category(ex){return String(ex.theme||ex.focus||"Andet").trim()||"Andet";}
+
+    /* V55: Native folder support inside Exercise Bank V2. */
+    function exerciseFolders(){
+        try{
+            if(typeof s13Data!=="undefined"){
+                if(!Array.isArray(s13Data.exerciseFolders))s13Data.exerciseFolders=[];
+                return s13Data.exerciseFolders;
+            }
+        }catch(_){}
+        if(window.s13Data){
+            if(!Array.isArray(window.s13Data.exerciseFolders))window.s13Data.exerciseFolders=[];
+            return window.s13Data.exerciseFolders;
+        }
+        return [];
+    }
+    function folderChildren(parentId=""){
+        return exerciseFolders().filter(f=>String(f.parentId||"")===String(parentId||""))
+            .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"da"));
+    }
+    function folderDescendants(id){
+        const ids=new Set([String(id)]); let changed=true;
+        while(changed){
+            changed=false;
+            exerciseFolders().forEach(f=>{
+                if(ids.has(String(f.parentId||""))&&!ids.has(String(f.id))){ids.add(String(f.id));changed=true;}
+            });
+        }
+        return ids;
+    }
+    function folderPath(id){
+        const names=[],seen=new Set(); let cur=exerciseFolders().find(f=>String(f.id)===String(id));
+        while(cur&&!seen.has(String(cur.id))){seen.add(String(cur.id));names.unshift(cur.name||"Mappe");cur=exerciseFolders().find(f=>String(f.id)===String(cur.parentId||""));}
+        return names.join(" / ");
+    }
+    function folderOptions(selected="",exclude=""){
+        const blocked=exclude?folderDescendants(exclude):new Set();
+        const walk=(parent="",depth=0)=>folderChildren(parent).filter(f=>!blocked.has(String(f.id))).map(f=>
+            `<option value="${esc(f.id)}" ${String(selected)===String(f.id)?"selected":""}>${"— ".repeat(depth)}${esc(f.name||"Mappe")}</option>${walk(f.id,depth+1)}`
+        ).join("");
+        return `<option value="" ${!selected?"selected":""}>Uden mappe</option>${walk()}`;
+    }
+    function folderTree(parent="",depth=0){
+        return folderChildren(parent).map(f=>{
+            const direct=exercises().filter(ex=>String(ex.folderId||"")===String(f.id)).length;
+            return `<button type="button" class="s55-folder ${String(state.folder)===String(f.id)?"active":""}" data-s55-folder="${esc(f.id)}" style="--s55-depth:${depth}"><span>▰ ${esc(f.name||"Mappe")}</span><b>${direct}</b></button>${folderTree(f.id,depth+1)}`;
+        }).join("");
+    }
+    function persistFolders(){try{if(typeof s13Save==="function")s13Save();}catch(_){} render();}
+    function createFolder(parentId=""){
+        const name=prompt(parentId?"Navn på undermappe:":"Navn på mappe:",""); if(!name?.trim())return;
+        const id=typeof s13Id==="function"?s13Id("folder"):`folder_${Date.now()}`;
+        exerciseFolders().push({id,name:name.trim(),parentId:parentId||""}); state.folder=String(id); persistFolders();
+    }
+    function renameCurrentFolder(){
+        const f=exerciseFolders().find(x=>String(x.id)===String(state.folder)); if(!f)return;
+        const name=prompt("Nyt mappenavn:",f.name||""); if(!name?.trim())return; f.name=name.trim(); persistFolders();
+    }
+    function deleteCurrentFolder(){
+        const f=exerciseFolders().find(x=>String(x.id)===String(state.folder)); if(!f)return;
+        if(!confirm(`Slet mappen "${f.name}" og dens undermapper?\n\nØvelserne slettes ikke – de flyttes til Uden mappe.`))return;
+        const ids=folderDescendants(f.id); exercises().forEach(ex=>{if(ids.has(String(ex.folderId||"")))ex.folderId="";});
+        const keep=exerciseFolders().filter(x=>!ids.has(String(x.id))); const target=exerciseFolders(); target.splice(0,target.length,...keep); state.folder="all"; persistFolders();
+    }
+    function moveCurrentFolder(){
+        const f=exerciseFolders().find(x=>String(x.id)===String(state.folder)); if(!f)return;
+        const choices=[{id:"",name:"Rodniveau"},...exerciseFolders().filter(x=>!folderDescendants(f.id).has(String(x.id))).map(x=>({id:x.id,name:folderPath(x.id)}))];
+        const answer=prompt("Flyt mappen til:\n"+choices.map((x,i)=>`${i+1}. ${x.name}`).join("\n"),"1");
+        const n=Number(answer); if(!Number.isInteger(n)||n<1||n>choices.length)return; f.parentId=choices[n-1].id; persistFolders();
+    }
     function durationMatch(ex){
         if(!state.duration)return true;
         const n=Number(ex.duration||0);
@@ -66766,6 +66835,8 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
     function visibleExercises(){
         const f=favs(), q=norm(state.search);
         return exercises().filter(ex=>{
+            if(state.folder==="root" && ex.folderId)return false;
+            if(state.folder!=="all" && state.folder!=="root"){const ids=folderDescendants(state.folder);if(!ids.has(String(ex.folderId||"")))return false;}
             if(state.filter==="favorites"&&!f.has(String(ex.id)))return false;
             if(state.category&&category(ex)!==state.category)return false;
             if(!durationMatch(ex))return false;
@@ -66822,6 +66893,7 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
             coaching:"",
             progression:"",
             regression:"",
+            folderId:(state.folder!=="all"&&state.folder!=="root"?state.folder:""),
             diagram:(typeof s19DefaultDiagram==="function" ? s19DefaultDiagram() : null)
         };
 
@@ -66868,6 +66940,10 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
 
                 <label>Antal spillere
                   <input id="s46Players" value="${esc(draft.players||"")}" placeholder="Fx 8–12">
+                </label>
+
+                <label>Mappe
+                  <select id="s55ExerciseFolder" class="s55-editor-folder">${folderOptions(draft.folderId||"")}</select>
                 </label>
 
                 <div class="s48-panel-kicker">COACHING</div>
@@ -66918,6 +66994,7 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
             draft.coaching=$("s46Coaching").value.trim();
             draft.progression=$("s46Progression").value.trim();
             draft.regression=$("s46Regression").value.trim();
+            draft.folderId=$("s55ExerciseFolder")?.value || "";
             draft.id=existing?.id || draft.id || (typeof s13Id==="function"?s13Id("ex"):`ex_${Date.now()}`);
 
             const value=clone(draft);
@@ -66945,6 +67022,30 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
         $("s45CountMine")&&( $("s45CountMine").textContent=exercises().length );
         $("s45CountFav")&&( $("s45CountFav").textContent=favs().size );
         document.querySelectorAll("[data-s45-filter]").forEach(b=>b.classList.toggle("active",b.dataset.s45Filter===state.filter));
+
+        const side=document.querySelector(".s45-bank-side");
+        let folderBox=$("s55FolderBox");
+        if(side && !folderBox){
+            folderBox=document.createElement("section"); folderBox.id="s55FolderBox"; folderBox.className="s55-folder-box";
+            const categoriesTitle=[...side.querySelectorAll(".s45-side-title")].find(x=>x.textContent.trim()==="KATEGORIER");
+            if(categoriesTitle)side.insertBefore(folderBox,categoriesTitle); else side.appendChild(folderBox);
+        }
+        if(folderBox){
+            const currentReal=state.folder!=="all"&&state.folder!=="root";
+            folderBox.innerHTML=`
+              <div class="s55-folder-head"><span>MAPPER</span><button type="button" id="s55NewFolder">＋</button></div>
+              <button type="button" class="s55-folder ${state.folder==="all"?"active":""}" data-s55-folder="all" style="--s55-depth:0"><span>▦ Alle mapper</span><b>${exercises().length}</b></button>
+              <button type="button" class="s55-folder ${state.folder==="root"?"active":""}" data-s55-folder="root" style="--s55-depth:0"><span>⌂ Uden mappe</span><b>${exercises().filter(x=>!x.folderId).length}</b></button>
+              <div class="s55-folder-tree">${folderTree()}</div>
+              ${currentReal?`<div class="s55-folder-actions"><button id="s55NewSub" type="button">+ Under</button><button id="s55Rename" type="button">Omdøb</button><button id="s55Move" type="button">Flyt</button><button id="s55Delete" type="button">Slet</button></div>`:""}`;
+            folderBox.querySelectorAll("[data-s55-folder]").forEach(b=>b.onclick=()=>{state.folder=b.dataset.s55Folder;state.category="";render();});
+            $("s55NewFolder")&&( $("s55NewFolder").onclick=()=>createFolder("") );
+            $("s55NewSub")&&( $("s55NewSub").onclick=()=>createFolder(state.folder) );
+            $("s55Rename")&&( $("s55Rename").onclick=renameCurrentFolder );
+            $("s55Move")&&( $("s55Move").onclick=moveCurrentFolder );
+            $("s55Delete")&&( $("s55Delete").onclick=deleteCurrentFolder );
+        }
+
         const host=$("s45Categories");
         if(host)host.innerHTML=categories().map(([name,count])=>`
             <button type="button" class="${state.category===name?"active":""}" data-s45-category="${esc(name)}">
@@ -66958,14 +67059,14 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
     function renderGrid(){
         const list=visibleExercises(), host=$("s45ExerciseGrid"), f=favs();
         if($("s45ResultCount"))$("s45ResultCount").textContent=`${list.length} øvelse${list.length===1?"":"r"}`;
-        if($("s45ActiveFilter"))$("s45ActiveFilter").textContent=state.category||({all:"Alle øvelser",favorites:"Favoritter",mine:"Mine øvelser"}[state.filter]);
+        if($("s45ActiveFilter"))$("s45ActiveFilter").textContent=state.category || (state.folder!=="all" ? (state.folder==="root"?"Uden mappe":folderPath(state.folder)) : ({all:"Alle øvelser",favorites:"Favoritter",mine:"Mine øvelser"}[state.filter]));
         if(!host)return;
         host.innerHTML=list.length?list.map(ex=>`
           <article class="s45-card ${String(ex.id)===String(state.selected)?"active":""}" data-s45-exercise="${esc(ex.id)}">
             <div class="s45-card-thumb">${svgFor(ex)}</div>
             <div class="s45-card-body">
               <div class="s45-card-title"><strong>${esc(ex.title||"Øvelse")}</strong><button class="s45-fav ${f.has(String(ex.id))?"on":""}" data-s45-fav="${esc(ex.id)}" type="button">${f.has(String(ex.id))?"♥":"♡"}</button></div>
-              <div class="s45-tags"><span class="s45-tag">${esc(category(ex))}</span>${ex.players?`<span class="s45-tag">${esc(ex.players)} spillere</span>`:""}</div>
+              <div class="s45-tags"><span class="s45-tag">${esc(category(ex))}</span>${ex.players?`<span class="s45-tag">${esc(ex.players)} spillere</span>`:""}${ex.folderId?`<span class="s45-tag s55-folder-tag">▰ ${esc(folderPath(ex.folderId))}</span>`:""}</div>
               <div class="s45-card-meta"><span>◷ ${Number(ex.duration||0)} min</span><span>${ex.diagram?.frames?.length||1} trin</span></div>
             </div>
           </article>`).join(""):'<div class="s45-no-results">Ingen øvelser matcher filtrene.</div>';
@@ -67187,20 +67288,24 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
         if(state.view==="3d") setTimeout(()=>s49RenderThreeExercise(ex),0);
     }
     function render(){renderSide();renderGrid();renderDetail();}
+    function installFolderStyles(){
+        if(document.getElementById("s55FolderStyles"))return;
+        const style=document.createElement("style"); style.id="s55FolderStyles"; style.textContent=`
+          .s55-folder-box{margin:15px 0 17px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,.065)}
+          .s55-folder-head{display:flex;align-items:center;justify-content:space-between;margin:0 6px 7px;color:#67ef4e;font-size:7px;font-weight:900;letter-spacing:1.15px}
+          .s55-folder-head button{width:23px;height:23px;border:1px solid rgba(100,239,76,.25);border-radius:5px;background:rgba(100,239,76,.06);color:#6df052;cursor:pointer;font:inherit;font-size:13px}
+          .s55-folder{width:100%;min-height:30px;padding:0 7px 0 calc(8px + var(--s55-depth,0)*12px);display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:5px;background:transparent;color:#92a097;text-align:left;cursor:pointer;font:inherit;font-size:7.5px}
+          .s55-folder:hover{background:rgba(91,235,69,.055);color:#eaffea}.s55-folder.active{background:rgba(91,235,69,.11);color:#78f15d;box-shadow:inset 2px 0 #65ed4c}
+          .s55-folder span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.s55-folder b{color:#607066;font-size:6.5px}.s55-folder.active b{color:#72ec57}
+          .s55-folder-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px;padding:7px 6px 0}
+          .s55-folder-actions button{min-height:26px;border:1px solid rgba(255,255,255,.075);border-radius:5px;background:#07100a;color:#89968d;font:inherit;font-size:6.5px;cursor:pointer}
+          .s55-folder-actions button:hover{border-color:rgba(105,239,82,.25);color:#79ef5e}
+          .s55-editor-folder{width:100%;min-height:38px;padding:0 10px;border:1px solid rgba(255,255,255,.10);border-radius:6px;background:#07100a;color:#eef8ef;font:inherit;font-size:9px;outline:none}
+          .s55-editor-folder:focus{border-color:#62e94a}.s55-folder-tag{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        `; document.head.appendChild(style);
+    }
     function bind(){
-        /* V50.6:
-           Exercise Bank is its own modern view. When another sidebar route is
-           chosen, hide it immediately before that route's own handler runs.
-           This prevents Træning from remaining visible underneath Home/Players. */
-        document.querySelectorAll('[data-s34]').forEach(btn=>{
-            if(btn.dataset.s34==="training" || btn.dataset.s45LeaveBound) return;
-            btn.dataset.s45LeaveBound="1";
-            btn.addEventListener("click",()=>{
-                const bank=$("s45ExerciseBankView");
-                if(bank) bank.hidden=true;
-            },true);
-        });
-
+        installFolderStyles();
         document.querySelectorAll('[data-s34="training"]').forEach(btn=>{
             if(btn.dataset.s45Bound)return;btn.dataset.s45Bound="1";
             btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnlyBank();},true);
