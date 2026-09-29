@@ -1279,7 +1279,7 @@ function freezeBadge(player){
  return b;
 }
 function startFreezeEngine(v,c,draw){
- stopFreeze(); if(!v||!c)return;
+ stopFreeze(); if(window.__START11_V61_FREEZE__)return; if(!v||!c)return;
  freeze.video=v;freeze.clip=c;
  const player=v.closest(".s581-player"), badge=freezeBadge(player);
  const tick=()=>{
@@ -1437,6 +1437,7 @@ function playPresentation(data,index=0){
 }
 async function setupPresentationVideo(x){
  const v=q("#s59Video"),cv=q("#s59Canvas"),seek=q("#s59Seek"),time=q("#s59Time"),play=q("#s59Play");if(!v)return;
+ v.dataset.s59ClipKey=x.key||`${x.project?.id||""}::${x.clip?.id||""}`;
  const start=Number(x.clip.startSec)||0,end=Number(x.clip.endSec)||start,dur=Math.max(0,end-start);
  const draw=()=>{
    if(!cv)return;const r=v.getBoundingClientRect(),dpr=devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
@@ -1635,5 +1636,236 @@ document.addEventListener("play",e=>{
 },true);
 
 window.START11_BUILD="V60-SYNC-FREEZE-TIMECODE-PRESENTATION";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
+
+
+/* =========================================================
+ START11 V61 – TRUE FREEZE AT ONE VIDEO FRAME
+ - Freeze trigger = annotation.startTime
+ - Freeze length = annotation.freezeDuration (wall-clock seconds)
+ - Video source time does NOT advance during freeze
+ - All annotations beginning on same frame share one freeze
+ - Auto resume from same source frame
+ - Saved on annotation and reused everywhere
+========================================================= */
+(function start11V61TrueFreeze(){
+"use strict";
+window.__START11_V61_FREEZE__=true;
+
+const q=s=>document.querySelector(s);
+const fmt=sec=>{
+ sec=Math.max(0,Number(sec)||0);
+ const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);
+ return h?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+};
+const projects=()=>Array.isArray(window.s13Data?.videoProjects)?s13Data.videoProjects:[];
+const allClips=()=>projects().flatMap(p=>(p.clips||[]).map(c=>({project:p,clip:c,key:`${p.id}::${c.id}`})));
+const byKey=key=>{
+ const [pid,cid]=String(key||"").split("::");
+ const p=projects().find(x=>String(x.id)===pid);
+ const c=p?.clips?.find(x=>String(x.id)===cid);
+ return p&&c?{project:p,clip:c,key}:null;
+};
+const currentAnalysisClip=()=>typeof s18Clip==="function"?s18Clip():null;
+
+function migrate(a){
+ if(!a)return;
+ if(!Number.isFinite(Number(a.freezeDuration))){
+   const old=Math.max(0,Number(a.endTime)-Number(a.startTime));
+   a.freezeDuration=old>=.25&&old<=30?old:3;
+ }
+ a.freezeDuration=Math.max(.25,Math.min(30,Number(a.freezeDuration)||3));
+ if(a.freezeVideo==null)a.freezeVideo=true;
+}
+
+/* ---------- editor: explicit independent freeze duration ---------- */
+function ensureFreezeDurationEditor(){
+ const a=currentAnalysisClip()?.annotations?.find(x=>String(x.id)===String(window.s18?.selectedAnn));
+ const start=q("#s18AnnStart"),end=q("#s18AnnEnd");
+ if(start){
+   start.type="text";start.inputMode="numeric";
+   if(document.activeElement!==start&&a)start.value=fmt(a.startTime);
+ }
+ if(end){
+   end.type="text";end.inputMode="numeric";
+   if(document.activeElement!==end&&a)end.value=fmt(a.endTime);
+ }
+ if(!a||!end)return;
+ migrate(a);
+
+ let box=q("#s61FreezeDurationBox");
+ if(!box){
+   box=document.createElement("div");
+   box.id="s61FreezeDurationBox";
+   box.style.cssText="margin-top:10px";
+   box.innerHTML=`
+    <label style="display:block;color:#8fa596;font-size:10px;font-weight:900;margin-bottom:6px">FRYS BILLEDET I</label>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input id="s61FreezeDuration" type="number" min="0.25" max="30" step="0.25"
+       style="width:110px;background:#06130b;border:1px solid #254a2d;border-radius:7px;color:#fff;padding:9px">
+      <span style="font-size:10px;color:#819487">sekunder</span>
+    </div>
+    <small style="display:block;margin-top:5px;color:#65796b">Videoen står stille på “Synlig fra”-billedet og fortsætter automatisk fra samme sted.</small>`;
+   end.parentElement?.insertAdjacentElement("afterend",box);
+   q("#s61FreezeDuration")?.addEventListener("change",e=>{
+     const ann=currentAnalysisClip()?.annotations?.find(x=>String(x.id)===String(window.s18?.selectedAnn));
+     if(!ann)return;
+     ann.freezeDuration=Math.max(.25,Math.min(30,Number(e.target.value)||3));
+     ann.freezeVideo=true;
+     try{s18Touch?.()}catch(_){}
+   });
+ }
+ const input=q("#s61FreezeDuration");
+ if(input&&document.activeElement!==input)input.value=String(Number(a.freezeDuration).toFixed(Number(a.freezeDuration)%1?2:0));
+}
+
+/* Keep old compact freeze selector in sync with freezeDuration instead of endTime. */
+document.addEventListener("change",e=>{
+ if(e.target?.id!=="s269FreezeDuration")return;
+ const a=currentAnalysisClip()?.annotations?.find(x=>String(x.id)===String(window.s18?.selectedAnn));
+ if(!a)return;
+ a.freezeDuration=Math.max(.25,Number(e.target.value)||3);
+ a.freezeVideo=true;
+ try{s18Touch?.()}catch(_){}
+},true);
+
+/* ---------- exact clip lookup for every player ---------- */
+function clipForVideo(v){
+ if(!v)return null;
+ if(v.id==="s18Video")return currentAnalysisClip();
+
+ if(v.id==="s59Video"){
+   const hit=byKey(v.dataset.s59ClipKey);
+   if(hit)return hit.clip;
+ }
+
+ if(v.id==="s57Video"){
+   const selected=q("[data-s57-card].selected,[data-s57-card].active");
+   const cid=selected?.dataset?.s57Card;
+   if(cid){
+     const hit=allClips().find(x=>String(x.clip.id)===String(cid));
+     if(hit)return hit.clip;
+   }
+   const title=q(".s57-detail h2,.s57-detail h3")?.textContent?.trim();
+   if(title){
+     const hit=allClips().find(x=>String(x.clip.title||"").trim()===title);
+     if(hit)return hit.clip;
+   }
+ }
+ return null;
+}
+
+let active={video:null,timer:0,busy:false,lastSourceTime:null,lastTrigger:null,token:0};
+
+function badge(v,on){
+ const host=v?.parentElement;if(!host)return;
+ let b=host.querySelector(".s61FreezeBadge");
+ if(!b){
+   b=document.createElement("div");
+   b.className="s61FreezeBadge";
+   b.textContent="❚❚ FRYS · MARKERING";
+   host.appendChild(b);
+ }
+ b.classList.toggle("show",!!on);
+}
+
+function redraw(v){
+ try{
+   if(v.id==="s18Video")s18Draw?.();
+   else v.dispatchEvent(new Event("timeupdate"));
+ }catch(_){}
+}
+
+function beginFreeze(v,clip,trigger,group){
+ if(active.busy)return;
+ const durations=group.map(a=>{migrate(a);return a.freezeVideo===false?0:Number(a.freezeDuration)||3});
+ const duration=Math.max(...durations,0);
+ if(duration<=0)return;
+
+ active.busy=true;
+ active.video=v;
+ active.lastTrigger=trigger;
+ const token=++active.token;
+
+ /* This is the core behaviour: hold EXACTLY this source frame. */
+ v.pause();
+ try{v.currentTime=trigger}catch(_){}
+ redraw(v);
+ badge(v,true);
+
+ clearTimeout(active.timer);
+ active.timer=setTimeout(()=>{
+   if(token!==active.token||active.video!==v)return;
+   badge(v,false);
+   active.busy=false;
+
+   /* Continue from the same match moment, only a tiny epsilon avoids retrigger. */
+   const resumeAt=trigger+.035;
+   try{v.currentTime=Math.min(v.duration||1e12,resumeAt)}catch(_){}
+   active.lastSourceTime=resumeAt;
+
+   const p=v.play();
+   if(p?.catch)p.catch(()=>{});
+ },duration*1000);
+}
+
+function monitor(){
+ const videos=[q("#s18Video"),q("#s57Video"),q("#s59Video")].filter(Boolean);
+ const v=videos.find(x=>!x.paused)||videos.find(x=>x===active.video)||videos[0];
+
+ if(v&&!active.busy&&!v.paused){
+   if(active.video!==v){
+     active.video=v;active.lastSourceTime=Number(v.currentTime)||0;active.lastTrigger=null;
+   }
+   const clip=clipForVideo(v);
+   const anns=Array.isArray(clip?.annotations)?clip.annotations:[];
+   anns.forEach(migrate);
+
+   const now=Number(v.currentTime)||0;
+   const prev=active.lastSourceTime==null?now:active.lastSourceTime;
+
+   const starts=[...new Set(anns
+     .filter(a=>a.freezeVideo!==false&&Number.isFinite(Number(a.startTime)))
+     .map(a=>Number(a.startTime))
+     .sort((a,b)=>a-b))];
+
+   const trigger=starts.find(s=>{
+     const crossed=(prev<s&&now>=s)||(Math.abs(now-s)<.045&&active.lastTrigger!==s);
+     return crossed&&active.lastTrigger!==s;
+   });
+
+   if(trigger!=null){
+     const group=anns.filter(a=>a.freezeVideo!==false&&Math.abs(Number(a.startTime)-trigger)<.06);
+     beginFreeze(v,clip,trigger,group);
+   }else{
+     active.lastSourceTime=now;
+     /* Seeking backwards allows the same freeze to play again. */
+     if(active.lastTrigger!=null&&now<active.lastTrigger-.25)active.lastTrigger=null;
+   }
+ }
+
+ requestAnimationFrame(monitor);
+}
+
+/* If user closes/changes player, cancel stale timer cleanly. */
+new MutationObserver(()=>{
+ ensureFreezeDurationEditor();
+ if(active.video&&!document.body.contains(active.video)){
+   clearTimeout(active.timer);active.timer=0;active.busy=false;active.video=null;active.lastSourceTime=null;active.lastTrigger=null;active.token++;
+ }
+}).observe(document.body,{childList:true,subtree:true});
+
+const st=document.createElement("style");
+st.textContent=`
+.s61FreezeBadge{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:1000;background:#62f34f;color:#002807;border-radius:999px;padding:7px 11px;font-size:10px;font-weight:950;opacity:0;pointer-events:none}
+.s61FreezeBadge.show{opacity:1}
+`;
+document.head.appendChild(st);
+
+setInterval(ensureFreezeDurationEditor,350);
+requestAnimationFrame(monitor);
+
+window.START11_BUILD="V61-TRUE-FRAME-FREEZE";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
