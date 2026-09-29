@@ -71006,6 +71006,231 @@ document.head.appendChild(css);
 window.START11_BUILD="V66-PRESENTATION-HUB-MATCH-LINK";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+ START11 V67 – PRESENTATION PREVIEW + SAVE/PLAY FIX
+ - Real selected-clip video preview inside Design 1
+ - Save uses the durable V64 store directly and mirrors app data
+ - Play uses a direct presentation player (no V66 recursive bridge)
+ - Existing annotation/freeze engines can attach to #s59Video
+========================================================= */
+(function start11V67PresentationFix(){
+"use strict";
+if(window.__START11_V67_PRESENTATION_FIX__)return;
+window.__START11_V67_PRESENTATION_FIX__=true;
+
+const q=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=sec=>{sec=Math.max(0,Number(sec)||0);const m=Math.floor(sec/60),ss=Math.floor(sec%60);return `${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`};
+const STORE="start11.videoPresentations.v64";
+let previewUrl="", playerUrl="", previewKey="";
+
+function projects(){
+ try{return typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoProjects)?s13Data.videoProjects:[]}catch(_){return[]}
+}
+function resolve(key){
+ const [pid,cid]=String(key||"").split("::");
+ const p=projects().find(x=>String(x.id)===pid);
+ const c=p?.clips?.find(x=>String(x.id)===cid);
+ return p&&c?{project:p,clip:c,key}:null;
+}
+async function sourceFor(p){
+ const mv=p?.matchVideo;
+ if(mv){
+   if(mv.sourceType==="local"&&mv.mediaId&&typeof s15GetBlob==="function"){
+     try{const x=await s15GetBlob(mv.mediaId);if(x?.blob)return URL.createObjectURL(x.blob)}catch(e){console.warn("V67 local video",e)}
+   }
+   if(mv.sourceType==="veo"){
+     if(mv.directUrl)return mv.directUrl;
+     if(typeof s18ResolveVeo==="function"){
+       try{const r=await s18ResolveVeo(mv.url);if(r?.url)return r.url}catch(e){console.warn("V67 Veo",e)}
+     }
+   }
+   if(mv.url)return mv.url;
+ }
+ try{
+   if(typeof s18VideoSource==="function"){
+     let x=s18VideoSource(p);if(x&&typeof x.then==="function")x=await x;if(x)return x;
+   }
+   if(typeof s18ResolveVideoSource==="function"){
+     let x=s18ResolveVideoSource(p);if(x&&typeof x.then==="function")x=await x;if(x)return x;
+   }
+ }catch(e){console.warn("V67 source resolver",e)}
+ return p?.videoUrl||p?.url||p?.video||p?.src||"";
+}
+function readStore(){
+ try{const x=JSON.parse(localStorage.getItem(STORE)||"[]");return Array.isArray(x)?x:[]}catch(_){return[]}
+}
+function writePresentation(p){
+ const local=readStore(),i=local.findIndex(x=>String(x.id)===String(p.id)),copy=JSON.parse(JSON.stringify(p));
+ if(i>=0)local[i]=copy;else local.unshift(copy);
+ localStorage.setItem(STORE,JSON.stringify(local));
+ try{
+   if(typeof s13Data!=="undefined"&&s13Data){
+     if(!Array.isArray(s13Data.videoPresentations))s13Data.videoPresentations=[];
+     const j=s13Data.videoPresentations.findIndex(x=>String(x.id)===String(p.id));
+     if(j>=0)s13Data.videoPresentations[j]=copy;else s13Data.videoPresentations.unshift(copy);
+   }
+ }catch(_){}
+ try{if(typeof s13Save==="function")s13Save()}catch(_){}
+ try{if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(_){}
+ return copy;
+}
+function removePresentation(id){
+ const local=readStore().filter(x=>String(x.id)!==String(id));localStorage.setItem(STORE,JSON.stringify(local));
+ try{if(typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoPresentations))s13Data.videoPresentations=s13Data.videoPresentations.filter(x=>String(x.id)!==String(id))}catch(_){}
+ try{if(typeof s13Save==="function")s13Save()}catch(_){}
+ try{if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(_){}
+}
+
+/* Add a real preview panel above the selected clip list. */
+function ensurePreview(){
+ const right=q(".s66right");if(!right)return;
+ let host=q("#s67Preview");
+ if(!host){
+   host=document.createElement("div");host.id="s67Preview";
+   const sub=q(".s66subline");right.insertBefore(host,sub||right.firstChild);
+ }
+ const picks=q("#s66Selected");
+ if(picks&&!picks.dataset.v67Click){
+   picks.dataset.v67Click="1";
+   picks.addEventListener("click",e=>{
+     const row=e.target.closest(".s66pick");if(!row)return;
+     const rows=[...picks.querySelectorAll(".s66pick")],i=rows.indexOf(row);
+     const key=window.__START11_V66_DRAFT__?.clips?.[i]||null;
+     if(key)showPreview(key);
+   });
+ }
+ return host;
+}
+async function showPreview(key){
+ const host=ensurePreview(),x=resolve(key);if(!host||!x)return;
+ previewKey=key;
+ if(previewUrl.startsWith("blob:"))URL.revokeObjectURL(previewUrl);previewUrl="";
+ host.innerHTML=`<div class="s67stage"><video id="s67Video" playsinline controls></video><canvas id="s67Canvas"></canvas></div>
+ <div class="s67meta"><b>${esc(x.clip.title||"Klip")}</b><span>${esc(x.project.title||x.project.opponent||"Kamp")} · ${fmt((Number(x.clip.endSec)||0)-(Number(x.clip.startSec)||0))}</span></div>`;
+ const v=q("#s67Video"),cv=q("#s67Canvas"),start=Number(x.clip.startSec)||0,end=Number(x.clip.endSec)||start;
+ const src=await sourceFor(x.project);if(previewKey!==key||!src)return;
+ previewUrl=src;v.src=src;
+ const draw=()=>{
+   if(!cv)return;const r=v.getBoundingClientRect(),dpr=devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+   const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);
+   try{(x.clip.annotations||[]).filter(a=>typeof s18Visible==="function"?s18Visible(a,v.currentTime):(v.currentTime>=Number(a.startTime||0)&&v.currentTime<=Number(a.endTime ?? a.startTime ?? 0))).forEach(a=>s18DrawOne?.(ctx,a,cv.width,cv.height,false))}catch(_){}
+ };
+ v.onloadedmetadata=()=>{v.currentTime=start;draw()};
+ v.ontimeupdate=()=>{if(v.currentTime>=end&&end>start){v.pause();v.currentTime=start}draw()};
+ v.onseeked=draw;
+}
+
+/* Direct presentation player, using the same #s59Video ID expected by the
+   already-working V62/V63 freeze monitor. */
+let playState={data:null,index:0};
+function closePlayer(){
+ if(playerUrl.startsWith("blob:"))URL.revokeObjectURL(playerUrl);playerUrl="";
+ q("#s67Player")?.remove();playState={data:null,index:0};
+}
+async function playPresentation(data,index=0){
+ closePlayer();q("#s66Overlay")?.remove();
+ playState={data,index:Math.max(0,Math.min(index,(data.clips||[]).length-1))};
+ const x=resolve(data.clips[playState.index]);if(!x){alert("Klippet findes ikke længere.");return}
+ const start=Number(x.clip.startSec)||0,end=Number(x.clip.endSec)||start,dur=Math.max(0,end-start);
+ const root=document.createElement("div");root.id="s67Player";
+ root.innerHTML=`<div class="s67playhead"><div><strong>${esc(data.title||"Videopræsentation")}</strong><span>Klip ${playState.index+1} af ${data.clips.length} · ${esc(x.clip.title||"Klip")}</span></div><button id="s67Exit">LUK PRÆSENTATION</button></div>
+ <div class="s67playstage"><video id="s59Video" playsinline></video><canvas id="s59Canvas"></canvas><div id="s59FreezeBadge">❚❚ FRYS · MARKERING</div></div>
+ <div class="s67controls"><button id="s67Prev">← FORRIGE</button><button id="s59Play" class="primary">▶</button><input id="s59Seek" type="range" min="0" max="${Math.max(.01,dur)}" step=".05" value="0"><span id="s59Time">00:00 / ${fmt(dur)}</span><button id="s67Next">NÆSTE →</button></div>`;
+ document.body.appendChild(root);
+ q("#s67Exit").onclick=closePlayer;
+ q("#s67Prev").onclick=()=>playPresentation(data,Math.max(0,playState.index-1));
+ q("#s67Next").onclick=()=>playPresentation(data,Math.min(data.clips.length-1,playState.index+1));
+ const v=q("#s59Video"),cv=q("#s59Canvas"),seek=q("#s59Seek"),time=q("#s59Time"),play=q("#s59Play");
+ v.dataset.s59ClipKey=x.key;
+ const draw=()=>{
+   const r=v.getBoundingClientRect(),dpr=devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+   const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);
+   try{(x.clip.annotations||[]).filter(a=>typeof s18Visible==="function"?s18Visible(a,v.currentTime):(v.currentTime>=Number(a.startTime||0)&&v.currentTime<=Number(a.endTime ?? a.startTime ?? 0))).forEach(a=>s18DrawOne?.(ctx,a,cv.width,cv.height,false))}catch(_){}
+ };
+ const src=await sourceFor(x.project);if(!src)return;playerUrl=src;v.src=src;
+ v.onloadedmetadata=()=>{v.currentTime=start;draw()};
+ v.ontimeupdate=()=>{
+   const rel=Math.max(0,v.currentTime-start);
+   seek.value=Math.min(dur,rel);time.textContent=`${fmt(Math.min(dur,rel))} / ${fmt(dur)}`;draw();
+   if(dur&&rel>=dur-.03){v.pause();if(playState.index<data.clips.length-1)setTimeout(()=>playPresentation(data,playState.index+1),180);else v.currentTime=start}
+ };
+ v.onplay=()=>play.textContent="❚❚";v.onpause=()=>play.textContent="▶";
+ play.onclick=()=>v.paused?v.play().catch(()=>{}):v.pause();v.onclick=play.onclick;
+ seek.oninput=()=>{v.currentTime=start+Number(seek.value||0);draw()};
+}
+window.start11V67PlayPresentation=playPresentation;
+
+/* Patch V66's visible controls without replacing the whole layout. */
+function bind(){
+ const ov=q("#s66Overlay");if(!ov)return;
+ ensurePreview();
+
+ /* Expose current V66 draft to preview selection. V66 keeps it lexical, so derive
+    selection keys from rendered rows via button operations and mirror them below. */
+ const selected=q("#s66Selected");
+ if(selected){
+   const rows=[...selected.querySelectorAll(".s66pick")];
+   const keys=[];
+   rows.forEach(row=>{
+     const title=row.querySelector(".s66pickmain b")?.textContent||"";
+     const meta=row.querySelector(".s66pickmain small")?.textContent||"";
+     const hit=projects().flatMap(p=>(p.clips||[]).map(c=>({p,c,key:`${p.id}::${c.id}`}))).find(z=>(z.c.title||"Klip")===title && meta.includes(z.p.title||z.p.opponent||"Kamp"));
+     if(hit)keys.push(hit.key);
+   });
+   window.__START11_V66_DRAFT__={clips:keys};
+   if(keys.length&&(!previewKey||!keys.includes(previewKey)))showPreview(keys[0]);
+ }
+
+ const save=q("#s66Save");
+ if(save&&!save.dataset.v67){
+   save.dataset.v67="1";
+   save.addEventListener("click",()=>{
+     setTimeout(()=>{
+       /* V66 may have mutated app data; copy the currently selected presentation
+          into durable storage even if its own persistence path failed. */
+       try{
+         const name=q("#s66Name")?.value||"Videopræsentation";
+         const matchId=q("#s66Match")?.value||"";
+         const keys=window.__START11_V66_DRAFT__?.clips||[];
+         let app=[];
+         try{app=typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoPresentations)?s13Data.videoPresentations:[]}catch(_){}
+         let p=app.find(x=>x.title===name&&Array.isArray(x.clips)&&x.clips.length===keys.length);
+         if(!p)p={id:`video-presentation-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,title:name,clips:keys,matchId};
+         p={...p,title:name,clips:keys,matchId};
+         writePresentation(p);
+       }catch(e){console.warn("V67 save repair",e)}
+     },0);
+   },true);
+ }
+ const play=q("#s66Play");
+ if(play&&!play.dataset.v67){
+   play.dataset.v67="1";
+   const clone=play.cloneNode(true);clone.dataset.v67="1";play.replaceWith(clone);
+   clone.onclick=()=>{
+     const name=q("#s66Name")?.value||"Videopræsentation",keys=window.__START11_V66_DRAFT__?.clips||[],matchId=q("#s66Match")?.value||"";
+     if(!keys.length){alert("Tilføj mindst ét klip.");return}
+     let p=readStore().find(x=>x.title===name&&Array.isArray(x.clips)&&x.clips.join("|")===keys.join("|"));
+     if(!p)p={id:`video-presentation-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,title:name,clips:keys,matchId};
+     p=writePresentation({...p,title:name,clips:keys,matchId});
+     playPresentation(p,0);
+   };
+ }
+}
+new MutationObserver(()=>setTimeout(bind,0)).observe(document.body,{childList:true,subtree:true});
+setInterval(bind,400);
+bind();
+
+const css=document.createElement("style");css.id="s67Css";css.textContent=`
+#s67Preview{margin:0 0 14px}.s67stage{position:relative;aspect-ratio:16/9;background:#000;border:1px solid #183b22;border-radius:8px;overflow:hidden}.s67stage video{width:100%;height:100%;object-fit:contain}.s67stage canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.s67meta{display:flex;justify-content:space-between;gap:10px;padding:7px 2px 2px}.s67meta b{font-size:9px}.s67meta span{font-size:7px;color:#71877a}
+#s67Player{position:fixed;inset:0;z-index:10200;background:#000;color:#fff;display:grid;grid-template-rows:auto 1fr auto}.s67playhead{padding:12px 18px;background:#041008;display:flex;align-items:center}.s67playhead div{display:flex;flex-direction:column;gap:3px}.s67playhead strong{font-size:14px}.s67playhead span{font-size:9px;color:#84988b}.s67playhead button{margin-left:auto}.s67playstage{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}.s67playstage video{width:100%;height:100%;object-fit:contain}.s67playstage canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.s67controls{padding:12px 18px;background:#041008;display:grid;grid-template-columns:auto auto 1fr auto auto;gap:9px;align-items:center}.s67controls button,.s67playhead button{border:1px solid #2c6b39;background:#06140b;color:#fff;border-radius:6px;padding:8px 11px;font-size:8px;font-weight:950;cursor:pointer}.s67controls button.primary{background:#62f34f;color:#001b05}.s67controls input{width:100%;accent-color:#62f34f}
+`;
+document.head.appendChild(css);
+window.START11_BUILD="V67-PRESENTATION-PREVIEW-SAVE-PLAY";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
    - Cloud-first exercise library per authenticated account
