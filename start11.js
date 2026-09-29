@@ -71231,6 +71231,213 @@ document.head.appendChild(css);
 window.START11_BUILD="V67-PRESENTATION-PREVIEW-SAVE-PLAY";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+ START11 V68 – CLIP THUMBNAILS + TRUE CLIP WINDOW + FREEZE
+ - Video still/thumbnail on every clip row
+ - Builder preview shows RELATIVE 00:00 -> clip duration
+ - Preview can never play outside clip IN/OUT
+ - Preview uses #s59Video so proven V62 freeze engine attaches
+ - Freeze keeps annotation on the frozen frame and resumes automatically
+========================================================= */
+(function start11V68PresentationClipWindow(){
+"use strict";
+if(window.__START11_V68_PRESENTATION_CLIP_WINDOW__)return;
+window.__START11_V68_PRESENTATION_CLIP_WINDOW__=true;
+
+const q=s=>document.querySelector(s);
+const qa=s=>[...document.querySelectorAll(s)];
+const fmt=sec=>{sec=Math.max(0,Number(sec)||0);const m=Math.floor(sec/60),ss=Math.floor(sec%60);return `${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`};
+const projects=()=>{try{return typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoProjects)?s13Data.videoProjects:[]}catch(_){return[]}};
+const byKey=key=>{
+ const [pid,cid]=String(key||"").split("::");
+ const p=projects().find(x=>String(x.id)===pid),c=p?.clips?.find(x=>String(x.id)===cid);
+ return p&&c?{project:p,clip:c,key}:null;
+};
+const all=()=>projects().flatMap(p=>(p.clips||[]).map(c=>({project:p,clip:c,key:`${p.id}::${c.id}`})));
+
+async function srcFor(p){
+ const mv=p?.matchVideo;
+ if(mv){
+  if(mv.sourceType==="local"&&mv.mediaId&&typeof s15GetBlob==="function"){
+   try{const x=await s15GetBlob(mv.mediaId);if(x?.blob)return URL.createObjectURL(x.blob)}catch(_){}
+  }
+  if(mv.sourceType==="veo"){
+   if(mv.directUrl)return mv.directUrl;
+   if(typeof s18ResolveVeo==="function"){try{const r=await s18ResolveVeo(mv.url);if(r?.url)return r.url}catch(_){}}
+  }
+  if(mv.url)return mv.url;
+ }
+ try{
+  if(typeof s18VideoSource==="function"){let x=s18VideoSource(p);if(x?.then)x=await x;if(x)return x}
+  if(typeof s18ResolveVideoSource==="function"){let x=s18ResolveVideoSource(p);if(x?.then)x=await x;if(x)return x}
+ }catch(_){}
+ return p?.videoUrl||p?.url||p?.video||p?.src||"";
+}
+const sourceCache=new Map();
+function cachedSource(p){
+ const k=String(p?.id||"");
+ if(!sourceCache.has(k))sourceCache.set(k,Promise.resolve(srcFor(p)));
+ return sourceCache.get(k);
+}
+
+/* Resolve a rendered library row back to the exact clip. Titles can repeat,
+   so project label is also used. */
+function rowItem(row){
+ const title=row.querySelector(".s66clipmain b")?.textContent?.trim()||"";
+ const meta=row.querySelector(".s66clipmain small")?.textContent||"";
+ return all().find(x=>(x.clip.title||"Klip").trim()===title && meta.includes(x.project.title||x.project.opponent||"Kamp"))||null;
+}
+
+/* ---------- LEFT-SIDE VIDEO STILLS ---------- */
+async function hydrateThumb(row,item){
+ if(!row||!item||row.dataset.v68Thumb==="1")return;
+ row.dataset.v68Thumb="1";
+ const main=row.querySelector(".s66clipmain");if(!main)return;
+ const thumb=document.createElement("div");thumb.className="s68thumb";
+ thumb.innerHTML=`<video muted playsinline preload="metadata"></video><span>▶</span>`;
+ row.insertBefore(thumb,main);
+ const v=thumb.querySelector("video"),start=Number(item.clip.startSec)||0;
+ const src=await cachedSource(item.project);if(!src||!document.body.contains(v))return;
+ v.src=src;
+ v.addEventListener("loadedmetadata",()=>{try{v.currentTime=Math.min(Math.max(0,start+.04),Math.max(0,(v.duration||start+.04)-.05))}catch(_){}},{once:true});
+ v.addEventListener("seeked",()=>v.pause());
+}
+function hydrateThumbs(){
+ qa("#s66Library .s66clip").forEach(row=>{const item=rowItem(row);if(item)hydrateThumb(row,item)});
+}
+
+/* ---------- BUILDER PREVIEW ---------- */
+let currentKey="",currentObjectUrl="",freeze={timer:0,busy:false,last:null,lastTrigger:null,raf:0,token:0};
+
+function stopFreeze(){
+ clearTimeout(freeze.timer);cancelAnimationFrame(freeze.raf);
+ freeze={timer:0,busy:false,last:null,lastTrigger:null,raf:0,token:freeze.token+1};
+}
+function drawAnnotations(v,cv,clip){
+ if(!cv)return;
+ const r=v.getBoundingClientRect(),dpr=devicePixelRatio||1;
+ cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+ const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);
+ try{
+  (clip.annotations||[]).filter(a=>typeof s18Visible==="function"?s18Visible(a,v.currentTime):(v.currentTime>=Number(a.startTime||0)&&v.currentTime<=Number(a.endTime??a.startTime??0)))
+   .forEach(a=>s18DrawOne?.(ctx,a,cv.width,cv.height,false));
+ }catch(_){}
+}
+function startOwnFreeze(v,cv,clip,start,end){
+ stopFreeze();
+ const tick=()=>{
+  if(!document.body.contains(v))return;
+  if(!freeze.busy&&!v.paused&&!v.seeking){
+   const now=Number(v.currentTime)||0,prev=freeze.last==null?now:freeze.last;
+   const anns=(clip.annotations||[]).filter(a=>a.freezeVideo!==false&&Number.isFinite(Number(a.startTime)));
+   const starts=[...new Set(anns.map(a=>Number(a.startTime)).filter(t=>t>=start-.08&&t<=end+.08).sort((a,b)=>a-b))];
+   const trigger=starts.find(t=>freeze.lastTrigger!==t&&((prev<t&&now>=t)||Math.abs(now-t)<=.07));
+   if(trigger!=null){
+    const group=anns.filter(a=>Math.abs(Number(a.startTime)-trigger)<.06);
+    const duration=Math.max(...group.map(a=>{
+     let d=Number(a.freezeDuration);
+     if(!Number.isFinite(d)){const legacy=Math.max(0,Number(a.endTime)-Number(a.startTime));d=legacy>=.25&&legacy<=30?legacy:3}
+     return Math.max(.25,Math.min(30,d||3));
+    }),0);
+    if(duration>0){
+     freeze.busy=true;freeze.lastTrigger=trigger;const token=++freeze.token;
+     v.pause();try{v.currentTime=trigger}catch(_){}
+     drawAnnotations(v,cv,clip);
+     v.parentElement?.classList.add("s68frozen");
+     freeze.timer=setTimeout(()=>{
+      if(token!==freeze.token||!document.body.contains(v))return;
+      freeze.busy=false;v.parentElement?.classList.remove("s68frozen");
+      const resume=Math.min(end,trigger+.035);try{v.currentTime=resume}catch(_){}
+      freeze.last=resume;v.play().catch(()=>{});
+     },duration*1000);
+    }
+   } else freeze.last=now;
+  } else if(!freeze.busy)freeze.last=Number(v.currentTime)||0;
+  freeze.raf=requestAnimationFrame(tick);
+ };
+ freeze.raf=requestAnimationFrame(tick);
+}
+
+async function showClip(key,autoplay=false){
+ const x=byKey(key),host=q("#s67Preview");if(!x||!host)return;
+ currentKey=key;stopFreeze();
+ if(currentObjectUrl.startsWith("blob:"))URL.revokeObjectURL(currentObjectUrl);currentObjectUrl="";
+ const start=Number(x.clip.startSec)||0,end=Math.max(start,Number(x.clip.endSec)||start),dur=Math.max(0,end-start);
+ host.innerHTML=`<div class="s68stage">
+   <video id="s59Video" playsinline preload="auto" data-s59-clip-key="${String(key).replace(/"/g,"&quot;")}"></video>
+   <canvas id="s68Canvas"></canvas><div class="s68freeze">❚❚ FRYS · MARKERING</div>
+  </div>
+  <div class="s68controls"><button id="s68Play">▶</button><input id="s68Seek" type="range" min="0" max="${Math.max(.01,dur)}" step=".05" value="0"><span id="s68Time">00:00 / ${fmt(dur)}</span></div>
+  <div class="s67meta"><b>${String(x.clip.title||"Klip").replace(/[&<>]/g,"")}</b><span>${String(x.project.title||x.project.opponent||"Kamp").replace(/[&<>]/g,"")} · ${fmt(dur)}</span></div>`;
+ const v=q("#s59Video"),cv=q("#s68Canvas"),play=q("#s68Play"),seek=q("#s68Seek"),time=q("#s68Time");
+ const src=await cachedSource(x.project);if(currentKey!==key||!src||!document.body.contains(v))return;
+ currentObjectUrl=src;v.src=src;
+ let ready=false;
+ const sync=()=>{
+  if(!ready)return;
+  let rel=Math.max(0,Math.min(dur,(Number(v.currentTime)||start)-start));
+  seek.value=rel;time.textContent=`${fmt(rel)} / ${fmt(dur)}`;
+  drawAnnotations(v,cv,x.clip);
+  if(!freeze.busy&&dur&&v.currentTime>=end-.025){
+   v.pause();try{v.currentTime=start}catch(_){}
+   seek.value=0;time.textContent=`00:00 / ${fmt(dur)}`;drawAnnotations(v,cv,x.clip);
+  }
+ };
+ v.onloadedmetadata=()=>{
+  ready=true;try{v.currentTime=start}catch(_){}
+  sync();startOwnFreeze(v,cv,x.clip,start,end);
+  if(autoplay)v.play().catch(()=>{});
+ };
+ v.ontimeupdate=sync;v.onseeked=sync;
+ v.onplay=()=>play.textContent="❚❚";v.onpause=()=>play.textContent="▶";
+ play.onclick=()=>{if(v.currentTime<start||v.currentTime>=end-.02)v.currentTime=start;v.paused?v.play().catch(()=>{}):v.pause()};
+ v.onclick=play.onclick;
+ seek.oninput=()=>{v.currentTime=start+Number(seek.value||0);sync()};
+}
+
+/* Determine selected clip from the V66 presentation list. */
+function selectedKeys(){
+ const rows=qa("#s66Selected .s66pick"),items=all();
+ return rows.map(row=>{
+  const title=row.querySelector(".s66pickmain b")?.textContent?.trim()||"";
+  const meta=row.querySelector(".s66pickmain small")?.textContent||"";
+  return items.find(x=>(x.clip.title||"Klip").trim()===title&&meta.includes(x.project.title||x.project.opponent||"Kamp"))?.key;
+ }).filter(Boolean);
+}
+function bindSelected(){
+ const box=q("#s66Selected");if(!box||box.dataset.v68==="1")return;
+ box.dataset.v68="1";
+ box.addEventListener("click",e=>{
+  if(e.target.closest("button"))return;
+  const row=e.target.closest(".s66pick");if(!row)return;
+  const rows=qa("#s66Selected .s66pick"),i=rows.indexOf(row),keys=selectedKeys();
+  if(keys[i])showClip(keys[i],false);
+ });
+}
+
+/* Keep V67's generated host, but own its contents from now on. */
+function scan(){
+ if(!q("#s66Overlay"))return;
+ hydrateThumbs();bindSelected();
+ const keys=selectedKeys();
+ if(keys.length&&(!currentKey||!keys.includes(currentKey)||!q("#s59Video")))showClip(keys[0],false);
+}
+new MutationObserver(()=>setTimeout(scan,0)).observe(document.body,{childList:true,subtree:true});
+setInterval(scan,500);
+scan();
+
+const st=document.createElement("style");st.id="s68Css";st.textContent=`
+.s66clip{min-height:54px}.s68thumb{position:relative;width:86px;aspect-ratio:16/9;flex:0 0 86px;background:#000;border:1px solid #173a21;border-radius:5px;overflow:hidden}.s68thumb video{width:100%;height:100%;object-fit:cover;pointer-events:none}.s68thumb span{position:absolute;left:6px;bottom:5px;font-size:8px;color:#fff;text-shadow:0 1px 4px #000}
+.s68stage{position:relative;aspect-ratio:16/9;background:#000;border:1px solid #183b22;border-radius:8px;overflow:hidden}.s68stage video{width:100%;height:100%;object-fit:contain}.s68stage canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.s68freeze{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#62f34f;color:#002807;border-radius:999px;padding:6px 9px;font-size:8px;font-weight:950;opacity:0}.s68stage.s68frozen .s68freeze{opacity:1}
+.s68controls{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:8px 2px 3px}.s68controls button{border:1px solid #2c6b39;background:#06140b;color:#fff;border-radius:6px;width:31px;height:29px;font-weight:950;cursor:pointer}.s68controls input{width:100%;accent-color:#62f34f}.s68controls span{font-size:8px;color:#84988b;font-variant-numeric:tabular-nums}
+`;
+document.head.appendChild(st);
+
+window.START11_BUILD="V68-CLIP-THUMBNAILS-WINDOW-FREEZE";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
    - Cloud-first exercise library per authenticated account
