@@ -2064,3 +2064,167 @@ console.info("START11 loaded:",window.START11_BUILD);
 /* START11 V64 – adjustable freeze duration + durable video presentations */
 window.START11_BUILD="V64-FREEZE-DURATION-PRESENTATION-SAVE";
 console.info("START11 loaded:",window.START11_BUILD);
+
+
+/* =========================================================
+ START11 V65 – VISIBLE FREEZE CONTROL + PERSISTENT PROJECT DELETE
+ - Freeze duration control is placed directly under MARKERINGER
+ - Deleted video projects get local tombstones immediately
+ - Tombstones are reapplied after reload/cloud hydration
+ - Deletion is pushed through START11 save + cloud save
+========================================================= */
+(function start11V65VideoPersistence(){
+"use strict";
+
+const q=s=>document.querySelector(s);
+const TOMBSTONE_KEY="start11.deletedVideoProjects.v65";
+
+function currentClip(){
+ try{return typeof s18Clip==="function"?s18Clip():null}catch(_){return null}
+}
+function currentAnnotation(){
+ const c=currentClip();
+ if(!c||!Array.isArray(c.annotations))return null;
+ return c.annotations.find(a=>String(a.id)===String(typeof s18!=="undefined"?s18.selectedAnn:""));
+}
+function persist(){
+ try{if(typeof s18Touch==="function")s18Touch()}catch(_){}
+ try{if(typeof s13Save==="function")s13Save()}catch(_){}
+ try{if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(_){}
+}
+
+/* ---------- Freeze duration: visible directly below MARKERINGER ---------- */
+function markerHeading(){
+ const candidates=[...document.querySelectorAll("h1,h2,h3,h4,h5,h6,strong,b,div,span")];
+ return candidates.find(el=>{
+   if((el.textContent||"").trim().toUpperCase()!=="MARKERINGER")return false;
+   return el.offsetParent!==null;
+ })||null;
+}
+function setFreezeDuration(value){
+ const a=currentAnnotation();if(!a)return;
+ a.freezeDuration=Math.max(.25,Math.min(30,Number(value)||3));
+ a.freezeVideo=true;
+ const input=q("#s65FreezeDuration");if(input)input.value=String(a.freezeDuration);
+ const old=q("#s61FreezeDuration");if(old)old.value=String(a.freezeDuration);
+ persist();
+}
+function renderFreezeControl(){
+ const heading=markerHeading();
+ const a=currentAnnotation();
+ let box=q("#s65FreezeQuick");
+
+ if(!heading||!a){
+   box?.remove();
+   return;
+ }
+ if(!Number.isFinite(Number(a.freezeDuration))){
+   const legacy=Math.max(0,Number(a.endTime)-Number(a.startTime));
+   a.freezeDuration=legacy>=.25&&legacy<=30?legacy:3;
+ }
+
+ if(!box){
+   box=document.createElement("div");
+   box.id="s65FreezeQuick";
+   box.innerHTML=`
+    <div class="s65FreezeLabel">FRYS BILLEDET I</div>
+    <div class="s65FreezeRow">
+      <button type="button" id="s65FreezeMinus">−</button>
+      <input id="s65FreezeDuration" type="number" min="0.25" max="30" step="0.25">
+      <span>sek.</span>
+      <button type="button" id="s65FreezePlus">+</button>
+    </div>`;
+   heading.insertAdjacentElement("afterend",box);
+   q("#s65FreezeMinus").onclick=()=>setFreezeDuration((Number(q("#s65FreezeDuration")?.value)||3)-.25);
+   q("#s65FreezePlus").onclick=()=>setFreezeDuration((Number(q("#s65FreezeDuration")?.value)||3)+.25);
+   q("#s65FreezeDuration").onchange=e=>setFreezeDuration(e.target.value);
+ }
+ const input=q("#s65FreezeDuration");
+ if(input&&document.activeElement!==input)input.value=String(Number(a.freezeDuration));
+}
+
+/* ---------- Project deletion tombstones ---------- */
+function tombstones(){
+ try{
+   const x=JSON.parse(localStorage.getItem(TOMBSTONE_KEY)||"[]");
+   return new Set(Array.isArray(x)?x.map(String):[]);
+ }catch(_){return new Set()}
+}
+function saveTombstones(set){
+ try{localStorage.setItem(TOMBSTONE_KEY,JSON.stringify([...set]))}catch(_){}
+}
+function rememberDeleted(id){
+ if(id==null||id==="")return;
+ const set=tombstones();set.add(String(id));saveTombstones(set);
+}
+function applyDeletedProjects(pushSave=false){
+ if(typeof s13Data==="undefined"||!Array.isArray(s13Data?.videoProjects))return false;
+ const dead=tombstones();if(!dead.size)return false;
+ const before=s13Data.videoProjects.length;
+ s13Data.videoProjects=s13Data.videoProjects.filter(p=>!dead.has(String(p.id)));
+ const changed=s13Data.videoProjects.length!==before;
+
+ if(typeof s18!=="undefined"&&dead.has(String(s18.projectId))){
+   const next=s13Data.videoProjects[0]||null;
+   s18.projectId=next?.id||null;
+   s18.clipId=next?.clips?.[0]?.id||null;
+   s18.selectedAnn=null;
+ }
+ if(changed&&pushSave)persist();
+ return changed;
+}
+
+/* Capture project ID before the existing delete handler mutates UI/state. */
+document.addEventListener("click",e=>{
+ const btn=e.target?.closest?.("button");
+ if(!btn)return;
+ const label=(btn.textContent||"").replace(/\s+/g," ").trim().toUpperCase();
+ if(label!=="SLET PROJEKT")return;
+
+ let id=null;
+ try{id=typeof s18Project==="function"?s18Project()?.id:s18?.projectId}catch(_){}
+ if(id==null)return;
+
+ /* Existing handler still owns confirmation/deletion.
+    Only create tombstone if that project is actually gone immediately afterwards. */
+ setTimeout(()=>{
+   try{
+     const stillThere=Array.isArray(s13Data?.videoProjects)&&s13Data.videoProjects.some(p=>String(p.id)===String(id));
+     if(stillThere)return; // user cancelled or deletion failed
+     rememberDeleted(id);
+     persist();
+   }catch(_){}
+ },80);
+},true);
+
+/* Cloud hydration can arrive after initial render. Reapply tombstones repeatedly for a short,
+   cheap pass; this prevents a stale cloud copy resurrecting deleted projects after F5. */
+let passes=0;
+const hydrateGuard=setInterval(()=>{
+ passes++;
+ const changed=applyDeletedProjects(true);
+ renderFreezeControl();
+ if(passes>60)clearInterval(hydrateGuard);
+},500);
+
+new MutationObserver(()=>renderFreezeControl()).observe(document.body,{childList:true,subtree:true});
+setInterval(renderFreezeControl,500);
+
+const st=document.createElement("style");
+st.id="s65VideoPersistenceCss";
+st.textContent=`
+#s65FreezeQuick{margin:7px 0 10px;padding:9px 10px;border:1px solid rgba(112,255,78,.25);border-radius:7px;background:rgba(74,255,54,.045)}
+.s65FreezeLabel{margin-bottom:7px;color:#79ff5d;font-size:7px;font-weight:950;letter-spacing:.55px}
+.s65FreezeRow{display:flex;align-items:center;gap:6px}
+.s65FreezeRow button{width:29px;height:29px;border:1px solid #315f38;border-radius:5px;background:#061009;color:#fff;font-weight:950;cursor:pointer}
+.s65FreezeRow input{width:70px;height:29px;box-sizing:border-box;border:1px solid #315f38;border-radius:5px;background:#020805;color:#fff;text-align:center;font:inherit;font-size:8px;font-weight:900}
+.s65FreezeRow span{color:#819487;font-size:7px}
+`;
+document.head.appendChild(st);
+
+applyDeletedProjects(false);
+renderFreezeControl();
+
+window.START11_BUILD="V65-VIDEO-PERSISTENCE-FREEZE-UI";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
