@@ -69599,6 +69599,66 @@ const boot=()=>{ensureData();ensureView();bindNav();new MutationObserver(bindNav
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,350),{once:true});else setTimeout(boot,350);
 window.START11_BUILD="V58.1-VIDEO-CLIP-FIX";console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+   START11 V58.2 – MODERN KAMPANALYSE PROJECT SWITCH FIX
+   - Clicking a project inside the modern Video > Kampanalyse
+     keeps the analyser inside #s57AnalysisHost
+   - Automatically selects that project's first clip
+   - Loads/seeks the correct project video immediately
+========================================================= */
+(function start11V582ProjectSwitchFix(){
+"use strict";
+
+function analysisHost(){
+  return document.getElementById("s57AnalysisHost") || document.getElementById("s13content");
+}
+
+if(typeof s18BindProjectClip==="function"){
+  s18BindProjectClip=function(){
+    document.querySelectorAll("[data-project]").forEach(x=>{
+      x.onclick=()=>{
+        const p=(Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[])
+          .find(z=>String(z.id)===String(x.dataset.project));
+        if(!p)return;
+
+        s18.projectId=p.id;
+        s18.clipId=p.clips?.[0]?.id||null;
+        s18.inSec=null;
+        s18.outSec=null;
+        s18.selectedAnn=null;
+        s18.undo=[];
+        s18.redo=[];
+
+        const host=analysisHost();
+        if(host&&typeof s18Render==="function"){
+          s18Render(host);
+          setTimeout(()=>{
+            const c=typeof s18Clip==="function"?s18Clip():null;
+            if(c&&typeof s18Seek==="function")s18Seek(c);
+          },80);
+        }
+      };
+    });
+
+    document.querySelectorAll("[data-clip]").forEach(x=>{
+      x.onclick=()=>{
+        s18.clipId=x.dataset.clip;
+        s18.selectedAnn=null;
+        s18.undo=[];
+        s18.redo=[];
+        const c=typeof s18Clip==="function"?s18Clip():null;
+        if(c&&typeof s18Seek==="function")s18Seek(c);
+        if(typeof s18RenderPanels==="function")s18RenderPanels();
+      };
+    });
+  };
+}
+
+window.START11_BUILD="V58.2-VIDEO-PROJECT-SWITCH-FIX";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
    - Cloud-first exercise library per authenticated account
