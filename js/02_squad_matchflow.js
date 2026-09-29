@@ -6371,7 +6371,7 @@ if (
        V39 still owns some match-entry buttons, so it must hide the exact
        same modern views as the V41 router. */
     function v509ShowOnly(id){
-        ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView"]
+        ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView","s57VideoView"]
             .map($).filter(Boolean)
             .forEach(v=>v.hidden=(v.id!==id));
         const app=$("s34App");
@@ -6507,7 +6507,7 @@ if (
         /* V50.7: Exercise Bank is also a top-level modern view.
            It must be part of the central router, otherwise HOME can be shown
            while Træning remains visible underneath it. */
-        return ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView"]
+        return ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView","s57VideoView"]
             .map($).filter(Boolean);
     }
 
@@ -6639,7 +6639,7 @@ if (
                 const btn=e.target.closest?.("[data-s34]");
                 if(!btn) return;
                 const route=btn.dataset.s34;
-                if(!["home","players","matches"].includes(route)) return;
+                if(!["home","players","matches","video"].includes(route)) return;
 
                 e.preventDefault();
                 e.stopImmediatePropagation();
@@ -6647,6 +6647,7 @@ if (
                 if(route==="home") return showHome();
                 if(route==="players") return showPlayers();
                 if(route==="matches") return showLineup();
+                if(route==="video" && typeof window.start11ShowVideoLibrary==="function") return window.start11ShowVideoLibrary();
             },true);
         }
 

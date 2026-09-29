@@ -1679,7 +1679,7 @@
     window.__START11_V45_EXERCISE_BANK__=true;
 
     const $=id=>document.getElementById(id);
-    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d",folder:"all"};
+    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d",folder:"all",mode:"exercises",sessionFilter:"all",sessionSearch:"",sessionSelected:""};
     const FAV_KEY="start11.v45.exerciseFavorites";
 
     function esc(v){
@@ -1798,7 +1798,7 @@
         return '<div class="s45-card-fallback">⚽</div>';
     }
     function showOnlyBank(){
-        ["s34HomeView","s34PlayersView","s34LineupView","s45ExerciseBankView"].forEach(id=>{
+        ["s34HomeView","s34PlayersView","s34LineupView","s45ExerciseBankView","s57VideoView"].forEach(id=>{
             const el=$(id); if(el) el.hidden=id!=="s45ExerciseBankView";
         });
         $("s34App")?.removeAttribute("hidden");
@@ -2230,7 +2230,309 @@
         host.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{state.view=b.dataset.view;renderDetail();});
         if(state.view==="3d") setTimeout(()=>s49RenderThreeExercise(ex),0);
     }
-    function render(){renderSide();renderGrid();renderDetail();}
+
+    /* =========================================================
+       START11 V56 – TRAINING PLANS INSIDE MODERN TRAINING AREA
+       Reuses s13Data.sessions + s13Save. No migration.
+    ========================================================= */
+    function sessions(){
+        try{
+            if(typeof s13Data!=="undefined"){
+                if(!Array.isArray(s13Data.sessions))s13Data.sessions=[];
+                return s13Data.sessions;
+            }
+        }catch(_){}
+        if(window.s13Data){
+            if(!Array.isArray(window.s13Data.sessions))window.s13Data.sessions=[];
+            return window.s13Data.sessions;
+        }
+        return [];
+    }
+    function clone56(v){
+        try{return structuredClone(v);}catch(_){return JSON.parse(JSON.stringify(v));}
+    }
+    function today56(){return new Date().toISOString().slice(0,10);}
+    function date56(v,long=false){
+        if(!v)return "Ingen dato";
+        const d=new Date(v+"T12:00:00");
+        if(isNaN(d))return v;
+        return d.toLocaleDateString("da-DK",long?{weekday:"long",day:"numeric",month:"long",year:"numeric"}:{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+    }
+    function total56(s){return (s?.blocks||[]).reduce((n,b)=>n+Number(b.duration||0),0);}
+    function ex56(id){return exercises().find(x=>String(x.id)===String(id));}
+    function sessionThemes56(s){
+        const set=new Set();
+        if(s?.theme) set.add(String(s.theme).trim());
+        (s?.blocks||[]).forEach(b=>{
+            const e=ex56(b.exerciseId);
+            const t=e?.theme||e?.focus||"";
+            if(t) set.add(String(t).trim());
+        });
+        return [...set].filter(Boolean).slice(0,4);
+    }
+    function visibleSessions56(){
+        const q=norm(state.sessionSearch),today=today56();
+        return [...sessions()].filter(s=>{
+            if(state.sessionFilter==="upcoming" && String(s.date||"")<today)return false;
+            if(state.sessionFilter==="past" && String(s.date||"")>=today)return false;
+            if(q){
+                const blockText=(s.blocks||[]).map(b=>`${b.title||""} ${ex56(b.exerciseId)?.title||""}`).join(" ");
+                if(!norm([s.title,s.theme,s.note,blockText].join(" ")).includes(q))return false;
+            }
+            return true;
+        }).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+    }
+    function sessionThumb56(s){
+        const first=(s?.blocks||[]).map(b=>ex56(b.exerciseId)).find(Boolean);
+        return first?svgFor(first):'<div class="s56-session-fallback"><span>△</span></div>';
+    }
+    function installPlannerShell56(){
+        const side=document.querySelector(".s45-bank-side");
+        const main=document.querySelector(".s45-bank-main");
+        if(!side||!main)return;
+
+        if(!$("s56ModeTabs")){
+            const tabs=document.createElement("div");
+            tabs.id="s56ModeTabs";tabs.className="s56-mode-tabs";
+            tabs.innerHTML=`<button type="button" data-s56-mode="exercises">Øvelsesbank</button><button type="button" data-s56-mode="plans">Træningsplaner</button>`;
+            side.insertBefore(tabs,side.children[1]||null);
+            tabs.querySelectorAll("[data-s56-mode]").forEach(b=>b.onclick=()=>{
+                state.mode=b.dataset.s56Mode;
+                render();
+            });
+        }
+        if(!$("s56PlannerSide")){
+            const box=document.createElement("div");
+            box.id="s56PlannerSide";box.className="s56-planner-side";box.hidden=true;
+            box.innerHTML=`
+              <div class="s45-side-title">TRÆNINGSPLANER</div>
+              <nav class="s45-bank-nav s56-plan-nav">
+                <button class="active" data-s56-session-filter="all" type="button"><span>▦</span> Alle træninger <b id="s56CountAll">0</b></button>
+                <button data-s56-session-filter="upcoming" type="button"><span>◷</span> Kommende <b id="s56CountUpcoming">0</b></button>
+                <button data-s56-session-filter="past" type="button"><span>↶</span> Tidligere <b id="s56CountPast">0</b></button>
+              </nav>
+              <div class="s45-side-title">GENVEJE</div>
+              <div class="s56-plan-shortcuts">
+                <button type="button" id="s56ThisWeek">Denne uge</button>
+                <button type="button" id="s56ClearPlanSearch">Nulstil filtre</button>
+              </div>`;
+            side.appendChild(box);
+            box.querySelectorAll("[data-s56-session-filter]").forEach(b=>b.onclick=()=>{state.sessionFilter=b.dataset.s56SessionFilter;render();});
+            $("s56ClearPlanSearch").onclick=()=>{state.sessionFilter="all";state.sessionSearch="";render();};
+            $("s56ThisWeek").onclick=()=>{state.sessionFilter="upcoming";state.sessionSearch="";render();};
+        }
+    }
+    function applyMode56(){
+        installPlannerShell56();
+        const plans=state.mode==="plans";
+        $("s56ModeTabs")?.querySelectorAll("[data-s56-mode]").forEach(b=>b.classList.toggle("active",b.dataset.s56Mode===state.mode));
+        const side=document.querySelector(".s45-bank-side");
+        if(side){
+            [...side.children].forEach(el=>{
+                if(el.id==="s45NewExercise"||el.id==="s56ModeTabs"||el.id==="s56PlannerSide")return;
+                el.hidden=plans;
+            });
+        }
+        if($("s56PlannerSide"))$("s56PlannerSide").hidden=!plans;
+
+        const primary=$("s45NewExercise");
+        if(primary){
+            primary.textContent=plans?"＋ Opret træning":"＋ Opret øvelse";
+            primary.onclick=plans?()=>openSessionEditor56(""):newExercise;
+        }
+        const head=document.querySelector(".s45-bank-head > div");
+        if(head)head.innerHTML=plans?`<span>TRÆNING · PLANLÆGNING</span><h1>Træningsplaner</h1><p class="s56-head-copy">Planlæg, rediger og gennemfør dine træninger. Brug øvelsesbanken til at bygge hvert pas.</p>`:`<span>TRÆNING · ØVELSESBANK V2</span><h1>Øvelsesbank</h1>`;
+        const input=$("s45ExerciseSearch");
+        if(input){
+            input.placeholder=plans?"Søg træninger, temaer eller noter...":"Søg øvelser, temaer eller fokus...";
+            input.value=plans?state.sessionSearch:state.search;
+        }
+        document.querySelector(".s45-bank-toolbar")?.classList.toggle("s56-planner-toolbar",plans);
+    }
+    function renderPlannerSide56(){
+        const all=sessions(),today=today56();
+        $("s56CountAll")&&($("s56CountAll").textContent=all.length);
+        $("s56CountUpcoming")&&($("s56CountUpcoming").textContent=all.filter(s=>String(s.date||"")>=today).length);
+        $("s56CountPast")&&($("s56CountPast").textContent=all.filter(s=>String(s.date||"")<today).length);
+        document.querySelectorAll("[data-s56-session-filter]").forEach(b=>b.classList.toggle("active",b.dataset.s56SessionFilter===state.sessionFilter));
+    }
+    function renderSessionGrid56(){
+        const list=visibleSessions56(),host=$("s45ExerciseGrid");
+        if(!host)return;
+        host.classList.add("s56-session-grid");
+        if($("s45ActiveFilter"))$("s45ActiveFilter").textContent=state.sessionFilter==="upcoming"?"Kommende træninger":state.sessionFilter==="past"?"Tidligere træninger":"Alle træninger";
+        if($("s45ResultCount"))$("s45ResultCount").textContent=`${list.length} træning${list.length===1?"":"er"}`;
+        host.innerHTML=list.map(s=>{
+            const themes=sessionThemes56(s),mins=total56(s),blocks=(s.blocks||[]).length;
+            return `<article class="s56-session-card ${String(s.id)===String(state.sessionSelected)?"active":""}" data-s56-session="${esc(s.id)}">
+              <div class="s56-session-thumb">${sessionThumb56(s)}</div>
+              <div class="s56-session-body">
+                <span class="s56-session-date">${esc(date56(s.date))}</span>
+                <strong>${esc(s.title||"Træning")}</strong>
+                <div class="s45-tags">${themes.map(t=>`<span class="s45-tag">${esc(t)}</span>`).join("")}</div>
+                <div class="s56-session-meta"><span>◷ ${mins} min</span><span>▣ ${blocks} øvelse${blocks===1?"":"r"}</span></div>
+              </div>
+              <button type="button" class="s56-open-session" data-s56-open="${esc(s.id)}">Åbn træning →</button>
+            </article>`;
+        }).join("")||`<div class="s45-no-results">Ingen træninger matcher filtrene.</div>`;
+        host.querySelectorAll("[data-s56-session]").forEach(card=>card.onclick=e=>{
+            if(e.target.closest("[data-s56-open]"))return;
+            state.sessionSelected=card.dataset.s56Session;render();
+        });
+        host.querySelectorAll("[data-s56-open]").forEach(b=>b.onclick=e=>{e.stopPropagation();state.sessionSelected=b.dataset.s56Open;render();});
+    }
+    function renderSessionDetail56(){
+        const host=$("s45ExerciseDetail");if(!host)return;
+        const s=sessions().find(x=>String(x.id)===String(state.sessionSelected));
+        if(!s){
+            host.innerHTML=`<div class="s45-empty-detail"><span>△</span><strong>Vælg en træning</strong><p>Se træningsforløb, øvelser, varighed og noter.</p></div>`;
+            return;
+        }
+        const blocks=s.blocks||[],total=total56(s),themes=sessionThemes56(s);
+        host.innerHTML=`
+          <div class="s56-detail-head">
+            <div><span>TRÆNINGSPLAN</span><h2>${esc(s.title||"Træning")}</h2><p>${esc(date56(s.date,true))} · ${total} min</p></div>
+            <button id="s56EditSession" class="primary" type="button">Rediger</button>
+          </div>
+          <div class="s45-tags s56-detail-tags">${themes.map(t=>`<span class="s45-tag">${esc(t)}</span>`).join("")}</div>
+          <section class="s56-flow">
+            <div class="s56-flow-head"><strong>Træningsforløb</strong><b>${total} min</b></div>
+            <div class="s56-progress"><i style="width:${blocks.length?100:0}%"></i></div>
+            <div class="s56-blocks">${blocks.map((b,i)=>{
+                const e=ex56(b.exerciseId);
+                return `<div class="s56-block">
+                  <span class="s56-block-no">${i+1}</span>
+                  <div class="s56-block-thumb">${e?svgFor(e):'<span>△</span>'}</div>
+                  <div class="s56-block-copy"><strong>${esc(b.title||e?.title||"Øvelse")}</strong><span>${esc(e?.theme||s.theme||"Træning")}</span></div>
+                  <b>◷ ${Number(b.duration||0)} min</b>
+                </div>`;
+            }).join("")||`<div class="s56-empty-flow">Ingen øvelser tilføjet endnu.</div>`}</div>
+            <button id="s56AddFromBank" class="s56-add-bank" type="button">＋ Tilføj øvelse fra øvelsesbanken</button>
+          </section>
+          <section class="s56-session-info">
+            <strong>Træningsinfo</strong>
+            <div><span>Dato</span><b>${esc(date56(s.date,true))}</b></div>
+            <div><span>Varighed</span><b>${total} min</b></div>
+            <div><span>Tema</span><b>${esc(s.theme||"—")}</b></div>
+            <div><span>Noter</span><b>${esc(s.note||"—")}</b></div>
+          </section>`;
+        $("s56EditSession").onclick=()=>openSessionEditor56(s.id);
+        $("s56AddFromBank").onclick=()=>openSessionEditor56(s.id,true);
+    }
+    function openSessionEditor56(id="",focusBlocks=false){
+        document.getElementById("s56SessionEditor")?.remove();
+        const existing=sessions().find(x=>String(x.id)===String(id));
+        const draft=existing?clone56(existing):{id:"",date:today56(),title:"Træning",theme:"",note:"",blocks:[],attendance:{}};
+        let blocks=clone56(draft.blocks||[]);
+        const overlay=document.createElement("div");
+        overlay.id="s56SessionEditor";overlay.className="s56-editor-overlay";
+        document.body.appendChild(overlay);
+
+        const draw=()=>{
+            overlay.innerHTML=`<section class="s56-editor">
+              <header><div><span>TRÆNING · PLANLÆGGER</span><h2>${draft.id?"Rediger træning":"Opret træning"}</h2></div><button id="s56CloseEditor" type="button">×</button></header>
+              <div class="s56-editor-layout">
+                <aside class="s56-editor-meta">
+                  <label>Titel<input id="s56SessionTitle" value="${esc(draft.title||"")}"></label>
+                  <div class="s56-editor-pair"><label>Dato<input id="s56SessionDate" type="date" value="${esc(draft.date||today56())}"></label><label>Tema<input id="s56SessionTheme" value="${esc(draft.theme||"")}"></label></div>
+                  <label>Noter<textarea id="s56SessionNote">${esc(draft.note||"")}</textarea></label>
+                  <div class="s56-editor-summary"><span>Samlet tid</span><strong>${blocks.reduce((n,b)=>n+Number(b.duration||0),0)} min</strong><span>Øvelser</span><strong>${blocks.length}</strong></div>
+                </aside>
+                <main class="s56-editor-plan">
+                  <div class="s56-editor-plan-head"><div><span>TRÆNINGSFORLØB</span><strong>Byg træningen med øvelser fra banken</strong></div><button id="s56AddBlock" type="button">＋ Tilføj øvelse</button></div>
+                  <div class="s56-editor-blocks">${blocks.map((b,i)=>`<article class="s56-edit-block" data-s56-block="${esc(b.id)}">
+                    <span class="s56-edit-index">${i+1}</span>
+                    <div class="s56-edit-fields">
+                      <select data-f="exerciseId"><option value="">Manuel øvelse</option>${exercises().map(e=>`<option value="${esc(e.id)}" ${String(b.exerciseId)===String(e.id)?"selected":""}>${esc(e.title||"Øvelse")}${e.folderId?` · ${esc(folderPath(e.folderId))}`:""}</option>`).join("")}</select>
+                      <input data-f="title" value="${esc(b.title||"")}" placeholder="Titel">
+                      <textarea data-f="note" placeholder="Coaching/noter">${esc(b.note||"")}</textarea>
+                    </div>
+                    <label class="s56-duration">MIN<input data-f="duration" type="number" min="0" value="${Number(b.duration||15)}"></label>
+                    <button data-del type="button">×</button>
+                  </article>`).join("")||`<div class="s56-editor-empty">Tilføj den første øvelse til træningen.</div>`}</div>
+                </main>
+              </div>
+              <footer>${draft.id?`<button id="s56DeleteSession" class="danger" type="button">Slet træning</button>`:"<span></span>"}<div><button id="s56CancelSession" type="button">Annuller</button><button id="s56SaveSession" class="primary" type="button">Gem træning</button></div></footer>
+            </section>`;
+            const syncMeta=()=>{
+                draft.title=$("s56SessionTitle")?.value||"Træning";
+                draft.date=$("s56SessionDate")?.value||today56();
+                draft.theme=$("s56SessionTheme")?.value||"";
+                draft.note=$("s56SessionNote")?.value||"";
+            };
+            overlay.querySelectorAll("[data-s56-block]").forEach(row=>{
+                const get=()=>blocks.find(x=>String(x.id)===String(row.dataset.s56Block));
+                row.querySelectorAll("[data-f]").forEach(field=>field.addEventListener(field.tagName==="SELECT"?"change":"input",()=>{
+                    syncMeta();const b=get();if(!b)return;
+                    if(field.dataset.f==="duration")b.duration=Math.max(0,Number(field.value||0));
+                    else b[field.dataset.f]=field.value;
+                    if(field.dataset.f==="exerciseId"&&field.value){
+                        const e=ex56(field.value);
+                        if(e){b.title=e.title||"Øvelse";b.duration=Number(e.duration||15);b.note=e.coaching||"";draw();}
+                    }
+                }));
+                row.querySelector("[data-del]").onclick=()=>{syncMeta();blocks=blocks.filter(x=>String(x.id)!==String(row.dataset.s56Block));draw();};
+            });
+            $("s56AddBlock").onclick=()=>{syncMeta();blocks.push({id:typeof s13Id==="function"?s13Id("b"):`b_${Date.now()}`,exerciseId:"",title:"Ny øvelse",duration:15,note:""});draw();setTimeout(()=>overlay.querySelector(".s56-editor-blocks")?.scrollTo({top:99999,behavior:"smooth"}),20);};
+            $("s56CloseEditor").onclick=$("s56CancelSession").onclick=()=>overlay.remove();
+            $("s56SaveSession").onclick=()=>{
+                syncMeta();
+                const value={...draft,id:draft.id||(typeof s13Id==="function"?s13Id("session"):`session_${Date.now()}`),blocks:clone56(blocks)};
+                const i=sessions().findIndex(x=>String(x.id)===String(value.id));
+                if(i<0)sessions().push(value);else sessions()[i]=value;
+                try{if(typeof s13Save==="function")s13Save();}catch(_){}
+                state.sessionSelected=String(value.id);overlay.remove();render();
+            };
+            $("s56DeleteSession")&&($("s56DeleteSession").onclick=()=>{
+                if(!confirm("Slet træningen?"))return;
+                const i=sessions().findIndex(x=>String(x.id)===String(draft.id));
+                if(i>=0)sessions().splice(i,1);
+                try{if(typeof s13Save==="function")s13Save();}catch(_){}
+                state.sessionSelected="";overlay.remove();render();
+            });
+        };
+        draw();
+        if(focusBlocks)setTimeout(()=>$("s56AddBlock")?.focus(),30);
+    }
+    function installPlannerStyles56(){
+        if($("s56PlannerStyles"))return;
+        const style=document.createElement("style");style.id="s56PlannerStyles";style.textContent=`
+          .s56-mode-tabs{display:grid;grid-template-columns:1fr 1fr;margin:8px 0 15px;border:1px solid rgba(255,255,255,.07);border-radius:6px;overflow:hidden}
+          .s56-mode-tabs button{height:34px;border:0;background:#07100a;color:#7f8b83;font:inherit;font-size:7.5px;font-weight:900;cursor:pointer}
+          .s56-mode-tabs button.active{background:rgba(91,235,69,.10);color:#72ef57;box-shadow:inset 0 -2px #64eb4b}
+          .s56-planner-side{margin-top:3px}.s56-plan-shortcuts{display:grid;gap:6px}.s56-plan-shortcuts button{height:30px;border:1px solid rgba(255,255,255,.07);border-radius:5px;background:#07100a;color:#87948c;font:inherit;font-size:7px;cursor:pointer}
+          .s56-head-copy{margin:4px 0 0;color:#718078;font-size:7px}.s56-session-grid{display:flex!important;flex-direction:column!important;gap:10px!important}
+          .s56-session-card{min-height:112px;display:grid;grid-template-columns:150px minmax(0,1fr) 130px;align-items:center;gap:14px;padding:10px;border:1px solid rgba(255,255,255,.075);border-radius:8px;background:#061009;cursor:pointer}
+          .s56-session-card:hover,.s56-session-card.active{border-color:rgba(98,236,74,.55);background:linear-gradient(90deg,rgba(85,225,66,.055),#061009 55%)}
+          .s56-session-thumb{height:90px;overflow:hidden;border-radius:6px;background:#176f38}.s56-session-thumb svg{width:100%;height:100%;display:block}.s56-session-fallback{height:100%;display:grid;place-items:center;font-size:28px;color:#74ef58}
+          .s56-session-body{min-width:0}.s56-session-date{display:block;margin-bottom:5px;color:#8e9a92;font-size:7px;font-weight:900;text-transform:uppercase}.s56-session-body>strong{display:block;margin-bottom:8px;font-size:13px;color:#fff}
+          .s56-session-meta{display:flex;gap:14px;margin-top:9px;color:#89968d;font-size:7px}.s56-open-session{height:36px;border:1px solid rgba(101,237,77,.28);border-radius:6px;background:rgba(90,226,69,.035);color:#73ee58;font:inherit;font-size:7.5px;font-weight:900;cursor:pointer}
+          .s56-detail-head{display:flex;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid rgba(255,255,255,.07)}.s56-detail-head span{color:#70ee55;font-size:6.5px;font-weight:900;letter-spacing:1px}.s56-detail-head h2{margin:5px 0 3px;font-size:17px}.s56-detail-head p{margin:0;color:#839087;font-size:7.5px}
+          .s56-detail-head button{align-self:flex-start;height:32px;padding:0 15px;border:0;border-radius:5px;background:#72ed54;color:#061006;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-detail-tags{padding:0 14px 12px}
+          .s56-flow{margin:0 10px 10px;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:7px}.s56-flow-head{display:flex;justify-content:space-between;font-size:8px}.s56-flow-head b{color:#70ee55}.s56-progress{height:5px;margin:10px 0 7px;border-radius:99px;background:#132219;overflow:hidden}.s56-progress i{display:block;height:100%;background:#68ec4d}
+          .s56-block{display:grid;grid-template-columns:24px 54px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.055)}.s56-block-no{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#203328;color:#fff;font-size:7px;font-weight:900}.s56-block-thumb{height:42px;overflow:hidden;border-radius:4px;background:#176f38}.s56-block-thumb svg{width:100%;height:100%}.s56-block-copy strong{display:block;font-size:8px}.s56-block-copy span{display:block;margin-top:3px;color:#74a17c;font-size:6.5px}.s56-block>b{color:#a7b1aa;font-size:6.5px}
+          .s56-add-bank{width:100%;height:34px;margin-top:10px;border:1px dashed rgba(104,235,80,.22);border-radius:5px;background:transparent;color:#89978e;font:inherit;font-size:7px;cursor:pointer}.s56-add-bank:hover{color:#72ee57;border-color:#72ee57}
+          .s56-session-info{margin:0 10px 12px;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:7px}.s56-session-info>strong{display:block;margin-bottom:8px;font-size:8px}.s56-session-info div{display:grid;grid-template-columns:70px 1fr;gap:8px;padding:5px 0;color:#849188;font-size:7px}.s56-session-info div b{color:#dce5de;font-weight:700}.s56-empty-flow{padding:18px;text-align:center;color:#738078;font-size:7px}
+          .s56-editor-overlay{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:24px;background:rgba(0,4,2,.88);backdrop-filter:blur(10px)}.s56-editor{width:min(1180px,96vw);height:min(760px,92vh);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;border:1px solid rgba(101,237,77,.22);border-radius:12px;background:#041008;color:#fff;box-shadow:0 35px 120px #000}
+          .s56-editor>header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.07)}.s56-editor>header span,.s56-editor-plan-head span{color:#70ed55;font-size:7px;font-weight:900;letter-spacing:1px}.s56-editor>header h2{margin:4px 0 0;font-size:20px}.s56-editor>header button{width:34px;height:34px;border:1px solid rgba(255,255,255,.08);border-radius:50%;background:#07140b;color:#fff;font-size:18px;cursor:pointer}
+          .s56-editor-layout{min-height:0;display:grid;grid-template-columns:320px 1fr}.s56-editor-meta{padding:18px;border-right:1px solid rgba(255,255,255,.07);overflow:auto}.s56-editor-meta label{display:grid;gap:5px;margin-bottom:12px;color:#829087;font-size:7px;font-weight:900}.s56-editor-meta input,.s56-editor-meta textarea,.s56-edit-fields input,.s56-edit-fields textarea,.s56-edit-fields select,.s56-duration input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#020805;color:#fff;font:inherit;font-size:8px;outline:none}.s56-editor-meta input{height:38px;padding:0 10px}.s56-editor-meta textarea{height:100px;padding:10px;resize:vertical}.s56-editor-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.s56-editor-summary{display:grid;grid-template-columns:1fr auto;gap:7px;padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:7px;color:#829087;font-size:7px}.s56-editor-summary strong{color:#70ed55}
+          .s56-editor-plan{min-width:0;padding:18px;overflow:hidden;display:grid;grid-template-rows:auto 1fr}.s56-editor-plan-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.s56-editor-plan-head strong{display:block;margin-top:4px;font-size:10px}.s56-editor-plan-head button{height:34px;padding:0 12px;border:1px solid rgba(101,237,77,.25);border-radius:5px;background:rgba(101,237,77,.06);color:#72ed56;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-editor-blocks{overflow:auto;padding-right:4px}.s56-edit-block{display:grid;grid-template-columns:28px minmax(0,1fr) 70px 30px;gap:9px;align-items:start;padding:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:#061009}.s56-edit-index{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#203328;font-size:7px;font-weight:900}.s56-edit-fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}.s56-edit-fields select{grid-column:1/-1;height:34px;padding:0 8px}.s56-edit-fields input{height:34px;padding:0 8px}.s56-edit-fields textarea{height:34px;padding:8px;resize:vertical}.s56-duration{display:grid;gap:4px;color:#748179;font-size:6px;font-weight:900}.s56-duration input{height:34px;padding:0 7px}.s56-edit-block>[data-del]{width:28px;height:28px;border:1px solid rgba(255,91,82,.14);border-radius:5px;background:transparent;color:#d77b75;cursor:pointer}.s56-editor-empty{padding:50px;text-align:center;color:#718078;font-size:8px}
+          .s56-editor>footer{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-top:1px solid rgba(255,255,255,.07)}.s56-editor>footer div{display:flex;gap:8px}.s56-editor>footer button{height:36px;padding:0 15px;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#07110a;color:#dce5de;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-editor>footer button.primary{border-color:#72ed54;background:#72ed54;color:#051006}.s56-editor>footer button.danger{color:#e1847d;border-color:rgba(230,92,83,.18);background:rgba(230,92,83,.035)}
+          @media(max-width:900px){.s56-session-card{grid-template-columns:100px 1fr}.s56-open-session{grid-column:1/-1}.s56-editor-layout{grid-template-columns:1fr}.s56-editor-meta{border-right:0;border-bottom:1px solid rgba(255,255,255,.07)}}
+        `;document.head.appendChild(style);
+    }
+
+    function render(){
+        applyMode56();
+        if(state.mode==="plans"){
+            renderPlannerSide56();
+            renderSessionGrid56();
+            renderSessionDetail56();
+        }else{
+            $("s45ExerciseGrid")?.classList.remove("s56-session-grid");
+            renderSide();renderGrid();renderDetail();
+        }
+    }
     function installFolderStyles(){
         if(document.getElementById("s55FolderStyles"))return;
         const style=document.createElement("style"); style.id="s55FolderStyles"; style.textContent=`
@@ -2249,17 +2551,25 @@
     }
     function bind(){
         installFolderStyles();
+        installPlannerStyles56();
+        installPlannerShell56();
         document.querySelectorAll('[data-s34="training"]').forEach(btn=>{
             if(btn.dataset.s45Bound)return;btn.dataset.s45Bound="1";
             btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnlyBank();},true);
         });
         $("s45NewExercise")?.addEventListener("click",newExercise);
         $("s45OpenOldBank")?.addEventListener("click",()=>openLegacy("exercises"));
-        $("s45OpenOldPlanner")?.addEventListener("click",()=>openLegacy("training"));
-        $("s45ExerciseSearch")?.addEventListener("input",e=>{state.search=e.target.value;render();});
+        $("s45OpenOldPlanner")?.addEventListener("click",()=>{state.mode="plans";render();});
+        $("s45ExerciseSearch")?.addEventListener("input",e=>{
+            if(state.mode==="plans")state.sessionSearch=e.target.value;
+            else state.search=e.target.value;
+            render();
+        });
         document.querySelectorAll("[data-s45-filter]").forEach(b=>b.onclick=()=>{state.filter=b.dataset.s45Filter;state.category="";render();});
         document.querySelectorAll("[data-s45-duration]").forEach(b=>b.onclick=()=>{state.duration=state.duration===b.dataset.s45Duration?"":b.dataset.s45Duration;render();});
         window.start11ShowExerciseBank=showOnlyBank;
+        window.start11ShowTrainingPlans=()=>{state.mode="plans";showOnlyBank();};
+        render();
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,250),{once:true});
     else setTimeout(bind,250);

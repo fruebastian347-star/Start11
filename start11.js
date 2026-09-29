@@ -14669,7 +14669,7 @@ if (
        V39 still owns some match-entry buttons, so it must hide the exact
        same modern views as the V41 router. */
     function v509ShowOnly(id){
-        ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView"]
+        ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView","s57VideoView"]
             .map($).filter(Boolean)
             .forEach(v=>v.hidden=(v.id!==id));
         const app=$("s34App");
@@ -14805,7 +14805,7 @@ if (
         /* V50.7: Exercise Bank is also a top-level modern view.
            It must be part of the central router, otherwise HOME can be shown
            while Træning remains visible underneath it. */
-        return ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView"]
+        return ["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView","s57VideoView"]
             .map($).filter(Boolean);
     }
 
@@ -14937,7 +14937,7 @@ if (
                 const btn=e.target.closest?.("[data-s34]");
                 if(!btn) return;
                 const route=btn.dataset.s34;
-                if(!["home","players","matches"].includes(route)) return;
+                if(!["home","players","matches","video"].includes(route)) return;
 
                 e.preventDefault();
                 e.stopImmediatePropagation();
@@ -14945,6 +14945,7 @@ if (
                 if(route==="home") return showHome();
                 if(route==="players") return showPlayers();
                 if(route==="matches") return showLineup();
+                if(route==="video" && typeof window.start11ShowVideoLibrary==="function") return window.start11ShowVideoLibrary();
             },true);
         }
 
@@ -66736,7 +66737,7 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
     window.__START11_V45_EXERCISE_BANK__=true;
 
     const $=id=>document.getElementById(id);
-    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d",folder:"all"};
+    const state={filter:"all",category:"",duration:"",search:"",selected:"",view:"2d",folder:"all",mode:"exercises",sessionFilter:"all",sessionSearch:"",sessionSelected:""};
     const FAV_KEY="start11.v45.exerciseFavorites";
 
     function esc(v){
@@ -66855,7 +66856,7 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
         return '<div class="s45-card-fallback">⚽</div>';
     }
     function showOnlyBank(){
-        ["s34HomeView","s34PlayersView","s34LineupView","s45ExerciseBankView"].forEach(id=>{
+        ["s34HomeView","s34PlayersView","s34LineupView","s45ExerciseBankView","s57VideoView"].forEach(id=>{
             const el=$(id); if(el) el.hidden=id!=="s45ExerciseBankView";
         });
         $("s34App")?.removeAttribute("hidden");
@@ -67287,7 +67288,309 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
         host.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{state.view=b.dataset.view;renderDetail();});
         if(state.view==="3d") setTimeout(()=>s49RenderThreeExercise(ex),0);
     }
-    function render(){renderSide();renderGrid();renderDetail();}
+
+    /* =========================================================
+       START11 V56 – TRAINING PLANS INSIDE MODERN TRAINING AREA
+       Reuses s13Data.sessions + s13Save. No migration.
+    ========================================================= */
+    function sessions(){
+        try{
+            if(typeof s13Data!=="undefined"){
+                if(!Array.isArray(s13Data.sessions))s13Data.sessions=[];
+                return s13Data.sessions;
+            }
+        }catch(_){}
+        if(window.s13Data){
+            if(!Array.isArray(window.s13Data.sessions))window.s13Data.sessions=[];
+            return window.s13Data.sessions;
+        }
+        return [];
+    }
+    function clone56(v){
+        try{return structuredClone(v);}catch(_){return JSON.parse(JSON.stringify(v));}
+    }
+    function today56(){return new Date().toISOString().slice(0,10);}
+    function date56(v,long=false){
+        if(!v)return "Ingen dato";
+        const d=new Date(v+"T12:00:00");
+        if(isNaN(d))return v;
+        return d.toLocaleDateString("da-DK",long?{weekday:"long",day:"numeric",month:"long",year:"numeric"}:{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+    }
+    function total56(s){return (s?.blocks||[]).reduce((n,b)=>n+Number(b.duration||0),0);}
+    function ex56(id){return exercises().find(x=>String(x.id)===String(id));}
+    function sessionThemes56(s){
+        const set=new Set();
+        if(s?.theme) set.add(String(s.theme).trim());
+        (s?.blocks||[]).forEach(b=>{
+            const e=ex56(b.exerciseId);
+            const t=e?.theme||e?.focus||"";
+            if(t) set.add(String(t).trim());
+        });
+        return [...set].filter(Boolean).slice(0,4);
+    }
+    function visibleSessions56(){
+        const q=norm(state.sessionSearch),today=today56();
+        return [...sessions()].filter(s=>{
+            if(state.sessionFilter==="upcoming" && String(s.date||"")<today)return false;
+            if(state.sessionFilter==="past" && String(s.date||"")>=today)return false;
+            if(q){
+                const blockText=(s.blocks||[]).map(b=>`${b.title||""} ${ex56(b.exerciseId)?.title||""}`).join(" ");
+                if(!norm([s.title,s.theme,s.note,blockText].join(" ")).includes(q))return false;
+            }
+            return true;
+        }).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+    }
+    function sessionThumb56(s){
+        const first=(s?.blocks||[]).map(b=>ex56(b.exerciseId)).find(Boolean);
+        return first?svgFor(first):'<div class="s56-session-fallback"><span>△</span></div>';
+    }
+    function installPlannerShell56(){
+        const side=document.querySelector(".s45-bank-side");
+        const main=document.querySelector(".s45-bank-main");
+        if(!side||!main)return;
+
+        if(!$("s56ModeTabs")){
+            const tabs=document.createElement("div");
+            tabs.id="s56ModeTabs";tabs.className="s56-mode-tabs";
+            tabs.innerHTML=`<button type="button" data-s56-mode="exercises">Øvelsesbank</button><button type="button" data-s56-mode="plans">Træningsplaner</button>`;
+            side.insertBefore(tabs,side.children[1]||null);
+            tabs.querySelectorAll("[data-s56-mode]").forEach(b=>b.onclick=()=>{
+                state.mode=b.dataset.s56Mode;
+                render();
+            });
+        }
+        if(!$("s56PlannerSide")){
+            const box=document.createElement("div");
+            box.id="s56PlannerSide";box.className="s56-planner-side";box.hidden=true;
+            box.innerHTML=`
+              <div class="s45-side-title">TRÆNINGSPLANER</div>
+              <nav class="s45-bank-nav s56-plan-nav">
+                <button class="active" data-s56-session-filter="all" type="button"><span>▦</span> Alle træninger <b id="s56CountAll">0</b></button>
+                <button data-s56-session-filter="upcoming" type="button"><span>◷</span> Kommende <b id="s56CountUpcoming">0</b></button>
+                <button data-s56-session-filter="past" type="button"><span>↶</span> Tidligere <b id="s56CountPast">0</b></button>
+              </nav>
+              <div class="s45-side-title">GENVEJE</div>
+              <div class="s56-plan-shortcuts">
+                <button type="button" id="s56ThisWeek">Denne uge</button>
+                <button type="button" id="s56ClearPlanSearch">Nulstil filtre</button>
+              </div>`;
+            side.appendChild(box);
+            box.querySelectorAll("[data-s56-session-filter]").forEach(b=>b.onclick=()=>{state.sessionFilter=b.dataset.s56SessionFilter;render();});
+            $("s56ClearPlanSearch").onclick=()=>{state.sessionFilter="all";state.sessionSearch="";render();};
+            $("s56ThisWeek").onclick=()=>{state.sessionFilter="upcoming";state.sessionSearch="";render();};
+        }
+    }
+    function applyMode56(){
+        installPlannerShell56();
+        const plans=state.mode==="plans";
+        $("s56ModeTabs")?.querySelectorAll("[data-s56-mode]").forEach(b=>b.classList.toggle("active",b.dataset.s56Mode===state.mode));
+        const side=document.querySelector(".s45-bank-side");
+        if(side){
+            [...side.children].forEach(el=>{
+                if(el.id==="s45NewExercise"||el.id==="s56ModeTabs"||el.id==="s56PlannerSide")return;
+                el.hidden=plans;
+            });
+        }
+        if($("s56PlannerSide"))$("s56PlannerSide").hidden=!plans;
+
+        const primary=$("s45NewExercise");
+        if(primary){
+            primary.textContent=plans?"＋ Opret træning":"＋ Opret øvelse";
+            primary.onclick=plans?()=>openSessionEditor56(""):newExercise;
+        }
+        const head=document.querySelector(".s45-bank-head > div");
+        if(head)head.innerHTML=plans?`<span>TRÆNING · PLANLÆGNING</span><h1>Træningsplaner</h1><p class="s56-head-copy">Planlæg, rediger og gennemfør dine træninger. Brug øvelsesbanken til at bygge hvert pas.</p>`:`<span>TRÆNING · ØVELSESBANK V2</span><h1>Øvelsesbank</h1>`;
+        const input=$("s45ExerciseSearch");
+        if(input){
+            input.placeholder=plans?"Søg træninger, temaer eller noter...":"Søg øvelser, temaer eller fokus...";
+            input.value=plans?state.sessionSearch:state.search;
+        }
+        document.querySelector(".s45-bank-toolbar")?.classList.toggle("s56-planner-toolbar",plans);
+    }
+    function renderPlannerSide56(){
+        const all=sessions(),today=today56();
+        $("s56CountAll")&&($("s56CountAll").textContent=all.length);
+        $("s56CountUpcoming")&&($("s56CountUpcoming").textContent=all.filter(s=>String(s.date||"")>=today).length);
+        $("s56CountPast")&&($("s56CountPast").textContent=all.filter(s=>String(s.date||"")<today).length);
+        document.querySelectorAll("[data-s56-session-filter]").forEach(b=>b.classList.toggle("active",b.dataset.s56SessionFilter===state.sessionFilter));
+    }
+    function renderSessionGrid56(){
+        const list=visibleSessions56(),host=$("s45ExerciseGrid");
+        if(!host)return;
+        host.classList.add("s56-session-grid");
+        if($("s45ActiveFilter"))$("s45ActiveFilter").textContent=state.sessionFilter==="upcoming"?"Kommende træninger":state.sessionFilter==="past"?"Tidligere træninger":"Alle træninger";
+        if($("s45ResultCount"))$("s45ResultCount").textContent=`${list.length} træning${list.length===1?"":"er"}`;
+        host.innerHTML=list.map(s=>{
+            const themes=sessionThemes56(s),mins=total56(s),blocks=(s.blocks||[]).length;
+            return `<article class="s56-session-card ${String(s.id)===String(state.sessionSelected)?"active":""}" data-s56-session="${esc(s.id)}">
+              <div class="s56-session-thumb">${sessionThumb56(s)}</div>
+              <div class="s56-session-body">
+                <span class="s56-session-date">${esc(date56(s.date))}</span>
+                <strong>${esc(s.title||"Træning")}</strong>
+                <div class="s45-tags">${themes.map(t=>`<span class="s45-tag">${esc(t)}</span>`).join("")}</div>
+                <div class="s56-session-meta"><span>◷ ${mins} min</span><span>▣ ${blocks} øvelse${blocks===1?"":"r"}</span></div>
+              </div>
+              <button type="button" class="s56-open-session" data-s56-open="${esc(s.id)}">Åbn træning →</button>
+            </article>`;
+        }).join("")||`<div class="s45-no-results">Ingen træninger matcher filtrene.</div>`;
+        host.querySelectorAll("[data-s56-session]").forEach(card=>card.onclick=e=>{
+            if(e.target.closest("[data-s56-open]"))return;
+            state.sessionSelected=card.dataset.s56Session;render();
+        });
+        host.querySelectorAll("[data-s56-open]").forEach(b=>b.onclick=e=>{e.stopPropagation();state.sessionSelected=b.dataset.s56Open;render();});
+    }
+    function renderSessionDetail56(){
+        const host=$("s45ExerciseDetail");if(!host)return;
+        const s=sessions().find(x=>String(x.id)===String(state.sessionSelected));
+        if(!s){
+            host.innerHTML=`<div class="s45-empty-detail"><span>△</span><strong>Vælg en træning</strong><p>Se træningsforløb, øvelser, varighed og noter.</p></div>`;
+            return;
+        }
+        const blocks=s.blocks||[],total=total56(s),themes=sessionThemes56(s);
+        host.innerHTML=`
+          <div class="s56-detail-head">
+            <div><span>TRÆNINGSPLAN</span><h2>${esc(s.title||"Træning")}</h2><p>${esc(date56(s.date,true))} · ${total} min</p></div>
+            <button id="s56EditSession" class="primary" type="button">Rediger</button>
+          </div>
+          <div class="s45-tags s56-detail-tags">${themes.map(t=>`<span class="s45-tag">${esc(t)}</span>`).join("")}</div>
+          <section class="s56-flow">
+            <div class="s56-flow-head"><strong>Træningsforløb</strong><b>${total} min</b></div>
+            <div class="s56-progress"><i style="width:${blocks.length?100:0}%"></i></div>
+            <div class="s56-blocks">${blocks.map((b,i)=>{
+                const e=ex56(b.exerciseId);
+                return `<div class="s56-block">
+                  <span class="s56-block-no">${i+1}</span>
+                  <div class="s56-block-thumb">${e?svgFor(e):'<span>△</span>'}</div>
+                  <div class="s56-block-copy"><strong>${esc(b.title||e?.title||"Øvelse")}</strong><span>${esc(e?.theme||s.theme||"Træning")}</span></div>
+                  <b>◷ ${Number(b.duration||0)} min</b>
+                </div>`;
+            }).join("")||`<div class="s56-empty-flow">Ingen øvelser tilføjet endnu.</div>`}</div>
+            <button id="s56AddFromBank" class="s56-add-bank" type="button">＋ Tilføj øvelse fra øvelsesbanken</button>
+          </section>
+          <section class="s56-session-info">
+            <strong>Træningsinfo</strong>
+            <div><span>Dato</span><b>${esc(date56(s.date,true))}</b></div>
+            <div><span>Varighed</span><b>${total} min</b></div>
+            <div><span>Tema</span><b>${esc(s.theme||"—")}</b></div>
+            <div><span>Noter</span><b>${esc(s.note||"—")}</b></div>
+          </section>`;
+        $("s56EditSession").onclick=()=>openSessionEditor56(s.id);
+        $("s56AddFromBank").onclick=()=>openSessionEditor56(s.id,true);
+    }
+    function openSessionEditor56(id="",focusBlocks=false){
+        document.getElementById("s56SessionEditor")?.remove();
+        const existing=sessions().find(x=>String(x.id)===String(id));
+        const draft=existing?clone56(existing):{id:"",date:today56(),title:"Træning",theme:"",note:"",blocks:[],attendance:{}};
+        let blocks=clone56(draft.blocks||[]);
+        const overlay=document.createElement("div");
+        overlay.id="s56SessionEditor";overlay.className="s56-editor-overlay";
+        document.body.appendChild(overlay);
+
+        const draw=()=>{
+            overlay.innerHTML=`<section class="s56-editor">
+              <header><div><span>TRÆNING · PLANLÆGGER</span><h2>${draft.id?"Rediger træning":"Opret træning"}</h2></div><button id="s56CloseEditor" type="button">×</button></header>
+              <div class="s56-editor-layout">
+                <aside class="s56-editor-meta">
+                  <label>Titel<input id="s56SessionTitle" value="${esc(draft.title||"")}"></label>
+                  <div class="s56-editor-pair"><label>Dato<input id="s56SessionDate" type="date" value="${esc(draft.date||today56())}"></label><label>Tema<input id="s56SessionTheme" value="${esc(draft.theme||"")}"></label></div>
+                  <label>Noter<textarea id="s56SessionNote">${esc(draft.note||"")}</textarea></label>
+                  <div class="s56-editor-summary"><span>Samlet tid</span><strong>${blocks.reduce((n,b)=>n+Number(b.duration||0),0)} min</strong><span>Øvelser</span><strong>${blocks.length}</strong></div>
+                </aside>
+                <main class="s56-editor-plan">
+                  <div class="s56-editor-plan-head"><div><span>TRÆNINGSFORLØB</span><strong>Byg træningen med øvelser fra banken</strong></div><button id="s56AddBlock" type="button">＋ Tilføj øvelse</button></div>
+                  <div class="s56-editor-blocks">${blocks.map((b,i)=>`<article class="s56-edit-block" data-s56-block="${esc(b.id)}">
+                    <span class="s56-edit-index">${i+1}</span>
+                    <div class="s56-edit-fields">
+                      <select data-f="exerciseId"><option value="">Manuel øvelse</option>${exercises().map(e=>`<option value="${esc(e.id)}" ${String(b.exerciseId)===String(e.id)?"selected":""}>${esc(e.title||"Øvelse")}${e.folderId?` · ${esc(folderPath(e.folderId))}`:""}</option>`).join("")}</select>
+                      <input data-f="title" value="${esc(b.title||"")}" placeholder="Titel">
+                      <textarea data-f="note" placeholder="Coaching/noter">${esc(b.note||"")}</textarea>
+                    </div>
+                    <label class="s56-duration">MIN<input data-f="duration" type="number" min="0" value="${Number(b.duration||15)}"></label>
+                    <button data-del type="button">×</button>
+                  </article>`).join("")||`<div class="s56-editor-empty">Tilføj den første øvelse til træningen.</div>`}</div>
+                </main>
+              </div>
+              <footer>${draft.id?`<button id="s56DeleteSession" class="danger" type="button">Slet træning</button>`:"<span></span>"}<div><button id="s56CancelSession" type="button">Annuller</button><button id="s56SaveSession" class="primary" type="button">Gem træning</button></div></footer>
+            </section>`;
+            const syncMeta=()=>{
+                draft.title=$("s56SessionTitle")?.value||"Træning";
+                draft.date=$("s56SessionDate")?.value||today56();
+                draft.theme=$("s56SessionTheme")?.value||"";
+                draft.note=$("s56SessionNote")?.value||"";
+            };
+            overlay.querySelectorAll("[data-s56-block]").forEach(row=>{
+                const get=()=>blocks.find(x=>String(x.id)===String(row.dataset.s56Block));
+                row.querySelectorAll("[data-f]").forEach(field=>field.addEventListener(field.tagName==="SELECT"?"change":"input",()=>{
+                    syncMeta();const b=get();if(!b)return;
+                    if(field.dataset.f==="duration")b.duration=Math.max(0,Number(field.value||0));
+                    else b[field.dataset.f]=field.value;
+                    if(field.dataset.f==="exerciseId"&&field.value){
+                        const e=ex56(field.value);
+                        if(e){b.title=e.title||"Øvelse";b.duration=Number(e.duration||15);b.note=e.coaching||"";draw();}
+                    }
+                }));
+                row.querySelector("[data-del]").onclick=()=>{syncMeta();blocks=blocks.filter(x=>String(x.id)!==String(row.dataset.s56Block));draw();};
+            });
+            $("s56AddBlock").onclick=()=>{syncMeta();blocks.push({id:typeof s13Id==="function"?s13Id("b"):`b_${Date.now()}`,exerciseId:"",title:"Ny øvelse",duration:15,note:""});draw();setTimeout(()=>overlay.querySelector(".s56-editor-blocks")?.scrollTo({top:99999,behavior:"smooth"}),20);};
+            $("s56CloseEditor").onclick=$("s56CancelSession").onclick=()=>overlay.remove();
+            $("s56SaveSession").onclick=()=>{
+                syncMeta();
+                const value={...draft,id:draft.id||(typeof s13Id==="function"?s13Id("session"):`session_${Date.now()}`),blocks:clone56(blocks)};
+                const i=sessions().findIndex(x=>String(x.id)===String(value.id));
+                if(i<0)sessions().push(value);else sessions()[i]=value;
+                try{if(typeof s13Save==="function")s13Save();}catch(_){}
+                state.sessionSelected=String(value.id);overlay.remove();render();
+            };
+            $("s56DeleteSession")&&($("s56DeleteSession").onclick=()=>{
+                if(!confirm("Slet træningen?"))return;
+                const i=sessions().findIndex(x=>String(x.id)===String(draft.id));
+                if(i>=0)sessions().splice(i,1);
+                try{if(typeof s13Save==="function")s13Save();}catch(_){}
+                state.sessionSelected="";overlay.remove();render();
+            });
+        };
+        draw();
+        if(focusBlocks)setTimeout(()=>$("s56AddBlock")?.focus(),30);
+    }
+    function installPlannerStyles56(){
+        if($("s56PlannerStyles"))return;
+        const style=document.createElement("style");style.id="s56PlannerStyles";style.textContent=`
+          .s56-mode-tabs{display:grid;grid-template-columns:1fr 1fr;margin:8px 0 15px;border:1px solid rgba(255,255,255,.07);border-radius:6px;overflow:hidden}
+          .s56-mode-tabs button{height:34px;border:0;background:#07100a;color:#7f8b83;font:inherit;font-size:7.5px;font-weight:900;cursor:pointer}
+          .s56-mode-tabs button.active{background:rgba(91,235,69,.10);color:#72ef57;box-shadow:inset 0 -2px #64eb4b}
+          .s56-planner-side{margin-top:3px}.s56-plan-shortcuts{display:grid;gap:6px}.s56-plan-shortcuts button{height:30px;border:1px solid rgba(255,255,255,.07);border-radius:5px;background:#07100a;color:#87948c;font:inherit;font-size:7px;cursor:pointer}
+          .s56-head-copy{margin:4px 0 0;color:#718078;font-size:7px}.s56-session-grid{display:flex!important;flex-direction:column!important;gap:10px!important}
+          .s56-session-card{min-height:112px;display:grid;grid-template-columns:150px minmax(0,1fr) 130px;align-items:center;gap:14px;padding:10px;border:1px solid rgba(255,255,255,.075);border-radius:8px;background:#061009;cursor:pointer}
+          .s56-session-card:hover,.s56-session-card.active{border-color:rgba(98,236,74,.55);background:linear-gradient(90deg,rgba(85,225,66,.055),#061009 55%)}
+          .s56-session-thumb{height:90px;overflow:hidden;border-radius:6px;background:#176f38}.s56-session-thumb svg{width:100%;height:100%;display:block}.s56-session-fallback{height:100%;display:grid;place-items:center;font-size:28px;color:#74ef58}
+          .s56-session-body{min-width:0}.s56-session-date{display:block;margin-bottom:5px;color:#8e9a92;font-size:7px;font-weight:900;text-transform:uppercase}.s56-session-body>strong{display:block;margin-bottom:8px;font-size:13px;color:#fff}
+          .s56-session-meta{display:flex;gap:14px;margin-top:9px;color:#89968d;font-size:7px}.s56-open-session{height:36px;border:1px solid rgba(101,237,77,.28);border-radius:6px;background:rgba(90,226,69,.035);color:#73ee58;font:inherit;font-size:7.5px;font-weight:900;cursor:pointer}
+          .s56-detail-head{display:flex;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid rgba(255,255,255,.07)}.s56-detail-head span{color:#70ee55;font-size:6.5px;font-weight:900;letter-spacing:1px}.s56-detail-head h2{margin:5px 0 3px;font-size:17px}.s56-detail-head p{margin:0;color:#839087;font-size:7.5px}
+          .s56-detail-head button{align-self:flex-start;height:32px;padding:0 15px;border:0;border-radius:5px;background:#72ed54;color:#061006;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-detail-tags{padding:0 14px 12px}
+          .s56-flow{margin:0 10px 10px;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:7px}.s56-flow-head{display:flex;justify-content:space-between;font-size:8px}.s56-flow-head b{color:#70ee55}.s56-progress{height:5px;margin:10px 0 7px;border-radius:99px;background:#132219;overflow:hidden}.s56-progress i{display:block;height:100%;background:#68ec4d}
+          .s56-block{display:grid;grid-template-columns:24px 54px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.055)}.s56-block-no{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#203328;color:#fff;font-size:7px;font-weight:900}.s56-block-thumb{height:42px;overflow:hidden;border-radius:4px;background:#176f38}.s56-block-thumb svg{width:100%;height:100%}.s56-block-copy strong{display:block;font-size:8px}.s56-block-copy span{display:block;margin-top:3px;color:#74a17c;font-size:6.5px}.s56-block>b{color:#a7b1aa;font-size:6.5px}
+          .s56-add-bank{width:100%;height:34px;margin-top:10px;border:1px dashed rgba(104,235,80,.22);border-radius:5px;background:transparent;color:#89978e;font:inherit;font-size:7px;cursor:pointer}.s56-add-bank:hover{color:#72ee57;border-color:#72ee57}
+          .s56-session-info{margin:0 10px 12px;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:7px}.s56-session-info>strong{display:block;margin-bottom:8px;font-size:8px}.s56-session-info div{display:grid;grid-template-columns:70px 1fr;gap:8px;padding:5px 0;color:#849188;font-size:7px}.s56-session-info div b{color:#dce5de;font-weight:700}.s56-empty-flow{padding:18px;text-align:center;color:#738078;font-size:7px}
+          .s56-editor-overlay{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:24px;background:rgba(0,4,2,.88);backdrop-filter:blur(10px)}.s56-editor{width:min(1180px,96vw);height:min(760px,92vh);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;border:1px solid rgba(101,237,77,.22);border-radius:12px;background:#041008;color:#fff;box-shadow:0 35px 120px #000}
+          .s56-editor>header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.07)}.s56-editor>header span,.s56-editor-plan-head span{color:#70ed55;font-size:7px;font-weight:900;letter-spacing:1px}.s56-editor>header h2{margin:4px 0 0;font-size:20px}.s56-editor>header button{width:34px;height:34px;border:1px solid rgba(255,255,255,.08);border-radius:50%;background:#07140b;color:#fff;font-size:18px;cursor:pointer}
+          .s56-editor-layout{min-height:0;display:grid;grid-template-columns:320px 1fr}.s56-editor-meta{padding:18px;border-right:1px solid rgba(255,255,255,.07);overflow:auto}.s56-editor-meta label{display:grid;gap:5px;margin-bottom:12px;color:#829087;font-size:7px;font-weight:900}.s56-editor-meta input,.s56-editor-meta textarea,.s56-edit-fields input,.s56-edit-fields textarea,.s56-edit-fields select,.s56-duration input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#020805;color:#fff;font:inherit;font-size:8px;outline:none}.s56-editor-meta input{height:38px;padding:0 10px}.s56-editor-meta textarea{height:100px;padding:10px;resize:vertical}.s56-editor-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.s56-editor-summary{display:grid;grid-template-columns:1fr auto;gap:7px;padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:7px;color:#829087;font-size:7px}.s56-editor-summary strong{color:#70ed55}
+          .s56-editor-plan{min-width:0;padding:18px;overflow:hidden;display:grid;grid-template-rows:auto 1fr}.s56-editor-plan-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.s56-editor-plan-head strong{display:block;margin-top:4px;font-size:10px}.s56-editor-plan-head button{height:34px;padding:0 12px;border:1px solid rgba(101,237,77,.25);border-radius:5px;background:rgba(101,237,77,.06);color:#72ed56;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-editor-blocks{overflow:auto;padding-right:4px}.s56-edit-block{display:grid;grid-template-columns:28px minmax(0,1fr) 70px 30px;gap:9px;align-items:start;padding:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:#061009}.s56-edit-index{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#203328;font-size:7px;font-weight:900}.s56-edit-fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}.s56-edit-fields select{grid-column:1/-1;height:34px;padding:0 8px}.s56-edit-fields input{height:34px;padding:0 8px}.s56-edit-fields textarea{height:34px;padding:8px;resize:vertical}.s56-duration{display:grid;gap:4px;color:#748179;font-size:6px;font-weight:900}.s56-duration input{height:34px;padding:0 7px}.s56-edit-block>[data-del]{width:28px;height:28px;border:1px solid rgba(255,91,82,.14);border-radius:5px;background:transparent;color:#d77b75;cursor:pointer}.s56-editor-empty{padding:50px;text-align:center;color:#718078;font-size:8px}
+          .s56-editor>footer{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-top:1px solid rgba(255,255,255,.07)}.s56-editor>footer div{display:flex;gap:8px}.s56-editor>footer button{height:36px;padding:0 15px;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#07110a;color:#dce5de;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-editor>footer button.primary{border-color:#72ed54;background:#72ed54;color:#051006}.s56-editor>footer button.danger{color:#e1847d;border-color:rgba(230,92,83,.18);background:rgba(230,92,83,.035)}
+          @media(max-width:900px){.s56-session-card{grid-template-columns:100px 1fr}.s56-open-session{grid-column:1/-1}.s56-editor-layout{grid-template-columns:1fr}.s56-editor-meta{border-right:0;border-bottom:1px solid rgba(255,255,255,.07)}}
+        `;document.head.appendChild(style);
+    }
+
+    function render(){
+        applyMode56();
+        if(state.mode==="plans"){
+            renderPlannerSide56();
+            renderSessionGrid56();
+            renderSessionDetail56();
+        }else{
+            $("s45ExerciseGrid")?.classList.remove("s56-session-grid");
+            renderSide();renderGrid();renderDetail();
+        }
+    }
     function installFolderStyles(){
         if(document.getElementById("s55FolderStyles"))return;
         const style=document.createElement("style"); style.id="s55FolderStyles"; style.textContent=`
@@ -67306,17 +67609,25 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
     }
     function bind(){
         installFolderStyles();
+        installPlannerStyles56();
+        installPlannerShell56();
         document.querySelectorAll('[data-s34="training"]').forEach(btn=>{
             if(btn.dataset.s45Bound)return;btn.dataset.s45Bound="1";
             btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnlyBank();},true);
         });
         $("s45NewExercise")?.addEventListener("click",newExercise);
         $("s45OpenOldBank")?.addEventListener("click",()=>openLegacy("exercises"));
-        $("s45OpenOldPlanner")?.addEventListener("click",()=>openLegacy("training"));
-        $("s45ExerciseSearch")?.addEventListener("input",e=>{state.search=e.target.value;render();});
+        $("s45OpenOldPlanner")?.addEventListener("click",()=>{state.mode="plans";render();});
+        $("s45ExerciseSearch")?.addEventListener("input",e=>{
+            if(state.mode==="plans")state.sessionSearch=e.target.value;
+            else state.search=e.target.value;
+            render();
+        });
         document.querySelectorAll("[data-s45-filter]").forEach(b=>b.onclick=()=>{state.filter=b.dataset.s45Filter;state.category="";render();});
         document.querySelectorAll("[data-s45-duration]").forEach(b=>b.onclick=()=>{state.duration=state.duration===b.dataset.s45Duration?"":b.dataset.s45Duration;render();});
         window.start11ShowExerciseBank=showOnlyBank;
+        window.start11ShowTrainingPlans=()=>{state.mode="plans";showOnlyBank();};
+        render();
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,250),{once:true});
     else setTimeout(bind,250);
@@ -69076,6 +69387,54 @@ console.info("START11 loaded:",window.START11_BUILD);
 window.START11_BUILD = "V27.1-PDF-PLAYER-FOCUS-BULLETS";
 console.info("START11 loaded:", window.START11_BUILD);
 
+
+/* =========================================================
+   START11 V57 – NATIVE VIDEO LIBRARY
+   Dedicated modern VIDEO page.
+   Reuses the existing V18/V27 videoProjects + clips directly.
+========================================================= */
+(function start11V57VideoLibrary(){
+"use strict";
+if(window.__START11_V57_VIDEO_LIBRARY__)return;
+window.__START11_V57_VIDEO_LIBRARY__=true;
+
+const $=id=>document.getElementById(id);
+const esc=v=>typeof s13Esc==="function"?s13Esc(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const fmt=sec=>{sec=Math.max(0,Number(sec)||0);const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);return h?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
+const date=v=>{if(!v)return"Ingen dato";try{return new Intl.DateTimeFormat("da-DK",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(v+"T12:00:00"))}catch(_){return v}};
+const state={mode:"library",query:"",project:"",phase:"",selected:"",objectUrl:"",playing:false};
+
+function projects(){try{s18EnsureData?.()}catch(_){}return Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[]}
+function clips(){return projects().flatMap(p=>(Array.isArray(p.clips)?p.clips:[]).map(c=>({project:p,clip:c,key:`${p.id}::${c.id}`})))}
+function selected(){const all=filtered();return all.find(x=>x.key===state.selected)||all[0]||null}
+function filtered(){const q=state.query.trim().toLowerCase();return clips().filter(x=>(!state.project||String(x.project.id)===state.project)&&(!state.phase||String(x.clip.phase||"")===state.phase)&&(!q||`${x.clip.title||""} ${x.clip.tags||""} ${x.clip.observation||""} ${x.clip.phase||""} ${x.project.title||""} ${x.project.opponent||""}`.toLowerCase().includes(q)))}
+function cleanup(){if(state.objectUrl){try{URL.revokeObjectURL(state.objectUrl)}catch(_){}state.objectUrl=""}}
+
+function styles(){if($("s57VideoStyles"))return;const st=document.createElement("style");st.id="s57VideoStyles";st.textContent=`
+#s57VideoView{padding:24px 28px 40px;min-width:0;color:#f4fff5}.s57-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:3px 0 18px;border-bottom:1px solid rgba(255,255,255,.07)}.s57-kicker{color:var(--s11-primary,#6df052);font-size:8px;font-weight:950;letter-spacing:1.25px}.s57-head h1{margin:5px 0 0;font-size:29px;line-height:1}.s57-head p{margin:6px 0 0;color:#7f8c83;font-size:10px}.s57-tabs{display:flex;gap:6px}.s57-tab,.s57-btn{height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:#071009;color:#aab6ad;font:inherit;font-size:8px;font-weight:950;cursor:pointer}.s57-tab.active,.s57-btn.primary{border-color:var(--s11-primary,#6df052);background:var(--s11-primary,#6df052);color:#061008}.s57-tools{display:grid;grid-template-columns:minmax(220px,1fr) 190px 170px auto;gap:8px;margin:16px 0}.s57-input,.s57-select{width:100%;height:38px;box-sizing:border-box;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:#061009;color:#edf8ee;padding:0 11px;font:inherit;font-size:9px;outline:none}.s57-input:focus,.s57-select:focus{border-color:rgba(109,240,82,.55)}.s57-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}.s57-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.s57-card{min-width:0;border:1px solid rgba(255,255,255,.085);border-radius:9px;background:#061009;overflow:hidden;cursor:pointer;transition:.16s}.s57-card:hover,.s57-card.active{border-color:rgba(109,240,82,.48);transform:translateY(-1px)}.s57-thumb{position:relative;aspect-ratio:16/9;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,rgba(109,240,82,.12),transparent 42%),linear-gradient(145deg,#102817,#07130a);overflow:hidden}.s57-thumb:before{content:"";position:absolute;inset:10% 7%;border:1px solid rgba(255,255,255,.13);background:linear-gradient(90deg,transparent 49.7%,rgba(255,255,255,.11) 50%,transparent 50.3%)}.s57-play{position:relative;z-index:2;width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(109,240,82,.45);border-radius:50%;background:#061008d9;color:var(--s11-primary,#6df052);font-size:14px}.s57-time{position:absolute;right:7px;bottom:7px;z-index:2;padding:4px 6px;border-radius:4px;background:#000c;color:#fff;font-size:7px;font-weight:900}.s57-cardbody{padding:10px}.s57-cardbody strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}.s57-meta{display:flex;gap:6px;align-items:center;margin-top:6px;color:#718078;font-size:7px}.s57-chip{display:inline-flex;align-items:center;max-width:100%;padding:3px 6px;border-radius:999px;background:rgba(109,240,82,.09);color:#8df477;font-size:6px;font-weight:900}.s57-side{position:sticky;top:80px;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:#061009;overflow:hidden}.s57-preview{aspect-ratio:16/9;background:#000;display:grid;place-items:center;position:relative}.s57-preview video{width:100%;height:100%;object-fit:contain}.s57-emptyvideo{padding:30px;text-align:center;color:#758178;font-size:9px}.s57-detail{padding:14px}.s57-detail h2{margin:3px 0 6px;font-size:18px}.s57-detail p{color:#89958d;font-size:8px;line-height:1.55}.s57-detailgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.s57-stat{padding:8px;border:1px solid rgba(255,255,255,.07);border-radius:6px}.s57-stat span{display:block;color:#66746b;font-size:6px;font-weight:900}.s57-stat b{display:block;margin-top:3px;font-size:8px}.s57-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.s57-empty{grid-column:1/-1;padding:70px 20px;border:1px dashed rgba(255,255,255,.11);border-radius:9px;text-align:center;color:#78857c}.s57-empty b{display:block;color:#fff;font-size:15px;margin-bottom:6px}.s57-analyser{min-height:720px}.s57-analyser .s18-layout{grid-template-columns:230px minmax(0,1fr) 310px}.s57-count{color:#6f7d74;font-size:8px;margin:0 0 9px}.s57-tags{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#718078;font-size:6px;margin-top:6px}
+@media(max-width:1250px){.s57-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.s57-layout{grid-template-columns:minmax(0,1fr) 320px}.s57-tools{grid-template-columns:1fr 160px 150px}}
+@media(max-width:900px){#s57VideoView{padding:16px}.s57-head{align-items:flex-start;flex-direction:column}.s57-layout{grid-template-columns:1fr}.s57-side{position:static}.s57-tools{grid-template-columns:1fr 1fr}.s57-grid{grid-template-columns:1fr}.s57-analyser .s18-layout{grid-template-columns:1fr}}
+`;document.head.appendChild(st)}
+
+function ensureView(){styles();let view=$("s57VideoView");if(view)return view;const home=$("s34HomeView");const parent=home?.parentElement||$("s34App");if(!parent)return null;view=document.createElement("main");view.id="s57VideoView";view.className="s34-view s57-video-view";view.hidden=true;parent.appendChild(view);return view}
+function showOnly(){const view=ensureView();if(!view)return;["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView","s57VideoView"].forEach(id=>{const el=$(id);if(el)el.hidden=id!=="s57VideoView"});$("s34App")?.removeAttribute("hidden");document.body.classList.add("s34-active","s39-modern-only");document.querySelectorAll("[data-s34]").forEach(b=>b.classList.toggle("active",b.dataset.s34==="video"));render();window.scrollTo({top:0,behavior:"smooth"})}
+
+function header(){return `<div class="s57-head"><div><div class="s57-kicker">VIDEO · ANALYSE & LÆRING</div><h1>Video</h1><p>Alle dine kampklip samlet ét sted – direkte fra dine eksisterende kampanalyser.</p></div><div class="s57-tabs"><button class="s57-tab ${state.mode==="library"?"active":""}" data-s57-mode="library">VIDEOBIBLIOTEK</button><button class="s57-tab ${state.mode==="analysis"?"active":""}" data-s57-mode="analysis">KAMPANALYSE</button></div></div>`}
+function render(){const view=ensureView();if(!view)return;cleanup();view.innerHTML=header()+(state.mode==="analysis"?`<div id="s57AnalysisHost" class="s57-analyser" style="margin-top:16px"></div>`:libraryHtml());view.querySelectorAll("[data-s57-mode]").forEach(b=>b.onclick=()=>{state.mode=b.dataset.s57Mode;render()});if(state.mode==="analysis"){const host=$("s57AnalysisHost");if(typeof s18Render==="function")s18Render(host);else host.innerHTML=`<div class="s57-empty"><b>Kampanalyse kunne ikke indlæses</b>Videoanalyse-modulet mangler.</div>`;return}bindLibrary();renderPreview()}
+function libraryHtml(){const ps=projects(),all=filtered();return `<div class="s57-tools"><input id="s57Search" class="s57-input" placeholder="Søg i klip, tags, observationer eller kampe…" value="${esc(state.query)}"><select id="s57Project" class="s57-select"><option value="">Alle kampe</option>${ps.map(p=>`<option value="${esc(p.id)}" ${state.project===String(p.id)?"selected":""}>${esc(p.title||p.opponent||"Kampanalyse")}</option>`).join("")}</select><select id="s57Phase" class="s57-select"><option value="">Alle spilfaser</option>${["Med bold","Uden bold","Offensiv omstilling","Defensiv omstilling","Standard"].map(x=>`<option ${state.phase===x?"selected":""}>${x}</option>`).join("")}</select><button id="s57NewAnalysis" class="s57-btn primary">+ KAMPANALYSE</button></div><div class="s57-count">${all.length} klip · ${ps.length} kampanalyser</div><div class="s57-layout"><section id="s57Grid" class="s57-grid">${cards(all)}</section><aside id="s57Side" class="s57-side"></aside></div>`}
+function cards(rows){if(!rows.length)return `<div class="s57-empty"><b>Ingen klip endnu</b>Opret eller åbn en kampanalyse og markér IN/OUT. Klippene kommer automatisk frem her.</div>`;return rows.map(x=>{const c=x.clip,p=x.project,dur=Math.max(0,Number(c.endSec||0)-Number(c.startSec||0));return `<article class="s57-card ${state.selected===x.key?"active":""}" data-s57-clip="${esc(x.key)}"><div class="s57-thumb"><span class="s57-play">▶</span><span class="s57-time">${fmt(c.startSec)} · ${Math.round(dur)}s</span></div><div class="s57-cardbody"><strong>${esc(c.title||"Klip")}</strong><div class="s57-meta"><span>${esc(p.title||p.opponent||"Kamp")}</span><span>·</span><span>${esc(date(p.date))}</span></div><div style="margin-top:7px"><span class="s57-chip">${esc(c.phase||"Uden spilfase")}</span></div>${c.tags?`<div class="s57-tags">${esc(c.tags)}</div>`:""}</div></article>`}).join("")}
+function bindLibrary(){const rerender=()=>render();$("s57Search")?.addEventListener("input",e=>{state.query=e.target.value;rerender()});$("s57Project")?.addEventListener("change",e=>{state.project=e.target.value;state.selected="";rerender()});$("s57Phase")?.addEventListener("change",e=>{state.phase=e.target.value;state.selected="";rerender()});$("s57NewAnalysis")?.addEventListener("click",()=>{state.mode="analysis";render();setTimeout(()=>$("s18NewProject")?.click(),0)});document.querySelectorAll("[data-s57-clip]").forEach(card=>card.onclick=()=>{state.selected=card.dataset.s57Clip;document.querySelectorAll("[data-s57-clip]").forEach(x=>x.classList.toggle("active",x.dataset.s57Clip===state.selected));renderPreview()})}
+async function sourceFor(p){const mv=p?.matchVideo;if(!mv)return"";if(mv.sourceType==="local"&&mv.mediaId&&typeof s15GetBlob==="function"){const x=await s15GetBlob(mv.mediaId);if(x?.blob){state.objectUrl=URL.createObjectURL(x.blob);return state.objectUrl}return""}if(mv.sourceType==="veo"){if(mv.directUrl)return mv.directUrl;if(typeof s18ResolveVeo==="function"){try{const r=await s18ResolveVeo(mv.url);return r?.url||""}catch(e){console.warn("START11 V57 Veo preview",e);return""}}}return mv.url||""}
+async function renderPreview(){const host=$("s57Side");if(!host)return;const x=selected();if(!x){host.innerHTML=`<div class="s57-emptyvideo">Vælg et klip for at se det her.</div>`;return}state.selected=x.key;const c=x.clip,p=x.project;host.innerHTML=`<div id="s57Preview" class="s57-preview"><div class="s57-emptyvideo">Indlæser klip…</div></div><div class="s57-detail"><div class="s57-kicker">${esc(c.phase||"VIDEO")}</div><h2>${esc(c.title||"Klip")}</h2><p>${esc(c.observation||"Ingen observation tilføjet endnu.")}</p><div class="s57-detailgrid"><div class="s57-stat"><span>KAMP</span><b>${esc(p.title||p.opponent||"Kampanalyse")}</b></div><div class="s57-stat"><span>TID</span><b>${fmt(c.startSec)} → ${fmt(c.endSec)}</b></div><div class="s57-stat"><span>DATO</span><b>${esc(date(p.date))}</b></div><div class="s57-stat"><span>TAGS</span><b>${esc(c.tags||"—")}</b></div></div><div class="s57-actions"><button id="s57PlayClip" class="s57-btn primary">▶ AFSPIL KLIP</button><button id="s57OpenAnalysis" class="s57-btn">ÅBN ANALYSE</button></div></div>`;$("s57OpenAnalysis").onclick=()=>{s18.projectId=p.id;s18.clipId=c.id;state.mode="analysis";render()};const src=await sourceFor(p);const preview=$("s57Preview");if(!preview)return;if(!src){preview.innerHTML=`<div class="s57-emptyvideo">Kampvideoen kan ikke hentes på denne enhed.<br>Åbn kampanalysen for at kontrollere videokilden.</div>`;return}preview.innerHTML=`<video id="s57Video" playsinline preload="metadata"></video>`;const v=$("s57Video");v.src=src;const seek=()=>{try{v.currentTime=Number(c.startSec)||0}catch(_){}};v.addEventListener("loadedmetadata",seek,{once:true});v.addEventListener("timeupdate",()=>{if(v.currentTime>=Number(c.endSec||0)&&Number(c.endSec||0)>Number(c.startSec||0)){v.pause();v.currentTime=Number(c.startSec)||0;state.playing=false;const b=$("s57PlayClip");if(b)b.textContent="▶ AFSPIL KLIP"}});$("s57PlayClip").onclick=()=>{if(v.paused){if(v.currentTime<Number(c.startSec||0)||v.currentTime>=Number(c.endSec||0))seek();v.play().catch(()=>{});state.playing=true;$("s57PlayClip").textContent="❚❚ PAUSE"}else{v.pause();state.playing=false;$("s57PlayClip").textContent="▶ AFSPIL KLIP"}}}
+
+function bindNav(){document.querySelectorAll('[data-s34="video"]').forEach(btn=>{if(btn.dataset.s57Bound)return;btn.dataset.s57Bound="1";btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnly()},true)})}
+window.start11ShowVideoLibrary=showOnly;
+window.start11RenderVideoLibrary=render;
+const boot=()=>{ensureView();bindNav();new MutationObserver(bindNav).observe(document.body,{childList:true,subtree:true})};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,350),{once:true});else setTimeout(boot,350);
+window.START11_BUILD="V57-NATIVE-VIDEO-LIBRARY";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
    - Cloud-first exercise library per authenticated account
