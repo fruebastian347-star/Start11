@@ -1885,7 +1885,7 @@ console.info("START11 loaded:",window.START11_BUILD);
 window.__START11_V62_FREEZE__=true;
 
 const q=s=>document.querySelector(s);
-const projects=()=>Array.isArray(window.s13Data?.videoProjects)?s13Data.videoProjects:[];
+const projects=()=>typeof s13Data!=="undefined"&&Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[];
 const byKey=key=>{
  const [pid,cid]=String(key||"").split("::");
  const p=projects().find(x=>String(x.id)===pid);
@@ -2030,3 +2030,9 @@ scan();
 window.START11_BUILD="V62-FREEZE-EVERY-VIDEO-PLAYER";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* START11 V63 – library/presentation freeze data resolver fix
+   s13Data is app-scope state and is not guaranteed to exist on window. */
+window.START11_BUILD="V63-FREEZE-DATA-RESOLVER";
+console.info("START11 loaded:",window.START11_BUILD);
