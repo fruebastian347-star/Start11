@@ -1224,3 +1224,233 @@ console.info("START11 loaded:",window.START11_BUILD);
    No duplicate annotation data is created. */
 window.START11_BUILD="V58.3-VIDEO-LIBRARY-ANNOTATIONS";
 console.info("START11 loaded:",window.START11_BUILD);
+
+
+/* =========================================================
+ START11 V59 – REAL FREEZE + VIDEO PRESENTATIONS
+ - Robust wall-clock freeze for annotation duration
+ - Freeze does NOT skip source footage
+ - Build ordered presentations from any saved clips
+ - Presentation playback uses the existing clip videos + annotations
+========================================================= */
+(function start11V59VideoPresentations(){
+"use strict";
+if(window.__START11_V59_VIDEO_PRESENTATIONS__)return;
+window.__START11_V59_VIDEO_PRESENTATIONS__=true;
+
+const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+const esc=v=>typeof s13Esc==="function"?s13Esc(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const uid=p=>typeof s13Id==="function"?s13Id(p):`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+const fmt=sec=>{sec=Math.max(0,Number(sec)||0);const m=Math.floor(sec/60),s=Math.floor(sec%60);return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
+
+function ensure(){
+ if(!s13Data||typeof s13Data!=="object")return;
+ if(!Array.isArray(s13Data.videoPresentations))s13Data.videoPresentations=[];
+}
+function save(){try{s13Save?.()}catch(_){try{scheduleCloudSave?.()}catch(__){}}}
+function projects(){return Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[]}
+function allClips(){
+ return projects().flatMap(p=>(p.clips||[]).map(c=>({project:p,clip:c,key:`${p.id}::${c.id}`})));
+}
+function resolve(key){
+ const [pid,cid]=String(key||"").split("::");
+ const p=projects().find(x=>String(x.id)===pid);
+ const c=p?.clips?.find(x=>String(x.id)===cid);
+ return p&&c?{project:p,clip:c,key}:null;
+}
+function sourceFor(p){
+ try{
+   if(typeof s18VideoSource==="function")return s18VideoSource(p);
+   if(typeof s18ResolveVideoSource==="function")return s18ResolveVideoSource(p);
+ }catch(_){}
+ return p?.videoUrl||p?.url||p?.video||p?.src||"";
+}
+
+/* ---------- Robust freeze engine for the Video Library preview ---------- */
+let freeze={raf:0,video:null,clip:null,last:null,busy:false,timer:0,lastHit:""};
+function stopFreeze(){
+ cancelAnimationFrame(freeze.raf);clearTimeout(freeze.timer);
+ freeze={raf:0,video:null,clip:null,last:null,busy:false,timer:0,lastHit:""};
+ q("#s59FreezeBadge")?.remove();
+}
+function freezeBadge(player){
+ let b=player?.querySelector("#s59FreezeBadge");
+ if(!b&&player){b=document.createElement("div");b.id="s59FreezeBadge";b.textContent="❚❚ FRYS · MARKERING";player.appendChild(b)}
+ return b;
+}
+function startFreezeEngine(v,c,draw){
+ stopFreeze(); if(!v||!c)return;
+ freeze.video=v;freeze.clip=c;
+ const player=v.closest(".s581-player"), badge=freezeBadge(player);
+ const tick=()=>{
+   if(freeze.video!==v)return;
+   const t=Number(v.currentTime)||0;
+   if(!freeze.busy&&!v.paused&&localStorage.getItem("start11.video.freezeDrawings")!=="0"){
+     const anns=Array.isArray(c.annotations)?c.annotations:[];
+     const hit=anns.find(a=>{
+       if(a.freezeVideo===false)return false;
+       const s=Number(a.startTime)||0,e=Number(a.endTime??s);
+       const id=String(a.id||`${s}-${e}`);
+       const crossed=freeze.last==null ? Math.abs(t-s)<.12 : freeze.last < s && t>=s;
+       return e>s && crossed && freeze.lastHit!==id;
+     });
+     if(hit){
+       const s=Number(hit.startTime)||0,e=Number(hit.endTime)||s,d=Math.max(.2,e-s);
+       freeze.busy=true;freeze.lastHit=String(hit.id||`${s}-${e}`);
+       v.pause();try{v.currentTime=s}catch(_){}
+       draw?.();badge?.classList.add("show");
+       freeze.timer=setTimeout(()=>{
+         if(freeze.video!==v)return;
+         freeze.busy=false;badge?.classList.remove("show");
+         /* resume just after the SAME source frame; annotation duration is wall-clock time */
+         try{v.currentTime=Math.min(Number(c.endSec)||1e9,s+.04)}catch(_){}
+         freeze.last=s+.04;v.play().catch(()=>{});
+       },d*1000);
+     }
+   }
+   if(!freeze.busy)freeze.last=t;
+   freeze.raf=requestAnimationFrame(tick);
+ };
+ freeze.raf=requestAnimationFrame(tick);
+}
+
+/* Hook the V58.3 library player after it is rendered. */
+function attachLibraryFreeze(){
+ const v=q("#s57Video"); if(!v||v.dataset.s59Freeze==="1")return;
+ v.dataset.s59Freeze="1";
+ const selectedKey=qa("[data-s57-card].selected,[data-s57-card].active")[0]?.dataset?.s57Card;
+ let item=selectedKey?allClips().find(x=>String(x.clip.id)===String(selectedKey)):null;
+ if(!item){
+   const title=q(".s57-detail h2,.s57-detail h3")?.textContent?.trim();
+   item=allClips().find(x=>x.clip.title===title)||null;
+ }
+ if(!item)return;
+ startFreezeEngine(v,item.clip,()=>{try{v.dispatchEvent(new Event("timeupdate"))}catch(_){}});
+}
+new MutationObserver(()=>setTimeout(attachLibraryFreeze,0)).observe(document.body,{childList:true,subtree:true});
+
+/* ---------- Presentation UI ---------- */
+const css=document.createElement("style");
+css.textContent=`
+#s59Overlay{position:fixed;inset:0;z-index:10080;background:rgba(0,8,4,.86);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px}
+.s59modal{width:min(1180px,96vw);height:min(760px,92vh);background:#031108;border:1px solid #245d31;border-radius:14px;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;color:#fff;box-shadow:0 30px 100px #000}
+.s59head,.s59foot{padding:16px 20px;border-bottom:1px solid #173b22;display:flex;align-items:center;gap:12px}.s59foot{border-top:1px solid #173b22;border-bottom:0;justify-content:flex-end}
+.s59head h2{margin:0;font-size:22px}.s59head small{color:#7f9a87}.s59close{margin-left:auto}
+.s59body{display:grid;grid-template-columns:1.15fr .85fr;min-height:0}.s59pane{padding:18px;overflow:auto}.s59pane+.s59pane{border-left:1px solid #173b22}
+.s59search,.s59name{width:100%;box-sizing:border-box;background:#06170d;border:1px solid #245d31;border-radius:8px;padding:11px;color:#fff;margin-bottom:12px}
+.s59clip,.s59pick{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid #183d23;border-radius:8px;margin-bottom:7px;background:#06140b}
+.s59clip b,.s59pick b{display:block}.s59clip small,.s59pick small{color:#789382}
+.s59btn{border:1px solid #3a8c48;background:#07160c;color:#fff;border-radius:7px;padding:9px 12px;font-weight:800;cursor:pointer}.s59btn.primary{background:#62f34f;color:#001b05;border-color:#62f34f}.s59btn.danger{border-color:#7c2d2d;color:#ff8b8b}
+.s59empty{padding:35px;text-align:center;color:#71877a;border:1px dashed #23452c;border-radius:10px}
+#s59Player{position:fixed;inset:0;z-index:10100;background:#000;color:#fff;display:grid;grid-template-rows:auto 1fr auto}
+.s59playhead{padding:12px 18px;background:#041008;display:flex;align-items:center;gap:12px}.s59playhead strong{font-size:15px}.s59playhead span{color:#8ca293;font-size:11px}.s59playhead button{margin-left:auto}
+.s59stage{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}.s59stage video{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}.s59stage canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.s59controls{padding:12px 18px;background:#041008;display:grid;grid-template-columns:auto auto 1fr auto auto;gap:10px;align-items:center}.s59controls input{width:100%;accent-color:#62f34f}
+#s59FreezeBadge{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:7;background:#62f34f;color:#002b08;font-size:10px;font-weight:900;padding:7px 11px;border-radius:999px;opacity:0;transition:.15s}#s59FreezeBadge.show{opacity:1}
+@media(max-width:850px){.s59body{grid-template-columns:1fr}.s59pane+.s59pane{border-left:0;border-top:1px solid #173b22}}
+`;
+document.head.appendChild(css);
+
+let draft={id:"",title:"",clips:[]};
+
+function openBuilder(existing=null){
+ ensure();
+ draft=existing?JSON.parse(JSON.stringify(existing)):{id:"",title:"Ny videopræsentation",clips:[]};
+ q("#s59Overlay")?.remove();
+ const ov=document.createElement("div");ov.id="s59Overlay";
+ ov.innerHTML=`<div class="s59modal">
+  <div class="s59head"><div><h2>Videopræsentation</h2><small>Vælg klip fra dit videobibliotek og bestem rækkefølgen.</small></div><button class="s59btn s59close">LUK</button></div>
+  <div class="s59body">
+   <section class="s59pane"><input class="s59search" id="s59Search" placeholder="Søg i klip, kamp eller tags…"><div id="s59Available"></div></section>
+   <section class="s59pane"><input class="s59name" id="s59Name" value="${esc(draft.title)}" placeholder="Navn på præsentation"><div id="s59Selected"></div></section>
+  </div>
+  <div class="s59foot"><button class="s59btn" id="s59Saved">GEMTE PRÆSENTATIONER</button><button class="s59btn primary" id="s59Save">GEM PRÆSENTATION</button></div>
+ </div>`;
+ document.body.appendChild(ov);
+ ov.querySelector(".s59close").onclick=()=>ov.remove();
+ ov.onclick=e=>{if(e.target===ov)ov.remove()};
+ q("#s59Search").oninput=renderBuilder;
+ q("#s59Save").onclick=savePresentation;
+ q("#s59Saved").onclick=showSaved;
+ renderBuilder();
+}
+function renderBuilder(){
+ const term=(q("#s59Search")?.value||"").toLowerCase();
+ const chosen=new Set(draft.clips);
+ const avail=allClips().filter(x=>{
+   const hay=[x.clip.title,x.project.title,x.project.opponent,x.clip.tags].flat().join(" ").toLowerCase();
+   return !chosen.has(x.key)&&(!term||hay.includes(term));
+ });
+ q("#s59Available").innerHTML=avail.length?avail.map(x=>`<div class="s59clip"><div><b>${esc(x.clip.title||"Klip")}</b><small>${esc(x.project.title||x.project.opponent||"Kamp")} · ${fmt((Number(x.clip.endSec)||0)-(Number(x.clip.startSec)||0))}</small></div><button class="s59btn primary" data-s59-add="${esc(x.key)}">+ TILFØJ</button></div>`).join(""):`<div class="s59empty">Ingen flere klip matcher.</div>`;
+ q("#s59Selected").innerHTML=draft.clips.length?draft.clips.map((key,i)=>{const x=resolve(key);return x?`<div class="s59pick"><div><b>${i+1}. ${esc(x.clip.title||"Klip")}</b><small>${esc(x.project.title||x.project.opponent||"Kamp")}</small></div><div><button class="s59btn" data-s59-up="${i}">↑</button> <button class="s59btn" data-s59-down="${i}">↓</button> <button class="s59btn danger" data-s59-remove="${i}">×</button></div></div>`:""}).join(""):`<div class="s59empty">Tilføj klip fra venstre side.</div>`;
+ qa("[data-s59-add]").forEach(b=>b.onclick=()=>{draft.clips.push(b.dataset.s59Add);renderBuilder()});
+ qa("[data-s59-remove]").forEach(b=>b.onclick=()=>{draft.clips.splice(+b.dataset.s59Remove,1);renderBuilder()});
+ qa("[data-s59-up]").forEach(b=>b.onclick=()=>{const i=+b.dataset.s59Up;if(i>0)[draft.clips[i-1],draft.clips[i]]=[draft.clips[i],draft.clips[i-1]];renderBuilder()});
+ qa("[data-s59-down]").forEach(b=>b.onclick=()=>{const i=+b.dataset.s59Down;if(i<draft.clips.length-1)[draft.clips[i+1],draft.clips[i]]=[draft.clips[i],draft.clips[i+1]];renderBuilder()});
+}
+function savePresentation(){
+ ensure();draft.title=(q("#s59Name")?.value||"Videopræsentation").trim();if(!draft.clips.length){alert("Tilføj mindst ét klip.");return}
+ if(!draft.id)draft.id=uid("video-presentation");
+ const i=s13Data.videoPresentations.findIndex(x=>x.id===draft.id);
+ if(i>=0)s13Data.videoPresentations[i]=JSON.parse(JSON.stringify(draft));else s13Data.videoPresentations.unshift(JSON.parse(JSON.stringify(draft)));
+ save();q("#s59Overlay")?.remove();playPresentation(draft);
+}
+function showSaved(){
+ ensure();const box=q("#s59Selected");if(!box)return;
+ box.innerHTML=s13Data.videoPresentations.length?s13Data.videoPresentations.map(p=>`<div class="s59pick"><div><b>${esc(p.title)}</b><small>${p.clips?.length||0} klip</small></div><div><button class="s59btn primary" data-s59-play="${esc(p.id)}">AFSPIL</button> <button class="s59btn" data-s59-edit="${esc(p.id)}">REDIGER</button></div></div>`).join(""):`<div class="s59empty">Ingen gemte præsentationer endnu.</div>`;
+ qa("[data-s59-play]").forEach(b=>b.onclick=()=>{const p=s13Data.videoPresentations.find(x=>x.id===b.dataset.s59Play);if(p){q("#s59Overlay")?.remove();playPresentation(p)}});
+ qa("[data-s59-edit]").forEach(b=>b.onclick=()=>{const p=s13Data.videoPresentations.find(x=>x.id===b.dataset.s59Edit);if(p)openBuilder(p)});
+}
+
+let pres={data:null,index:0,url:"",freeze:null};
+function closePlayer(){stopFreeze();if(pres.url?.startsWith("blob:"))URL.revokeObjectURL(pres.url);q("#s59Player")?.remove();pres={data:null,index:0,url:"",freeze:null}}
+async function presentationSource(p){
+ let src=sourceFor(p);
+ if(src&&typeof src.then==="function")src=await src;
+ return src||"";
+}
+function playPresentation(data,index=0){
+ q("#s59Overlay")?.remove();closePlayer();
+ pres.data=data;pres.index=Math.max(0,Math.min(index,(data.clips||[]).length-1));
+ const x=resolve(data.clips[pres.index]);if(!x)return;
+ const root=document.createElement("div");root.id="s59Player";
+ root.innerHTML=`<div class="s59playhead"><div><strong>${esc(data.title)}</strong><br><span>Klip ${pres.index+1} af ${data.clips.length} · ${esc(x.clip.title||"Klip")}</span></div><button class="s59btn" id="s59Exit">LUK PRÆSENTATION</button></div><div class="s59stage"><video id="s59Video" playsinline></video><canvas id="s59Canvas"></canvas><div id="s59FreezeBadge">❚❚ FRYS · MARKERING</div></div><div class="s59controls"><button class="s59btn" id="s59Prev">← FORRIGE</button><button class="s59btn primary" id="s59Play">▶</button><input id="s59Seek" type="range" min="0" max="${Math.max(.01,(Number(x.clip.endSec)||0)-(Number(x.clip.startSec)||0))}" step=".05" value="0"><span id="s59Time">00:00 / ${fmt((Number(x.clip.endSec)||0)-(Number(x.clip.startSec)||0))}</span><button class="s59btn" id="s59Next">NÆSTE →</button></div>`;
+ document.body.appendChild(root);
+ q("#s59Exit").onclick=closePlayer;q("#s59Prev").onclick=()=>playPresentation(data,Math.max(0,pres.index-1));q("#s59Next").onclick=()=>playPresentation(data,Math.min(data.clips.length-1,pres.index+1));
+ setupPresentationVideo(x);
+}
+async function setupPresentationVideo(x){
+ const v=q("#s59Video"),cv=q("#s59Canvas"),seek=q("#s59Seek"),time=q("#s59Time"),play=q("#s59Play");if(!v)return;
+ const start=Number(x.clip.startSec)||0,end=Number(x.clip.endSec)||start,dur=Math.max(0,end-start);
+ const draw=()=>{
+   if(!cv)return;const r=v.getBoundingClientRect(),dpr=devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+   const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);
+   (x.clip.annotations||[]).filter(a=>typeof s18Visible==="function"?s18Visible(a,v.currentTime):(v.currentTime>=Number(a.startTime||0)&&v.currentTime<=Number(a.endTime||0))).forEach(a=>s18DrawOne?.(ctx,a,cv.width,cv.height,false));
+ };
+ let src=await presentationSource(x.project);if(!src)return;
+ v.src=src;v.onloadedmetadata=()=>{v.currentTime=start;draw()};
+ v.ontimeupdate=()=>{let rel=Math.max(0,v.currentTime-start);if(rel>=dur-.03&&dur){v.pause();if(pres.index<(pres.data.clips.length-1)){setTimeout(()=>playPresentation(pres.data,pres.index+1),250)}else{v.currentTime=start}}seek.value=Math.min(dur,rel);time.textContent=`${fmt(Math.min(dur,rel))} / ${fmt(dur)}`;draw()};
+ v.onplay=()=>play.textContent="❚❚";v.onpause=()=>play.textContent="▶";
+ play.onclick=()=>v.paused?v.play():v.pause();v.onclick=play.onclick;
+ seek.oninput=()=>{v.currentTime=start+Number(seek.value||0);draw()};
+ startFreezeEngine(v,x.clip,draw);
+}
+
+/* Add a presentation button to the modern Video library header.
+   MutationObserver keeps it present after V58 rerenders. */
+function injectButton(){
+ const view=q("#s57VideoView");if(!view||view.hidden)return;
+ if(q("#s59PresentationBtn"))return;
+ const candidates=qa("#s57VideoView button");
+ const analysis=candidates.find(b=>/KAMPANALYSE/i.test(b.textContent||""));
+ if(!analysis)return;
+ const b=document.createElement("button");b.id="s59PresentationBtn";b.className=analysis.className;b.textContent="PRÆSENTATION";b.onclick=()=>openBuilder();
+ analysis.parentElement?.insertBefore(b,analysis);
+}
+new MutationObserver(()=>injectButton()).observe(document.body,{childList:true,subtree:true});
+setTimeout(injectButton,300);
+
+window.start11OpenVideoPresentation=openBuilder;
+window.START11_BUILD="V59-REAL-FREEZE-VIDEO-PRESENTATIONS";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
