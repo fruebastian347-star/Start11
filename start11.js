@@ -71595,6 +71595,65 @@ document.head.appendChild(st);
 window.START11_BUILD="V69-PRESENTATION-NAV-COMPACT-ACTIONS";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+ START11 V69.1 – FIX NÆSTE HITBOX ONLY
+ - No layout/design changes
+ - Makes the entire visible NÆSTE button interactive
+ - Works even if another presentation-control element overlaps its hitbox
+========================================================= */
+(function start11V691NextHitboxOnly(){
+"use strict";
+if(window.__START11_V691_NEXT_HITBOX__)return;
+window.__START11_V691_NEXT_HITBOX__=true;
+
+function nextButton(){return document.getElementById("s67Next")}
+
+function keepNextOnTop(){
+ const b=nextButton();
+ if(!b)return;
+ b.style.setProperty("position","relative","important");
+ b.style.setProperty("z-index","2147483646","important");
+ b.style.setProperty("pointer-events","auto","important");
+ b.style.setProperty("cursor",b.disabled?"not-allowed":"pointer","important");
+}
+
+/* Fallback: if an overlapping element still receives the click, use the
+   visible NÆSTE button's rectangle as the hit area and call its handler. */
+document.addEventListener("click",e=>{
+ const b=nextButton();
+ if(!b||b.disabled||e.target===b||b.contains(e.target))return;
+
+ const r=b.getBoundingClientRect();
+ const x=e.clientX,y=e.clientY;
+ if(x<r.left||x>r.right||y<r.top||y>r.bottom)return;
+
+ e.preventDefault();
+ e.stopImmediatePropagation();
+ if(typeof b.onclick==="function")b.onclick.call(b,e);
+ else b.click();
+},true);
+
+new MutationObserver(()=>keepNextOnTop()).observe(document.body,{childList:true,subtree:true});
+window.addEventListener("resize",keepNextOnTop);
+setInterval(keepNextOnTop,300);
+keepNextOnTop();
+
+const st=document.createElement("style");
+st.id="s691NextCss";
+st.textContent=`
+#s67Player #s67Next{
+ position:relative!important;
+ z-index:2147483646!important;
+ pointer-events:auto!important;
+}
+`;
+document.head.appendChild(st);
+
+window.START11_BUILD="V69.1-NEXT-HITBOX-FIX";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
    - Cloud-first exercise library per authenticated account
