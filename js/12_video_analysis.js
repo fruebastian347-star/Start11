@@ -1811,6 +1811,7 @@ function beginFreeze(v,clip,trigger,group){
 }
 
 function monitor(){
+ if(window.__START11_V62_FREEZE__){requestAnimationFrame(monitor);return;}
  const videos=[q("#s18Video"),q("#s57Video"),q("#s59Video")].filter(Boolean);
  const v=videos.find(x=>!x.paused)||videos.find(x=>x===active.video)||videos[0];
 
@@ -1867,5 +1868,165 @@ setInterval(ensureFreezeDurationEditor,350);
 requestAnimationFrame(monitor);
 
 window.START11_BUILD="V61-TRUE-FRAME-FREEZE";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
+
+
+/* =========================================================
+ START11 V62 – FREEZE EVERY PLAYER
+ Fixes V61 scope problem:
+ - Kampanalyse, Videobibliotek and Presentation each get their own engine
+ - Videobibliotek resolves the REAL data-s57-clip key
+ - Presentation uses the exact data-s59-clip-key already bound by V61
+ - No hidden/paused player can steal freeze monitoring from another player
+========================================================= */
+(function start11V62FreezeEveryPlayer(){
+"use strict";
+window.__START11_V62_FREEZE__=true;
+
+const q=s=>document.querySelector(s);
+const projects=()=>Array.isArray(window.s13Data?.videoProjects)?s13Data.videoProjects:[];
+const byKey=key=>{
+ const [pid,cid]=String(key||"").split("::");
+ const p=projects().find(x=>String(x.id)===pid);
+ const c=p?.clips?.find(x=>String(x.id)===cid);
+ return c||null;
+};
+const migrate=a=>{
+ if(!a)return;
+ if(!Number.isFinite(Number(a.freezeDuration))){
+   const legacy=Math.max(0,Number(a.endTime)-Number(a.startTime));
+   a.freezeDuration=legacy>=.25&&legacy<=30?legacy:3;
+ }
+ a.freezeDuration=Math.max(.25,Math.min(30,Number(a.freezeDuration)||3));
+ if(a.freezeVideo==null)a.freezeVideo=true;
+};
+
+const engines=new WeakMap();
+
+function exactClip(v){
+ if(v.id==="s18Video")return typeof s18Clip==="function"?s18Clip():null;
+
+ if(v.id==="s59Video"){
+   return byKey(v.dataset.s59ClipKey);
+ }
+
+ if(v.id==="s57Video"){
+   /* V58 cards store PROJECT::CLIP in data-s57-clip (not data-s57-card). */
+   const active=q('[data-s57-clip].active');
+   if(active?.dataset?.s57Clip)return byKey(active.dataset.s57Clip);
+
+   /* First opened clip may not have active class yet; detail heading + project is fallback. */
+   const title=q("#s57Side .s58-detail-head h2")?.textContent?.trim();
+   if(title){
+     for(const p of projects()){
+       const c=(p.clips||[]).find(x=>String(x.title||"").trim()===title);
+       if(c)return c;
+     }
+   }
+ }
+ return null;
+}
+
+function draw(v){
+ try{
+   if(v.id==="s18Video"&&typeof s18Draw==="function")s18Draw();
+   else v.dispatchEvent(new Event("timeupdate"));
+ }catch(_){}
+}
+
+function badge(v,on){
+ const host=v.parentElement;if(!host)return;
+ let b=host.querySelector(".s62FreezeBadge");
+ if(!b){
+   b=document.createElement("div");b.className="s62FreezeBadge";
+   b.textContent="❚❚ FRYS · MARKERING";host.appendChild(b);
+ }
+ b.classList.toggle("show",!!on);
+}
+
+function attach(v){
+ if(!v||engines.has(v))return;
+ const e={last:null,lastTrigger:null,busy:false,timer:0,raf:0,token:0};
+ engines.set(v,e);
+
+ const reset=()=>{
+   if(e.busy)return;
+   e.last=Number(v.currentTime)||0;
+   if(e.lastTrigger!=null&&e.last<e.lastTrigger-.2)e.lastTrigger=null;
+ };
+ v.addEventListener("seeking",reset);
+ v.addEventListener("loadedmetadata",reset);
+
+ const tick=()=>{
+   if(!document.body.contains(v)){clearTimeout(e.timer);return}
+   const clip=exactClip(v);
+
+   if(clip&&!e.busy&&!v.paused&&!v.seeking){
+     const anns=Array.isArray(clip.annotations)?clip.annotations:[];
+     anns.forEach(migrate);
+     const now=Number(v.currentTime)||0;
+     const prev=e.last==null?now:e.last;
+
+     const starts=[...new Set(anns
+       .filter(a=>a.freezeVideo!==false&&Number.isFinite(Number(a.startTime)))
+       .map(a=>Number(a.startTime)).sort((a,b)=>a-b))];
+
+     const trigger=starts.find(t=>
+       e.lastTrigger!==t &&
+       ((prev<t&&now>=t)||(Math.abs(now-t)<=.08))
+     );
+
+     if(trigger!=null){
+       const group=anns.filter(a=>a.freezeVideo!==false&&Math.abs(Number(a.startTime)-trigger)<.06);
+       const duration=Math.max(...group.map(a=>Number(a.freezeDuration)||3),0);
+
+       if(duration>0){
+         e.busy=true;e.lastTrigger=trigger;
+         const token=++e.token;
+
+         /* Freeze the actual media clock on the annotation frame. */
+         v.pause();
+         try{v.currentTime=trigger}catch(_){}
+         draw(v);badge(v,true);
+
+         e.timer=setTimeout(()=>{
+           if(token!==e.token||!document.body.contains(v))return;
+           badge(v,false);e.busy=false;
+
+           /* Resume essentially from the exact same match moment. */
+           const resume=trigger+.035;
+           try{v.currentTime=resume}catch(_){}
+           e.last=resume;
+           const p=v.play();if(p?.catch)p.catch(()=>{});
+         },duration*1000);
+       }
+     }else e.last=now;
+   } else if(!e.busy) {
+     e.last=Number(v.currentTime)||0;
+   }
+   e.raf=requestAnimationFrame(tick);
+ };
+ e.raf=requestAnimationFrame(tick);
+}
+
+function scan(){
+ q("#s18Video")&&attach(q("#s18Video"));
+ q("#s57Video")&&attach(q("#s57Video"));
+ q("#s59Video")&&attach(q("#s59Video"));
+}
+
+const st=document.createElement("style");
+st.textContent=`
+.s62FreezeBadge{position:absolute;z-index:1200;left:50%;top:16px;transform:translateX(-50%);
+ background:#62f34f;color:#002807;border-radius:999px;padding:7px 11px;font-size:10px;font-weight:950;
+ opacity:0;pointer-events:none}.s62FreezeBadge.show{opacity:1}`;
+document.head.appendChild(st);
+
+new MutationObserver(()=>setTimeout(scan,0)).observe(document.body,{childList:true,subtree:true});
+setInterval(scan,400);
+scan();
+
+window.START11_BUILD="V62-FREEZE-EVERY-VIDEO-PLAYER";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
