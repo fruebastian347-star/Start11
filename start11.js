@@ -69180,7 +69180,7 @@ document.addEventListener("click",e=>{
    This does not modify the source video. */
 function tick(){
  const v=q("#s18Video");
- if(!v||!document.body.classList.contains("s267open")){requestAnimationFrame(tick);return}
+ if(!v||!document.body.classList.contains("s267open")||window.__START11_V60_FREEZE__){requestAnimationFrame(tick);return}
  const c=clip(),anns=Array.isArray(c?.annotations)?c.annotations:[];
  const now=Number(v.currentTime)||0;
 
@@ -69339,7 +69339,7 @@ document.addEventListener("click",e=>{
    then resumes just after that same frame. No source footage is skipped. */
 function monitor(){
  const v=q("#s18Video"),c=typeof s18Clip==="function"?s18Clip():null;
- if(v&&c&&!v.paused&&!freezeRun.busy&&globalFreeze()){
+ if(v&&c&&!v.paused&&!freezeRun.busy&&globalFreeze()&&!window.__START11_V60_FREEZE__){
    const t=v.currentTime;
    const hit=(c.annotations||[]).find(a=>{
      if(a.freezeVideo===false)return false;
@@ -69621,7 +69621,7 @@ async function renderPreview(){
    if(seekBar&&!seekBar.matches(":active"))seekBar.value=Math.min(clipDur,rel);
    if(clock)clock.textContent=`${fmt(Math.min(clipDur,rel))} / ${fmt(clipDur)}`;
    drawAnn();
-   maybeFreeze();
+   /* V60 owns freeze playback */
  });
  play.onclick=()=>v.paused?v.play():v.pause();
  seekBar.oninput=()=>{if(s581Freeze.timer){clearTimeout(s581Freeze.timer);s581Freeze.timer=null;s581Freeze.busy=false}v.currentTime=clipStart+Number(seekBar.value||0);clock.textContent=`${fmt(Number(seekBar.value||0))} / ${fmt(clipDur)}`;drawAnn()};
@@ -69885,6 +69885,22 @@ function showSaved(){
 let pres={data:null,index:0,url:"",freeze:null};
 function closePlayer(){stopFreeze();if(pres.url?.startsWith("blob:"))URL.revokeObjectURL(pres.url);q("#s59Player")?.remove();pres={data:null,index:0,url:"",freeze:null}}
 async function presentationSource(p){
+ const mv=p?.matchVideo;
+ if(mv){
+   if(mv.sourceType==="local"&&mv.mediaId&&typeof s15GetBlob==="function"){
+     try{
+       const x=await s15GetBlob(mv.mediaId);
+       if(x?.blob)return URL.createObjectURL(x.blob);
+     }catch(e){console.warn("START11 V60 local presentation video",e)}
+   }
+   if(mv.sourceType==="veo"){
+     if(mv.directUrl)return mv.directUrl;
+     if(typeof s18ResolveVeo==="function"){
+       try{const r=await s18ResolveVeo(mv.url);if(r?.url)return r.url}catch(e){console.warn("START11 V60 Veo presentation video",e)}
+     }
+   }
+   if(mv.url)return mv.url;
+ }
  let src=sourceFor(p);
  if(src&&typeof src.then==="function")src=await src;
  return src||"";
@@ -69932,6 +69948,173 @@ setTimeout(injectButton,300);
 
 window.start11OpenVideoPresentation=openBuilder;
 window.START11_BUILD="V59-REAL-FREEZE-VIDEO-PRESENTATIONS";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
+
+
+/* =========================================================
+ START11 V60 – SYNCHRONISED FREEZE + TIMECODE + PRESENTATION FIX
+ - One freeze engine only (prevents double pause)
+ - Annotation visible duration == freeze wall-clock duration
+ - Resumes automatically from the SAME source frame
+ - Works in Kampanalyse, Videobibliotek and Presentation
+ - Synlig fra/til always shown as MM:SS / HH:MM:SS
+========================================================= */
+(function start11V60FreezeSync(){
+"use strict";
+window.__START11_V60_FREEZE__=true;
+
+const q=s=>document.querySelector(s);
+const fmtTime=sec=>{
+ sec=Math.max(0,Number(sec)||0);
+ const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);
+ return h?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+};
+
+let run={video:null,clip:null,raf:0,timer:0,busy:false,lastTime:null,lastKey:"",badge:null,draw:null};
+
+function cancel(resetKey=false){
+ cancelAnimationFrame(run.raf);clearTimeout(run.timer);
+ if(run.badge)run.badge.classList.remove("show");
+ run.raf=0;run.timer=0;run.busy=false;run.lastTime=null;
+ if(resetKey)run.lastKey="";
+}
+
+function badgeFor(v){
+ const host=v?.parentElement;
+ if(!host)return null;
+ let b=host.querySelector(".s60FreezeBadge");
+ if(!b){
+   b=document.createElement("div");b.className="s60FreezeBadge";b.textContent="❚❚ FRYS · MARKERING";
+   host.appendChild(b);
+ }
+ return b;
+}
+
+function installStyle(){
+ if(q("#s60FreezeCss"))return;
+ const st=document.createElement("style");st.id="s60FreezeCss";
+ st.textContent=`
+ .s60FreezeBadge{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:999;background:#62f34f;color:#002807;border-radius:999px;padding:7px 11px;font-size:10px;font-weight:950;opacity:0;pointer-events:none;transition:.12s}
+ .s60FreezeBadge.show{opacity:1}
+ #s18AnnStart,#s18AnnEnd{font-variant-numeric:tabular-nums}
+ `;
+ document.head.appendChild(st);
+}
+
+function attach(v,c,draw){
+ if(!v||!c)return;
+ if(run.video===v&&run.clip===c)return;
+ cancel(true);
+ run.video=v;run.clip=c;run.draw=draw||null;run.badge=badgeFor(v);
+ const loop=()=>{
+   if(run.video!==v||run.clip!==c)return;
+   const now=Number(v.currentTime)||0;
+   if(!run.busy&&!v.paused){
+     const anns=Array.isArray(c.annotations)?c.annotations:[];
+     const hit=anns.find(a=>{
+       if(a.freezeVideo===false)return false;
+       const s=Number(a.startTime),e=Number(a.endTime);
+       if(!Number.isFinite(s)||!Number.isFinite(e)||e<=s)return false;
+       const key=String(a.id||`${s}-${e}`);
+       const crossed=run.lastTime==null ? (now>=s&&now<s+.16) : (run.lastTime<s&&now>=s);
+       return crossed&&run.lastKey!==key;
+     });
+     if(hit){
+       const s=Number(hit.startTime),e=Number(hit.endTime);
+       const duration=Math.max(.1,e-s);
+       const key=String(hit.id||`${s}-${e}`);
+       run.busy=true;run.lastKey=key;
+       v.pause();
+       try{v.currentTime=s}catch(_){}
+       run.draw?.();
+       run.badge?.classList.add("show");
+
+       run.timer=setTimeout(()=>{
+         if(run.video!==v)return;
+         run.busy=false;
+         run.badge?.classList.remove("show");
+         /* Annotation time is presentation time, not skipped match footage. */
+         try{v.currentTime=Math.min(v.duration||1e12,s+.04)}catch(_){}
+         run.lastTime=s+.04;
+         const promise=v.play();
+         if(promise?.catch)promise.catch(()=>{});
+       },duration*1000);
+     }
+   }
+   if(!run.busy)run.lastTime=now;
+   run.raf=requestAnimationFrame(loop);
+ };
+ run.raf=requestAnimationFrame(loop);
+}
+
+/* Kampanalyse: same saved annotation controls the freeze. */
+function attachAnalysis(){
+ const v=q("#s18Video");
+ const c=typeof s18Clip==="function"?s18Clip():null;
+ if(v&&c)attach(v,c,()=>{try{s18Draw?.()}catch(_){}});
+}
+
+/* Videobibliotek: resolve the selected clip and attach. */
+function attachLibrary(){
+ const v=q("#s57Video");if(!v)return;
+ let c=null;
+ const selected=q("[data-s57-card].selected,[data-s57-card].active");
+ const cid=selected?.dataset?.s57Card;
+ if(cid&&Array.isArray(s13Data?.videoProjects)){
+   for(const p of s13Data.videoProjects){const hit=(p.clips||[]).find(x=>String(x.id)===String(cid));if(hit){c=hit;break}}
+ }
+ if(!c){
+   const title=q(".s57-detail h2,.s57-detail h3")?.textContent?.trim();
+   for(const p of (s13Data?.videoProjects||[])){const hit=(p.clips||[]).find(x=>x.title===title);if(hit){c=hit;break}}
+ }
+ if(c)attach(v,c,()=>{try{v.dispatchEvent(new Event("timeupdate"))}catch(_){}});
+}
+
+/* Presentation already has its clip in V59. Re-attach whenever its player appears. */
+function attachPresentation(){
+ const v=q("#s59Video");if(!v||!window.__START11_V59_VIDEO_PRESENTATIONS__)return;
+ /* The V59 setup attaches its own V59 engine. V60 takes ownership by locating
+    the current presentation clip from the visible heading. */
+ const title=q("#s59Player .s59playhead span")?.textContent||"";
+ const clipTitle=title.split("·").slice(1).join("·").trim();
+ let c=null;
+ for(const p of (s13Data?.videoProjects||[])){const hit=(p.clips||[]).find(x=>x.title===clipTitle);if(hit){c=hit;break}}
+ if(c)attach(v,c,()=>{try{v.dispatchEvent(new Event("timeupdate"))}catch(_){}});
+}
+
+/* Force annotation editor time fields to the same readable format as IN/OUT.
+   Do not overwrite while the user is actively typing. */
+function syncAnnotationTimeFields(){
+ const c=typeof s18Clip==="function"?s18Clip():null;
+ const a=c?.annotations?.find(x=>String(x.id)===String(s18?.selectedAnn));
+ if(!a)return;
+ [["s18AnnStart",a.startTime],["s18AnnEnd",a.endTime]].forEach(([id,val])=>{
+   const el=document.getElementById(id);if(!el)return;
+   el.type="text";el.inputMode="numeric";el.placeholder="MM:SS";
+   if(document.activeElement!==el)el.value=fmtTime(val);
+ });
+}
+
+installStyle();
+const watch=new MutationObserver(()=>{
+ syncAnnotationTimeFields();
+ setTimeout(()=>{
+   if(q("#s59Video"))attachPresentation();
+   else if(q("#s18Video"))attachAnalysis();
+   else if(q("#s57Video"))attachLibrary();
+ },0);
+});
+watch.observe(document.body,{childList:true,subtree:true});
+setInterval(syncAnnotationTimeFields,500);
+
+document.addEventListener("play",e=>{
+ if(e.target?.id==="s18Video")setTimeout(attachAnalysis,0);
+ if(e.target?.id==="s57Video")setTimeout(attachLibrary,0);
+ if(e.target?.id==="s59Video")setTimeout(attachPresentation,0);
+},true);
+
+window.START11_BUILD="V60-SYNC-FREEZE-TIMECODE-PRESENTATION";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
 /* =========================================================
