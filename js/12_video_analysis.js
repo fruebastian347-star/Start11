@@ -3174,3 +3174,139 @@ document.head.appendChild(st);
 window.START11_BUILD="V69.1-NEXT-HITBOX-FIX";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+ START11 V69.2 – NEXT CURSOR + PRESENTATION DELETE
+ - No design/layout changes
+ - Gives NÆSTE a real pointer hit-layer matching the visible button
+ - Makes SLET remove the active saved presentation from app + local store
+========================================================= */
+(function start11V692NextCursorAndDelete(){
+"use strict";
+if(window.__START11_V692_NEXT_DELETE__)return;
+window.__START11_V692_NEXT_DELETE__=true;
+
+const STORE="start11.videoPresentations.v64";
+const q=s=>document.querySelector(s);
+
+function ensureNextProxy(){
+ const b=q("#s67Next");
+ let proxy=q("#s692NextProxy");
+ if(!b){
+   proxy?.remove();
+   return;
+ }
+ if(!proxy){
+   proxy=document.createElement("div");
+   proxy.id="s692NextProxy";
+   proxy.setAttribute("aria-hidden","true");
+   document.body.appendChild(proxy);
+   proxy.addEventListener("click",e=>{
+     e.preventDefault();
+     e.stopPropagation();
+     const btn=q("#s67Next");
+     if(!btn||btn.disabled)return;
+     if(typeof btn.onclick==="function")btn.onclick.call(btn,e);
+     else btn.click();
+   });
+ }
+ const r=b.getBoundingClientRect();
+ Object.assign(proxy.style,{
+   position:"fixed",
+   left:r.left+"px", top:r.top+"px",
+   width:r.width+"px", height:r.height+"px",
+   zIndex:"2147483647",
+   cursor:b.disabled?"not-allowed":"pointer",
+   pointerEvents:"auto",
+   background:"transparent"
+ });
+}
+
+function localPresentations(){
+ try{
+   const x=JSON.parse(localStorage.getItem(STORE)||"[]");
+   return Array.isArray(x)?x:[];
+ }catch(_){return[]}
+}
+function appPresentations(){
+ try{
+   return typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoPresentations)
+     ? s13Data.videoPresentations : [];
+ }catch(_){return[]}
+}
+function currentPresentation(){
+ const active=q(".s66savedcard.active");
+ const id=active?.dataset?.s66Open;
+ if(id){
+   return appPresentations().find(x=>String(x.id)===String(id))
+       || localPresentations().find(x=>String(x.id)===String(id))
+       || null;
+ }
+ const name=(q("#s66Name")?.value||"").trim();
+ if(!name)return null;
+ return appPresentations().find(x=>String(x.title||"").trim()===name)
+     || localPresentations().find(x=>String(x.title||"").trim()===name)
+     || null;
+}
+function persistDelete(id){
+ const sid=String(id);
+ const local=localPresentations().filter(x=>String(x.id)!==sid);
+ try{localStorage.setItem(STORE,JSON.stringify(local))}catch(_){}
+ try{
+   if(typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoPresentations)){
+     s13Data.videoPresentations=s13Data.videoPresentations.filter(x=>String(x.id)!==sid);
+   }
+ }catch(_){}
+ try{if(typeof s13Save==="function")s13Save()}catch(_){}
+ try{if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(_){}
+}
+
+/* Capture before V66's lexical delete handler. */
+document.addEventListener("click",e=>{
+ const del=e.target.closest?.("#s66Delete");
+ if(!del)return;
+ const p=currentPresentation();
+ if(!p)return; // New/unsaved draft: let original code handle it.
+ e.preventDefault();
+ e.stopImmediatePropagation();
+ if(!confirm(`Slet præsentationen "${p.title||"Videopræsentation"}"?`))return;
+ persistDelete(p.id);
+
+ /* Re-open the same hub as a clean new draft so its own renderer cannot
+    immediately write the deleted presentation back. */
+ del.style.visibility="hidden";
+ const active=q(`.s66savedcard[data-s66-open="${CSS.escape(String(p.id))}"]`);
+ active?.remove();
+ const count=q("#s66SavedCount");
+ if(count)count.textContent=`${Math.max(0,appPresentations().length)} gemt`;
+ const name=q("#s66Name"); if(name)name.value="Ny videopræsentation";
+ const match=q("#s66Match"); if(match)match.value="";
+ const selected=q("#s66Selected");
+ if(selected)selected.innerHTML=`<div class="s66empty big">DIN PRÆSENTATION ER TOM<br><small>Tilføj klip fra biblioteket til venstre.</small></div>`;
+ const duration=q("#s66Duration");if(duration)duration.textContent="0 klip · 00:00";
+ const info=q("#s66MatchInfo");if(info)info.innerHTML="<span>PRÆSENTATION</span><b>Ikke knyttet til en kamp</b>";
+ try{visNotification?.("Præsentationen er slettet.")}catch(_){}
+},true);
+
+function sync(){
+ ensureNextProxy();
+}
+new MutationObserver(()=>requestAnimationFrame(sync)).observe(document.body,{childList:true,subtree:true});
+window.addEventListener("resize",sync);
+window.addEventListener("scroll",sync,true);
+setInterval(sync,250);
+sync();
+
+const st=document.createElement("style");
+st.id="s692Css";
+st.textContent=`
+#s67Player #s67Next{cursor:pointer!important}
+#s67Player #s67Next:disabled{cursor:not-allowed!important}
+#s692NextProxy{cursor:pointer!important}
+`;
+document.head.appendChild(st);
+
+window.START11_BUILD="V69.2-NEXT-CURSOR-PRESENTATION-DELETE";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
