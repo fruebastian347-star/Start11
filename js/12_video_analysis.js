@@ -909,49 +909,180 @@ console.info("START11 loaded:", window.START11_BUILD);
 
 
 /* =========================================================
-   START11 V57 – NATIVE VIDEO LIBRARY
-   Dedicated modern VIDEO page.
-   Reuses the existing V18/V27 videoProjects + clips directly.
+   START11 V58 – VIDEO LIBRARY PRO
+   - Existing videoProjects/clips remain the source of truth
+   - Clip folders + nested folders
+   - Live still previews from the source video
+   - Native video controls in the detail player
+   - Rich detail panel matching the modern Video mockup
 ========================================================= */
-(function start11V57VideoLibrary(){
+(function start11V58VideoLibrary(){
 "use strict";
-if(window.__START11_V57_VIDEO_LIBRARY__)return;
-window.__START11_V57_VIDEO_LIBRARY__=true;
+if(window.__START11_V58_VIDEO_LIBRARY__)return;
+window.__START11_V58_VIDEO_LIBRARY__=true;
 
 const $=id=>document.getElementById(id);
 const esc=v=>typeof s13Esc==="function"?s13Esc(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmt=sec=>{sec=Math.max(0,Number(sec)||0);const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);return h?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
-const date=v=>{if(!v)return"Ingen dato";try{return new Intl.DateTimeFormat("da-DK",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(v+"T12:00:00"))}catch(_){return v}};
-const state={mode:"library",query:"",project:"",phase:"",selected:"",objectUrl:"",playing:false};
+const date=v=>{if(!v)return"Ingen dato";try{return new Intl.DateTimeFormat("da-DK",{day:"numeric",month:"long",year:"numeric"}).format(new Date(v+"T12:00:00"))}catch(_){return v}};
+const uid=p=>typeof s13Id==="function"?s13Id(p):`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
+const state={mode:"library",query:"",project:"",phase:"",folder:"all",selected:"",objectUrls:[],detailTab:"description"};
 
-function projects(){try{s18EnsureData?.()}catch(_){}return Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[]}
+function ensureData(){
+  try{s18EnsureData?.()}catch(_){}
+  if(!s13Data||typeof s13Data!=="object")return;
+  if(!Array.isArray(s13Data.videoProjects))s13Data.videoProjects=[];
+  if(!Array.isArray(s13Data.videoFolders))s13Data.videoFolders=[];
+  s13Data.videoProjects.forEach(p=>(p.clips||[]).forEach(c=>{if(typeof c.folderId!=="string")c.folderId="";if(typeof c.favorite!=="boolean")c.favorite=false}));
+}
+function save(){try{if(typeof s13Save==="function")s13Save();else if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(e){console.warn("START11 V58 save",e)}}
+function projects(){ensureData();return Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[]}
+function folders(){ensureData();return Array.isArray(s13Data?.videoFolders)?s13Data.videoFolders:[]}
 function clips(){return projects().flatMap(p=>(Array.isArray(p.clips)?p.clips:[]).map(c=>({project:p,clip:c,key:`${p.id}::${c.id}`})))}
-function selected(){const all=filtered();return all.find(x=>x.key===state.selected)||all[0]||null}
-function filtered(){const q=state.query.trim().toLowerCase();return clips().filter(x=>(!state.project||String(x.project.id)===state.project)&&(!state.phase||String(x.clip.phase||"")===state.phase)&&(!q||`${x.clip.title||""} ${x.clip.tags||""} ${x.clip.observation||""} ${x.clip.phase||""} ${x.project.title||""} ${x.project.opponent||""}`.toLowerCase().includes(q)))}
-function cleanup(){if(state.objectUrl){try{URL.revokeObjectURL(state.objectUrl)}catch(_){}state.objectUrl=""}}
+function folderById(id){return folders().find(f=>String(f.id)===String(id))}
+function folderChildren(id=""){return folders().filter(f=>String(f.parentId||"")===String(id||""))}
+function folderPath(id){const names=[];let cur=folderById(id),guard=0;while(cur&&guard++<20){names.unshift(cur.name);cur=folderById(cur.parentId)}return names.join(" / ")}
+function folderContains(folderId,clipFolderId){if(String(folderId)===String(clipFolderId))return true;let cur=folderById(clipFolderId),guard=0;while(cur&&guard++<20){if(String(cur.parentId)===String(folderId))return true;cur=folderById(cur.parentId)}return false}
+function selected(){const all=clips();return all.find(x=>x.key===state.selected)||filtered()[0]||null}
+function filtered(){
+ const q=state.query.trim().toLowerCase();
+ return clips().filter(x=>
+   (!state.project||String(x.project.id)===state.project)&&
+   (!state.phase||String(x.clip.phase||"")===state.phase)&&
+   (state.folder==="all"||folderContains(state.folder,x.clip.folderId||""))&&
+   (!q||`${x.clip.title||""} ${x.clip.tags||""} ${x.clip.observation||""} ${x.clip.phase||""} ${x.project.title||""} ${x.project.opponent||""}`.toLowerCase().includes(q))
+ );
+}
+function cleanup(){state.objectUrls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(_){}});state.objectUrls=[]}
 
-function styles(){if($("s57VideoStyles"))return;const st=document.createElement("style");st.id="s57VideoStyles";st.textContent=`
-#s57VideoView{padding:24px 28px 40px;min-width:0;color:#f4fff5}.s57-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:3px 0 18px;border-bottom:1px solid rgba(255,255,255,.07)}.s57-kicker{color:var(--s11-primary,#6df052);font-size:8px;font-weight:950;letter-spacing:1.25px}.s57-head h1{margin:5px 0 0;font-size:29px;line-height:1}.s57-head p{margin:6px 0 0;color:#7f8c83;font-size:10px}.s57-tabs{display:flex;gap:6px}.s57-tab,.s57-btn{height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:#071009;color:#aab6ad;font:inherit;font-size:8px;font-weight:950;cursor:pointer}.s57-tab.active,.s57-btn.primary{border-color:var(--s11-primary,#6df052);background:var(--s11-primary,#6df052);color:#061008}.s57-tools{display:grid;grid-template-columns:minmax(220px,1fr) 190px 170px auto;gap:8px;margin:16px 0}.s57-input,.s57-select{width:100%;height:38px;box-sizing:border-box;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:#061009;color:#edf8ee;padding:0 11px;font:inherit;font-size:9px;outline:none}.s57-input:focus,.s57-select:focus{border-color:rgba(109,240,82,.55)}.s57-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}.s57-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.s57-card{min-width:0;border:1px solid rgba(255,255,255,.085);border-radius:9px;background:#061009;overflow:hidden;cursor:pointer;transition:.16s}.s57-card:hover,.s57-card.active{border-color:rgba(109,240,82,.48);transform:translateY(-1px)}.s57-thumb{position:relative;aspect-ratio:16/9;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,rgba(109,240,82,.12),transparent 42%),linear-gradient(145deg,#102817,#07130a);overflow:hidden}.s57-thumb:before{content:"";position:absolute;inset:10% 7%;border:1px solid rgba(255,255,255,.13);background:linear-gradient(90deg,transparent 49.7%,rgba(255,255,255,.11) 50%,transparent 50.3%)}.s57-play{position:relative;z-index:2;width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(109,240,82,.45);border-radius:50%;background:#061008d9;color:var(--s11-primary,#6df052);font-size:14px}.s57-time{position:absolute;right:7px;bottom:7px;z-index:2;padding:4px 6px;border-radius:4px;background:#000c;color:#fff;font-size:7px;font-weight:900}.s57-cardbody{padding:10px}.s57-cardbody strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}.s57-meta{display:flex;gap:6px;align-items:center;margin-top:6px;color:#718078;font-size:7px}.s57-chip{display:inline-flex;align-items:center;max-width:100%;padding:3px 6px;border-radius:999px;background:rgba(109,240,82,.09);color:#8df477;font-size:6px;font-weight:900}.s57-side{position:sticky;top:80px;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:#061009;overflow:hidden}.s57-preview{aspect-ratio:16/9;background:#000;display:grid;place-items:center;position:relative}.s57-preview video{width:100%;height:100%;object-fit:contain}.s57-emptyvideo{padding:30px;text-align:center;color:#758178;font-size:9px}.s57-detail{padding:14px}.s57-detail h2{margin:3px 0 6px;font-size:18px}.s57-detail p{color:#89958d;font-size:8px;line-height:1.55}.s57-detailgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.s57-stat{padding:8px;border:1px solid rgba(255,255,255,.07);border-radius:6px}.s57-stat span{display:block;color:#66746b;font-size:6px;font-weight:900}.s57-stat b{display:block;margin-top:3px;font-size:8px}.s57-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.s57-empty{grid-column:1/-1;padding:70px 20px;border:1px dashed rgba(255,255,255,.11);border-radius:9px;text-align:center;color:#78857c}.s57-empty b{display:block;color:#fff;font-size:15px;margin-bottom:6px}.s57-analyser{min-height:720px}.s57-analyser .s18-layout{grid-template-columns:230px minmax(0,1fr) 310px}.s57-count{color:#6f7d74;font-size:8px;margin:0 0 9px}.s57-tags{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#718078;font-size:6px;margin-top:6px}
-@media(max-width:1250px){.s57-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.s57-layout{grid-template-columns:minmax(0,1fr) 320px}.s57-tools{grid-template-columns:1fr 160px 150px}}
-@media(max-width:900px){#s57VideoView{padding:16px}.s57-head{align-items:flex-start;flex-direction:column}.s57-layout{grid-template-columns:1fr}.s57-side{position:static}.s57-tools{grid-template-columns:1fr 1fr}.s57-grid{grid-template-columns:1fr}.s57-analyser .s18-layout{grid-template-columns:1fr}}
+async function sourceFor(p){
+ const mv=p?.matchVideo;if(!mv)return"";
+ if(mv.sourceType==="local"&&mv.mediaId&&typeof s15GetBlob==="function"){
+   const x=await s15GetBlob(mv.mediaId);if(x?.blob){const u=URL.createObjectURL(x.blob);state.objectUrls.push(u);return u}return""
+ }
+ if(mv.sourceType==="veo"){
+   if(mv.directUrl)return mv.directUrl;
+   if(typeof s18ResolveVeo==="function"){try{const r=await s18ResolveVeo(mv.url);return r?.url||""}catch(e){console.warn("START11 V58 Veo preview",e);return""}}
+ }
+ return mv.url||""
+}
+
+function styles(){if($("s58VideoStyles"))return;const st=document.createElement("style");st.id="s58VideoStyles";st.textContent=`
+#s57VideoView{padding:18px 20px 40px;min-width:0;color:#f4fff5}.s58-shell{display:grid;grid-template-columns:205px minmax(0,1fr);gap:18px}.s58-left{min-width:0;border-right:1px solid rgba(255,255,255,.06);padding-right:14px}.s58-upload{width:100%;height:42px;border:0;border-radius:6px;background:var(--s11-primary,#6df052);color:#061008;font:inherit;font-size:8px;font-weight:950;cursor:pointer}.s58-side-title{margin:18px 5px 7px;color:#6df052;font-size:7px;font-weight:950;letter-spacing:1px}.s58-nav{display:grid;gap:2px}.s58-nav button,.s58-folder-row{width:100%;height:31px;display:flex;align-items:center;gap:8px;padding:0 8px;border:0;border-radius:5px;background:transparent;color:#98a69c;font:inherit;font-size:7.5px;text-align:left;cursor:pointer}.s58-nav button b,.s58-folder-row b{margin-left:auto;color:#708078;font-size:6.5px}.s58-nav button:hover,.s58-nav button.active,.s58-folder-row:hover,.s58-folder-row.active{background:rgba(109,240,82,.09);color:#78ef60}.s58-folder-head{display:flex;align-items:center;justify-content:space-between}.s58-folder-head button{width:25px;height:25px;border:1px solid rgba(109,240,82,.25);border-radius:5px;background:#071009;color:#6df052;cursor:pointer}.s58-folder-row{position:relative;padding-left:calc(8px + var(--depth,0)*12px)}.s58-folder-menu{margin-left:auto!important;width:18px!important;height:20px!important;padding:0!important;justify-content:center!important;color:#65736a!important}.s58-main{min-width:0}.s57-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:3px 0 14px;border-bottom:1px solid rgba(255,255,255,.07)}.s57-kicker{color:#6df052;font-size:7px;font-weight:950;letter-spacing:1.2px}.s57-head h1{margin:4px 0 0;font-size:27px;line-height:1}.s57-head p{margin:5px 0 0;color:#7f8c83;font-size:8px}.s57-tabs{display:flex;gap:6px}.s57-tab,.s57-btn{height:34px;padding:0 12px;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:#071009;color:#aab6ad;font:inherit;font-size:7px;font-weight:950;cursor:pointer}.s57-tab.active,.s57-btn.primary{border-color:#6df052;background:#6df052;color:#061008}.s57-tools{display:grid;grid-template-columns:minmax(220px,1fr) 175px 155px;gap:8px;margin:14px 0}.s57-input,.s57-select{width:100%;height:36px;box-sizing:border-box;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#061009;color:#edf8ee;padding:0 10px;font:inherit;font-size:8px;outline:none}.s57-layout{display:grid;grid-template-columns:minmax(0,1fr) 385px;gap:12px;align-items:start}.s57-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.s57-card{min-width:0;border:1px solid rgba(255,255,255,.075);border-radius:8px;background:#061009;overflow:hidden;cursor:pointer;transition:.14s}.s57-card:hover,.s57-card.active{border-color:rgba(109,240,82,.62);transform:translateY(-1px)}.s57-thumb{position:relative;aspect-ratio:16/9;display:grid;place-items:center;background:linear-gradient(145deg,#102817,#07130a);overflow:hidden}.s57-thumb video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}.s57-thumb:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.28))}.s57-play{position:relative;z-index:3;width:35px;height:35px;display:grid;place-items:center;border-radius:50%;background:#061008b8;color:white;font-size:13px}.s57-time{position:absolute;right:6px;bottom:6px;z-index:4;padding:3px 5px;border-radius:3px;background:#000d;color:#fff;font-size:6px;font-weight:900}.s57-cardbody{padding:9px}.s57-cardbody strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px}.s57-meta{display:flex;gap:5px;align-items:center;margin-top:5px;color:#718078;font-size:6.5px}.s57-chip{display:inline-flex;padding:3px 6px;border-radius:999px;background:rgba(109,240,82,.09);color:#8df477;font-size:5.8px;font-weight:900}.s57-tags{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#718078;font-size:6px;margin-top:5px}.s57-side{position:sticky;top:74px;border:1px solid rgba(255,255,255,.085);border-radius:8px;background:#061009;overflow:hidden}.s57-preview{aspect-ratio:16/9;background:#000;position:relative}.s57-preview video{width:100%;height:100%;display:block;object-fit:contain;background:#000}.s57-emptyvideo{height:100%;display:grid;place-items:center;padding:25px;text-align:center;color:#758178;font-size:8px}.s58-detail-head{display:flex;justify-content:space-between;gap:8px;padding:11px 12px 8px}.s58-detail-head h2{margin:3px 0 3px;font-size:16px}.s58-detail-head p{margin:0;color:#79877e;font-size:6.5px}.s58-detail-actions{display:flex;gap:5px}.s58-iconbtn{width:29px;height:29px;border:1px solid rgba(255,255,255,.08);border-radius:5px;background:#071009;color:#dfe8e1;cursor:pointer}.s58-iconbtn.favorite{color:#ffd72e}.s58-tags{padding:0 12px 9px;display:flex;gap:5px;flex-wrap:wrap}.s58-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}.s58-tabs button{height:34px;border:0;border-bottom:2px solid transparent;background:transparent;color:#839087;font:inherit;font-size:6.5px;cursor:pointer}.s58-tabs button.active{color:#fff;border-bottom-color:#6df052}.s58-tabbody{min-height:90px;padding:12px;font-size:7.5px;line-height:1.55;color:#a7b2aa}.s58-tabbody strong{display:block;margin-bottom:5px;color:#6df052;font-size:7px}.s58-info{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 12px 12px}.s58-info div{padding:8px;border:1px solid rgba(255,255,255,.065);border-radius:5px}.s58-info span{display:block;color:#68766d;font-size:5.7px;font-weight:900}.s58-info b{display:block;margin-top:3px;color:#e6eee8;font-size:6.8px}.s58-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 12px 12px}.s58-actions button{height:34px}.s58-actions .danger{color:#e86f68;border-color:rgba(232,90,80,.25)}.s57-count{color:#6f7d74;font-size:7px;margin:0 0 8px}.s57-empty{grid-column:1/-1;padding:60px 20px;border:1px dashed rgba(255,255,255,.1);border-radius:8px;text-align:center;color:#78857c}.s57-empty b{display:block;color:#fff;font-size:14px;margin-bottom:5px}.s57-analyser{min-height:720px}.s57-analyser .s18-layout{grid-template-columns:230px minmax(0,1fr) 310px}.s58-folder-modal{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;background:#000b;backdrop-filter:blur(6px)}.s58-folder-box{width:min(390px,92vw);padding:18px;border:1px solid rgba(109,240,82,.24);border-radius:9px;background:#071009}.s58-folder-box h3{margin:0 0 12px}.s58-folder-box label{display:grid;gap:5px;margin:8px 0;color:#829087;font-size:7px}.s58-folder-box input,.s58-folder-box select{height:36px;border:1px solid rgba(255,255,255,.1);border-radius:5px;background:#020805;color:#fff;padding:0 9px}.s58-folder-box footer{display:flex;justify-content:flex-end;gap:6px;margin-top:13px}
+@media(max-width:1250px){.s57-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.s57-layout{grid-template-columns:minmax(0,1fr) 330px}.s58-shell{grid-template-columns:185px minmax(0,1fr)}}
+@media(max-width:900px){.s58-shell{grid-template-columns:1fr}.s58-left{border-right:0;padding-right:0}.s57-layout{grid-template-columns:1fr}.s57-side{position:static}.s57-grid{grid-template-columns:1fr}.s57-tools{grid-template-columns:1fr}.s57-analyser .s18-layout{grid-template-columns:1fr}}
 `;document.head.appendChild(st)}
 
 function ensureView(){styles();let view=$("s57VideoView");if(view)return view;const home=$("s34HomeView");const parent=home?.parentElement||$("s34App");if(!parent)return null;view=document.createElement("main");view.id="s57VideoView";view.className="s34-view s57-video-view";view.hidden=true;parent.appendChild(view);return view}
 function showOnly(){const view=ensureView();if(!view)return;["s34HomeView","s34LineupView","s34PlayersView","s45ExerciseBankView","s57VideoView"].forEach(id=>{const el=$(id);if(el)el.hidden=id!=="s57VideoView"});$("s34App")?.removeAttribute("hidden");document.body.classList.add("s34-active","s39-modern-only");document.querySelectorAll("[data-s34]").forEach(b=>b.classList.toggle("active",b.dataset.s34==="video"));render();window.scrollTo({top:0,behavior:"smooth"})}
+function header(){return `<div class="s57-head"><div><div class="s57-kicker">VIDEO</div><h1>Videobibliotek</h1><p>Dine klip fra kampanalyser samlet, organiseret og klar til læring.</p></div><div class="s57-tabs"><button class="s57-tab ${state.mode==="library"?"active":""}" data-s57-mode="library">VIDEOBIBLIOTEK</button><button class="s57-tab ${state.mode==="analysis"?"active":""}" data-s57-mode="analysis">KAMPANALYSE</button></div></div>`}
 
-function header(){return `<div class="s57-head"><div><div class="s57-kicker">VIDEO · ANALYSE & LÆRING</div><h1>Video</h1><p>Alle dine kampklip samlet ét sted – direkte fra dine eksisterende kampanalyser.</p></div><div class="s57-tabs"><button class="s57-tab ${state.mode==="library"?"active":""}" data-s57-mode="library">VIDEOBIBLIOTEK</button><button class="s57-tab ${state.mode==="analysis"?"active":""}" data-s57-mode="analysis">KAMPANALYSE</button></div></div>`}
-function render(){const view=ensureView();if(!view)return;cleanup();view.innerHTML=header()+(state.mode==="analysis"?`<div id="s57AnalysisHost" class="s57-analyser" style="margin-top:16px"></div>`:libraryHtml());view.querySelectorAll("[data-s57-mode]").forEach(b=>b.onclick=()=>{state.mode=b.dataset.s57Mode;render()});if(state.mode==="analysis"){const host=$("s57AnalysisHost");if(typeof s18Render==="function")s18Render(host);else host.innerHTML=`<div class="s57-empty"><b>Kampanalyse kunne ikke indlæses</b>Videoanalyse-modulet mangler.</div>`;return}bindLibrary();renderPreview()}
-function libraryHtml(){const ps=projects(),all=filtered();return `<div class="s57-tools"><input id="s57Search" class="s57-input" placeholder="Søg i klip, tags, observationer eller kampe…" value="${esc(state.query)}"><select id="s57Project" class="s57-select"><option value="">Alle kampe</option>${ps.map(p=>`<option value="${esc(p.id)}" ${state.project===String(p.id)?"selected":""}>${esc(p.title||p.opponent||"Kampanalyse")}</option>`).join("")}</select><select id="s57Phase" class="s57-select"><option value="">Alle spilfaser</option>${["Med bold","Uden bold","Offensiv omstilling","Defensiv omstilling","Standard"].map(x=>`<option ${state.phase===x?"selected":""}>${x}</option>`).join("")}</select><button id="s57NewAnalysis" class="s57-btn primary">+ KAMPANALYSE</button></div><div class="s57-count">${all.length} klip · ${ps.length} kampanalyser</div><div class="s57-layout"><section id="s57Grid" class="s57-grid">${cards(all)}</section><aside id="s57Side" class="s57-side"></aside></div>`}
-function cards(rows){if(!rows.length)return `<div class="s57-empty"><b>Ingen klip endnu</b>Opret eller åbn en kampanalyse og markér IN/OUT. Klippene kommer automatisk frem her.</div>`;return rows.map(x=>{const c=x.clip,p=x.project,dur=Math.max(0,Number(c.endSec||0)-Number(c.startSec||0));return `<article class="s57-card ${state.selected===x.key?"active":""}" data-s57-clip="${esc(x.key)}"><div class="s57-thumb"><span class="s57-play">▶</span><span class="s57-time">${fmt(c.startSec)} · ${Math.round(dur)}s</span></div><div class="s57-cardbody"><strong>${esc(c.title||"Klip")}</strong><div class="s57-meta"><span>${esc(p.title||p.opponent||"Kamp")}</span><span>·</span><span>${esc(date(p.date))}</span></div><div style="margin-top:7px"><span class="s57-chip">${esc(c.phase||"Uden spilfase")}</span></div>${c.tags?`<div class="s57-tags">${esc(c.tags)}</div>`:""}</div></article>`}).join("")}
-function bindLibrary(){const rerender=()=>render();$("s57Search")?.addEventListener("input",e=>{state.query=e.target.value;rerender()});$("s57Project")?.addEventListener("change",e=>{state.project=e.target.value;state.selected="";rerender()});$("s57Phase")?.addEventListener("change",e=>{state.phase=e.target.value;state.selected="";rerender()});$("s57NewAnalysis")?.addEventListener("click",()=>{state.mode="analysis";render();setTimeout(()=>$("s18NewProject")?.click(),0)});document.querySelectorAll("[data-s57-clip]").forEach(card=>card.onclick=()=>{state.selected=card.dataset.s57Clip;document.querySelectorAll("[data-s57-clip]").forEach(x=>x.classList.toggle("active",x.dataset.s57Clip===state.selected));renderPreview()})}
-async function sourceFor(p){const mv=p?.matchVideo;if(!mv)return"";if(mv.sourceType==="local"&&mv.mediaId&&typeof s15GetBlob==="function"){const x=await s15GetBlob(mv.mediaId);if(x?.blob){state.objectUrl=URL.createObjectURL(x.blob);return state.objectUrl}return""}if(mv.sourceType==="veo"){if(mv.directUrl)return mv.directUrl;if(typeof s18ResolveVeo==="function"){try{const r=await s18ResolveVeo(mv.url);return r?.url||""}catch(e){console.warn("START11 V57 Veo preview",e);return""}}}return mv.url||""}
-async function renderPreview(){const host=$("s57Side");if(!host)return;const x=selected();if(!x){host.innerHTML=`<div class="s57-emptyvideo">Vælg et klip for at se det her.</div>`;return}state.selected=x.key;const c=x.clip,p=x.project;host.innerHTML=`<div id="s57Preview" class="s57-preview"><div class="s57-emptyvideo">Indlæser klip…</div></div><div class="s57-detail"><div class="s57-kicker">${esc(c.phase||"VIDEO")}</div><h2>${esc(c.title||"Klip")}</h2><p>${esc(c.observation||"Ingen observation tilføjet endnu.")}</p><div class="s57-detailgrid"><div class="s57-stat"><span>KAMP</span><b>${esc(p.title||p.opponent||"Kampanalyse")}</b></div><div class="s57-stat"><span>TID</span><b>${fmt(c.startSec)} → ${fmt(c.endSec)}</b></div><div class="s57-stat"><span>DATO</span><b>${esc(date(p.date))}</b></div><div class="s57-stat"><span>TAGS</span><b>${esc(c.tags||"—")}</b></div></div><div class="s57-actions"><button id="s57PlayClip" class="s57-btn primary">▶ AFSPIL KLIP</button><button id="s57OpenAnalysis" class="s57-btn">ÅBN ANALYSE</button></div></div>`;$("s57OpenAnalysis").onclick=()=>{s18.projectId=p.id;s18.clipId=c.id;state.mode="analysis";render()};const src=await sourceFor(p);const preview=$("s57Preview");if(!preview)return;if(!src){preview.innerHTML=`<div class="s57-emptyvideo">Kampvideoen kan ikke hentes på denne enhed.<br>Åbn kampanalysen for at kontrollere videokilden.</div>`;return}preview.innerHTML=`<video id="s57Video" playsinline preload="metadata"></video>`;const v=$("s57Video");v.src=src;const seek=()=>{try{v.currentTime=Number(c.startSec)||0}catch(_){}};v.addEventListener("loadedmetadata",seek,{once:true});v.addEventListener("timeupdate",()=>{if(v.currentTime>=Number(c.endSec||0)&&Number(c.endSec||0)>Number(c.startSec||0)){v.pause();v.currentTime=Number(c.startSec)||0;state.playing=false;const b=$("s57PlayClip");if(b)b.textContent="▶ AFSPIL KLIP"}});$("s57PlayClip").onclick=()=>{if(v.paused){if(v.currentTime<Number(c.startSec||0)||v.currentTime>=Number(c.endSec||0))seek();v.play().catch(()=>{});state.playing=true;$("s57PlayClip").textContent="❚❚ PAUSE"}else{v.pause();state.playing=false;$("s57PlayClip").textContent="▶ AFSPIL KLIP"}}}
+function folderTree(parent="",depth=0){
+ return folderChildren(parent).map(f=>{
+   const count=clips().filter(x=>folderContains(f.id,x.clip.folderId||"")).length;
+   return `<div><div class="s58-folder-row ${state.folder===String(f.id)?"active":""}" style="--depth:${depth}" data-folder="${esc(f.id)}"><span>▱</span><span>${esc(f.name)}</span><b>${count}</b><button class="s58-folder-menu" data-folder-menu="${esc(f.id)}" title="Mappeindstillinger">•••</button></div>${folderTree(f.id,depth+1)}</div>`
+ }).join("")
+}
+function sidebar(){
+ const all=clips(),fav=all.filter(x=>x.clip.favorite).length;
+ return `<aside class="s58-left">
+   <button class="s58-upload" id="s58NewAnalysis">＋ KAMPANALYSE</button>
+   <div class="s58-side-title">VIDEOER</div>
+   <nav class="s58-nav">
+     <button class="${state.folder==="all"?"active":""}" data-folder="all"><span>▣</span> Alle klip <b>${all.length}</b></button>
+     <button data-s58-special="favorites"><span>☆</span> Favoritter <b>${fav}</b></button>
+   </nav>
+   <div class="s58-folder-head"><div class="s58-side-title">MAPPER</div><button id="s58AddFolder" title="Ny mappe">＋</button></div>
+   <div id="s58Folders">${folderTree()}</div>
+   <div class="s58-side-title">SPILFASE</div>
+   <nav class="s58-nav">
+    ${["Med bold","Uden bold","Offensiv omstilling","Defensiv omstilling","Standard"].map(ph=>`<button data-phase="${esc(ph)}"><span>◉</span>${esc(ph)}<b>${all.filter(x=>x.clip.phase===ph).length}</b></button>`).join("")}
+   </nav>
+ </aside>`
+}
+function libraryHtml(){const ps=projects(),all=filtered();return `<div class="s58-shell">${sidebar()}<section class="s58-main">${header()}<div class="s57-tools"><input id="s57Search" class="s57-input" placeholder="Søg i videoer, kampe, tags eller noter…" value="${esc(state.query)}"><select id="s57Project" class="s57-select"><option value="">Alle kampe</option>${ps.map(p=>`<option value="${esc(p.id)}" ${state.project===String(p.id)?"selected":""}>${esc(p.title||p.opponent||"Kampanalyse")}</option>`).join("")}</select><select id="s57Phase" class="s57-select"><option value="">Alle spilfaser</option>${["Med bold","Uden bold","Offensiv omstilling","Defensiv omstilling","Standard"].map(x=>`<option ${state.phase===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="s57-count">${all.length} klip · ${ps.length} kampanalyser${state.folder!=="all"?` · ${esc(folderPath(state.folder))}`:""}</div><div class="s57-layout"><section id="s57Grid" class="s57-grid">${cards(all)}</section><aside id="s57Side" class="s57-side"></aside></div></section></div>`}
 
-function bindNav(){document.querySelectorAll('[data-s34="video"]').forEach(btn=>{if(btn.dataset.s57Bound)return;btn.dataset.s57Bound="1";btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnly()},true)})}
-window.start11ShowVideoLibrary=showOnly;
-window.start11RenderVideoLibrary=render;
-const boot=()=>{ensureView();bindNav();new MutationObserver(bindNav).observe(document.body,{childList:true,subtree:true})};
+function cards(rows){if(!rows.length)return `<div class="s57-empty"><b>Ingen klip her endnu</b>Lav et klip i Kampanalyse eller flyt et eksisterende klip til denne mappe.</div>`;return rows.map(x=>{const c=x.clip,p=x.project,dur=Math.max(0,Number(c.endSec||0)-Number(c.startSec||0));return `<article class="s57-card ${state.selected===x.key?"active":""}" data-s57-clip="${esc(x.key)}"><div class="s57-thumb" data-s58-thumb="${esc(x.key)}"><span class="s57-play">▶</span><span class="s57-time">${fmt(dur)}</span></div><div class="s57-cardbody"><strong>${esc(c.title||"Klip")}</strong><div class="s57-meta"><span>${esc(p.title||p.opponent||"Kamp")}</span><span>·</span><span>${esc(date(p.date))}</span></div><div style="margin-top:6px"><span class="s57-chip">${esc(c.phase||"Video")}</span></div>${c.tags?`<div class="s57-tags">${esc(c.tags)}</div>`:""}</div></article>`}).join("")}
+
+async function hydrateThumbs(){
+ const rows=filtered(),cache=new Map();
+ for(const x of rows){
+   const host=document.querySelector(`[data-s58-thumb="${CSS.escape(x.key)}"]`);if(!host)continue;
+   let src=cache.get(x.project.id);
+   if(src===undefined){src=await sourceFor(x.project);cache.set(x.project.id,src||"")}
+   if(!src||!document.body.contains(host))continue;
+   const v=document.createElement("video");v.muted=true;v.playsInline=true;v.preload="metadata";v.src=src;
+   v.addEventListener("loadedmetadata",()=>{try{v.currentTime=Math.min(Math.max(0,Number(x.clip.startSec||0)+.25),Math.max(0,(v.duration||1)-.1))}catch(_){}},{once:true});
+   host.prepend(v);
+ }
+}
+function render(){const view=ensureView();if(!view)return;cleanup();if(state.mode==="analysis"){view.innerHTML=`<div class="s58-main">${header()}<div id="s57AnalysisHost" class="s57-analyser" style="margin-top:14px"></div></div>`;view.querySelectorAll("[data-s57-mode]").forEach(b=>b.onclick=()=>{state.mode=b.dataset.s57Mode;render()});const host=$("s57AnalysisHost");if(typeof s18Render==="function")s18Render(host);else host.innerHTML=`<div class="s57-empty"><b>Kampanalyse kunne ikke indlæses</b></div>`;return}
+ view.innerHTML=libraryHtml();bindLibrary();renderPreview();hydrateThumbs()
+}
+function bindLibrary(){
+ viewModeBindings();
+ $("s57Search")?.addEventListener("input",e=>{state.query=e.target.value;render()});
+ $("s57Project")?.addEventListener("change",e=>{state.project=e.target.value;state.selected="";render()});
+ $("s57Phase")?.addEventListener("change",e=>{state.phase=e.target.value;state.selected="";render()});
+ $("s58NewAnalysis")?.addEventListener("click",()=>{state.mode="analysis";render();setTimeout(()=>$("s18NewProject")?.click(),0)});
+ $("s58AddFolder")?.addEventListener("click",()=>folderDialog());
+ document.querySelectorAll("[data-folder]").forEach(el=>el.addEventListener("click",e=>{if(e.target.closest("[data-folder-menu]"))return;state.folder=el.dataset.folder;render()}));
+ document.querySelectorAll("[data-folder-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();folderActions(b.dataset.folderMenu)});
+ document.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>{state.phase=state.phase===b.dataset.phase?"":b.dataset.phase;render()});
+ document.querySelectorAll("[data-s57-clip]").forEach(card=>card.onclick=()=>{state.selected=card.dataset.s57Clip;document.querySelectorAll("[data-s57-clip]").forEach(x=>x.classList.toggle("active",x.dataset.s57Clip===state.selected));renderPreview()})
+}
+function viewModeBindings(){document.querySelectorAll("[data-s57-mode]").forEach(b=>b.onclick=()=>{state.mode=b.dataset.s57Mode;render()})}
+
+function folderDialog(editId="",parentPreset=""){
+ const f=folderById(editId);const modal=document.createElement("div");modal.className="s58-folder-modal";
+ modal.innerHTML=`<div class="s58-folder-box"><h3>${f?"Rediger mappe":"Ny mappe"}</h3><label>NAVN<input id="s58FolderName" value="${esc(f?.name||"")}"></label><label>PLACERING<select id="s58FolderParent"><option value="">Ingen overmappe</option>${folders().filter(x=>String(x.id)!==String(editId)).map(x=>`<option value="${esc(x.id)}" ${String(f?.parentId||parentPreset)===String(x.id)?"selected":""}>${esc(folderPath(x.id))}</option>`).join("")}</select></label><footer><button class="s57-btn" id="s58FolderCancel">Annuller</button><button class="s57-btn primary" id="s58FolderSave">Gem</button></footer></div>`;
+ document.body.appendChild(modal);$("s58FolderCancel").onclick=()=>modal.remove();$("s58FolderSave").onclick=()=>{const name=$("s58FolderName").value.trim();if(!name)return;if(f){f.name=name;f.parentId=$("s58FolderParent").value}else folders().push({id:uid("vfolder"),name,parentId:$("s58FolderParent").value});save();modal.remove();render()}
+}
+function folderActions(id){
+ const f=folderById(id);if(!f)return;
+ const action=prompt(`Mappe: ${f.name}\n\nSkriv:\n1 = Omdøb/flyt\n2 = Ny undermappe\n3 = Slet mappe`,"1");
+ if(action==="1")folderDialog(id);
+ if(action==="2")folderDialog("",id);
+ if(action==="3"){if(!confirm(`Slet mappen "${f.name}"? Klippene slettes ikke.`))return;const ids=new Set([id]);let changed=true;while(changed){changed=false;folders().forEach(x=>{if(ids.has(x.parentId)&&!ids.has(x.id)){ids.add(x.id);changed=true}})}clips().forEach(x=>{if(ids.has(x.clip.folderId))x.clip.folderId=""});s13Data.videoFolders=folders().filter(x=>!ids.has(x.id));if(ids.has(state.folder))state.folder="all";save();render()}
+}
+function moveClipDialog(x){
+ const modal=document.createElement("div");modal.className="s58-folder-modal";
+ modal.innerHTML=`<div class="s58-folder-box"><h3>Flyt klip</h3><label>MAPPE<select id="s58MoveSelect"><option value="">Ingen mappe</option>${folders().map(f=>`<option value="${esc(f.id)}" ${String(x.clip.folderId||"")===String(f.id)?"selected":""}>${esc(folderPath(f.id))}</option>`).join("")}</select></label><footer><button class="s57-btn" id="s58MoveCancel">Annuller</button><button class="s57-btn primary" id="s58MoveSave">Flyt</button></footer></div>`;
+ document.body.appendChild(modal);$("s58MoveCancel").onclick=()=>modal.remove();$("s58MoveSave").onclick=()=>{x.clip.folderId=$("s58MoveSelect").value;save();modal.remove();render()}
+}
+
+function tabContent(c){
+ if(state.detailTab==="notes")return `<strong>NOTER</strong>${esc(c.coachingQuestion||c.action||"Ingen noter tilføjet endnu.")}`;
+ if(state.detailTab==="time")return `<strong>TIDSKODER</strong>IN ${fmt(c.startSec)}<br>OUT ${fmt(c.endSec)}<br>Varighed ${fmt(Math.max(0,Number(c.endSec||0)-Number(c.startSec||0)))}`;
+ if(state.detailTab==="analysis")return `<strong>ANALYSE</strong>Spilfase: ${esc(c.phase||"—")}<br>Resultat: ${esc(c.outcome||"—")}<br>${c.playerId?`Spiller-ID: ${esc(c.playerId)}`:"Ingen spiller koblet til klippet."}`;
+ return `<strong>BESKRIVELSE</strong>${esc(c.observation||"Ingen beskrivelse tilføjet endnu.")}`;
+}
+async function renderPreview(){
+ const host=$("s57Side");if(!host)return;const x=selected();if(!x){host.innerHTML=`<div class="s57-emptyvideo" style="min-height:300px">Vælg et klip for at se det her.</div>`;return}
+ state.selected=x.key;const c=x.clip,p=x.project,dur=Math.max(0,Number(c.endSec||0)-Number(c.startSec||0));
+ host.innerHTML=`<div id="s57Preview" class="s57-preview"><div class="s57-emptyvideo">Indlæser video…</div></div>
+ <div class="s58-detail-head"><div><div class="s57-kicker">${esc(c.phase||"VIDEO")}</div><h2>${esc(c.title||"Klip")}</h2><p>${esc(date(p.date))} · ${esc(p.title||p.opponent||"Kampanalyse")}</p></div><div class="s58-detail-actions"><button id="s58Favorite" class="s58-iconbtn ${c.favorite?"favorite":""}" title="Favorit">${c.favorite?"★":"☆"}</button><button id="s58Move" class="s58-iconbtn" title="Flyt til mappe">•••</button></div></div>
+ <div class="s58-tags"><span class="s57-chip">${esc(c.phase||"Video")}</span>${String(c.tags||"").split(/[,;]+/).map(t=>t.trim()).filter(Boolean).map(t=>`<span class="s57-chip">${esc(t)}</span>`).join("")}</div>
+ <div class="s58-tabs">${[["description","Beskrivelse"],["notes","Noter"],["time","Tidskoder"],["analysis","Analyse"]].map(([id,label])=>`<button data-s58-tab="${id}" class="${state.detailTab===id?"active":""}">${label}</button>`).join("")}</div>
+ <div class="s58-tabbody">${tabContent(c)}</div>
+ <div class="s58-info"><div><span>VARIGHED</span><b>${fmt(dur)}</b></div><div><span>TYPE</span><b>${esc(c.phase||"Video")}</b></div><div><span>DATO</span><b>${esc(date(p.date))}</b></div><div><span>MAPPE</span><b>${esc(folderPath(c.folderId)||"Ingen mappe")}</b></div></div>
+ <div class="s58-actions"><button id="s57OpenAnalysis" class="s57-btn primary">✎ REDIGER / ANALYSE</button><button id="s58MoveBottom" class="s57-btn">▱ FLYT</button></div>`;
+ $("s57OpenAnalysis").onclick=()=>{s18.projectId=p.id;s18.clipId=c.id;state.mode="analysis";render()};
+ $("s58Favorite").onclick=()=>{c.favorite=!c.favorite;save();render()};
+ $("s58Move").onclick=$("s58MoveBottom").onclick=()=>moveClipDialog(x);
+ host.querySelectorAll("[data-s58-tab]").forEach(b=>b.onclick=()=>{state.detailTab=b.dataset.s58Tab;renderPreview()});
+ const src=await sourceFor(p),preview=$("s57Preview");if(!preview)return;
+ if(!src){preview.innerHTML=`<div class="s57-emptyvideo">Kampvideoen kan ikke hentes på denne enhed.<br>Åbn kampanalysen for at kontrollere videokilden.</div>`;return}
+ preview.innerHTML=`<video id="s57Video" controls playsinline preload="metadata"></video>`;
+ const v=$("s57Video");v.src=src;
+ const seek=()=>{try{v.currentTime=Number(c.startSec)||0}catch(_){}};
+ v.addEventListener("loadedmetadata",seek,{once:true});
+ v.addEventListener("timeupdate",()=>{if(Number(c.endSec||0)>Number(c.startSec||0)&&v.currentTime>=Number(c.endSec||0)){v.pause();v.currentTime=Number(c.startSec)||0}});
+}
+
+function bindNav(){document.querySelectorAll('[data-s34="video"]').forEach(btn=>{if(btn.dataset.s58Bound)return;btn.dataset.s58Bound="1";btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnly()},true)})}
+window.start11ShowVideoLibrary=showOnly;window.start11RenderVideoLibrary=render;
+const boot=()=>{ensureData();ensureView();bindNav();new MutationObserver(bindNav).observe(document.body,{childList:true,subtree:true})};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,350),{once:true});else setTimeout(boot,350);
-window.START11_BUILD="V57-NATIVE-VIDEO-LIBRARY";
-console.info("START11 loaded:",window.START11_BUILD);
+window.START11_BUILD="V58-VIDEO-LIBRARY-PRO";console.info("START11 loaded:",window.START11_BUILD);
 })();
