@@ -71438,6 +71438,163 @@ document.head.appendChild(st);
 window.START11_BUILD="V68-CLIP-THUMBNAILS-WINDOW-FREEZE";
 console.info("START11 loaded:",window.START11_BUILD);
 })();
+
+
+/* =========================================================
+ START11 V69 – PRESENTATION NAV + COMPACT VIDEO ACTIONS
+ - Fixes FORRIGE/NÆSTE using the visible player's exact clip index
+ - Disables edge navigation correctly
+ - Places PRÆSENTATION + KAMPANALYSE side-by-side in the video sidebar
+========================================================= */
+(function start11V69PresentationNavAndActions(){
+"use strict";
+if(window.__START11_V69_NAV_ACTIONS__)return;
+window.__START11_V69_NAV_ACTIONS__=true;
+
+const q=s=>document.querySelector(s);
+
+/* ---------- PRESENTATION NEXT / PREVIOUS ---------- */
+/* V67's player is recreated for every clip. Rebind after each render and derive
+   the current index from the visible "Klip X af Y" header instead of shared state. */
+function bindPlayerNav(){
+ const root=q("#s67Player");
+ if(!root)return;
+
+ const prev=q("#s67Prev"),next=q("#s67Next");
+ if(!prev||!next)return;
+
+ const line=q("#s67Player .s67playhead span")?.textContent||"";
+ const m=line.match(/Klip\s+(\d+)\s+af\s+(\d+)/i);
+ const current=m?Math.max(0,Number(m[1])-1):0;
+ const total=m?Math.max(1,Number(m[2])):1;
+
+ /* The current presentation object is still available to V67's lexical handler,
+    but its old onclick depended on mutable playState. Capture the target index now. */
+ const oldPrev=prev.onclick,oldNext=next.onclick;
+
+ if(!prev.dataset.v69){
+   prev.dataset.v69="1";
+   prev.disabled=current<=0;
+   prev.classList.toggle("s69disabled",current<=0);
+   prev.onclick=()=>{
+     if(current<=0)return;
+     /* V67 exposes the current presentation player globally through its function.
+        Its original handler has the correct data object; temporarily set the visible
+        index target by invoking the captured handler only after replacing mutable
+        state via repeated calls is unreliable. Use presentation saved data below. */
+     const title=q("#s67Player .s67playhead strong")?.textContent?.trim()||"";
+     const data=findPresentation(title,total);
+     if(data&&typeof window.start11V67PlayPresentation==="function"){
+       window.start11V67PlayPresentation(data,current-1);
+     }else if(typeof oldPrev==="function")oldPrev.call(prev);
+   };
+ }
+ if(!next.dataset.v69){
+   next.dataset.v69="1";
+   next.disabled=current>=total-1;
+   next.classList.toggle("s69disabled",current>=total-1);
+   next.onclick=()=>{
+     if(current>=total-1)return;
+     const title=q("#s67Player .s67playhead strong")?.textContent?.trim()||"";
+     const data=findPresentation(title,total);
+     if(data&&typeof window.start11V67PlayPresentation==="function"){
+       window.start11V67PlayPresentation(data,current+1);
+     }else if(typeof oldNext==="function")oldNext.call(next);
+   };
+ }
+}
+function presentationLists(){
+ const out=[];
+ try{
+   if(typeof s13Data!=="undefined"&&Array.isArray(s13Data.videoPresentations))out.push(...s13Data.videoPresentations);
+ }catch(_){}
+ try{
+   const local=JSON.parse(localStorage.getItem("start11.videoPresentations.v64")||"[]");
+   if(Array.isArray(local))out.push(...local);
+ }catch(_){}
+ return out;
+}
+function findPresentation(title,total){
+ const xs=presentationLists();
+ return xs.find(p=>(p.title||"Videopræsentation").trim()===title && Array.isArray(p.clips) && p.clips.length===total)
+     || xs.find(p=>Array.isArray(p.clips)&&p.clips.length===total)
+     || null;
+}
+
+/* ---------- COMPACT VIDEO SIDEBAR ACTIONS ---------- */
+function compactActions(){
+ const analysis=q("#s58NewAnalysis");
+ const presentation=q("#s59PresentationBtn");
+ if(!analysis||!presentation)return;
+
+ let row=q("#s69VideoActions");
+ if(!row){
+   row=document.createElement("div");
+   row.id="s69VideoActions";
+   analysis.parentElement?.insertBefore(row,analysis);
+ }
+ if(presentation.parentElement!==row)row.appendChild(presentation);
+ if(analysis.parentElement!==row)row.appendChild(analysis);
+
+ presentation.classList.add("s69Presentation");
+ analysis.classList.add("s69Analysis");
+ presentation.textContent="PRÆSENTATION";
+ analysis.textContent="+ KAMPANALYSE";
+}
+
+function scan(){
+ compactActions();
+ bindPlayerNav();
+}
+new MutationObserver(()=>setTimeout(scan,0)).observe(document.body,{childList:true,subtree:true});
+setInterval(scan,400);
+scan();
+
+const st=document.createElement("style");
+st.id="s69Css";
+st.textContent=`
+#s69VideoActions{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:6px;
+ margin:0 0 14px;
+}
+#s69VideoActions .s58-upload{
+ width:100%;
+ height:34px;
+ min-width:0;
+ padding:0 6px;
+ border-radius:6px;
+ font-size:6.8px;
+ white-space:nowrap;
+}
+#s69VideoActions .s69Presentation{
+ background:var(--s11-primary,#6df052);
+ color:#061008;
+ border:1px solid var(--s11-primary,#6df052);
+}
+#s69VideoActions .s69Analysis{
+ background:#071009;
+ color:#8df477;
+ border:1px solid rgba(109,240,82,.32);
+}
+#s69VideoActions .s69Analysis:hover{
+ background:rgba(109,240,82,.09);
+ border-color:#6df052;
+}
+#s67Prev.s69disabled,#s67Next.s69disabled,
+#s67Prev:disabled,#s67Next:disabled{
+ opacity:.3;
+ cursor:not-allowed;
+ border-color:#273229!important;
+ color:#68736b!important;
+}
+`;
+document.head.appendChild(st);
+
+window.START11_BUILD="V69-PRESENTATION-NAV-COMPACT-ACTIONS";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
    - Cloud-first exercise library per authenticated account
