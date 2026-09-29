@@ -69723,11 +69723,27 @@ const esc=v=>typeof s13Esc==="function"?s13Esc(String(v??"")):String(v??"").repl
 const uid=p=>typeof s13Id==="function"?s13Id(p):`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
 const fmt=sec=>{sec=Math.max(0,Number(sec)||0);const m=Math.floor(sec/60),s=Math.floor(sec%60);return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
 
+const S59_PRESENTATION_STORE="start11.videoPresentations.v64";
 function ensure(){
  if(!s13Data||typeof s13Data!=="object")return;
  if(!Array.isArray(s13Data.videoPresentations))s13Data.videoPresentations=[];
+
+ /* V64: presentations also have a dedicated durable browser store.
+    Merge instead of overwrite so cloud/app data always wins when newer data exists. */
+ try{
+   const local=JSON.parse(localStorage.getItem(S59_PRESENTATION_STORE)||"[]");
+   if(Array.isArray(local)){
+     const known=new Set(s13Data.videoPresentations.map(x=>String(x.id)));
+     local.forEach(x=>{if(x?.id&&!known.has(String(x.id)))s13Data.videoPresentations.push(x)});
+   }
+ }catch(e){console.warn("START11 V64 presentation load",e)}
 }
-function save(){try{s13Save?.()}catch(_){try{scheduleCloudSave?.()}catch(__){}}}
+function save(){
+ ensure();
+ try{localStorage.setItem(S59_PRESENTATION_STORE,JSON.stringify(s13Data.videoPresentations||[]))}catch(e){console.warn("START11 V64 presentation local save",e)}
+ try{if(typeof s13Save==="function")s13Save()}catch(e){console.warn("START11 V64 presentation app save",e)}
+ try{if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(e){console.warn("START11 V64 presentation cloud save",e)}
+}
 function projects(){return Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[]}
 function allClips(){
  return projects().flatMap(p=>(p.clips||[]).map(c=>({project:p,clip:c,key:`${p.id}::${c.id}`})));
@@ -70182,19 +70198,26 @@ function ensureFreezeDurationEditor(){
    box.innerHTML=`
     <label style="display:block;color:#8fa596;font-size:10px;font-weight:900;margin-bottom:6px">FRYS BILLEDET I</label>
     <div style="display:flex;align-items:center;gap:8px">
+      <button type="button" id="s64FreezeMinus" style="width:34px;height:34px;border:1px solid #254a2d;border-radius:7px;background:#06130b;color:#fff;font-weight:900">−</button>
       <input id="s61FreezeDuration" type="number" min="0.25" max="30" step="0.25"
-       style="width:110px;background:#06130b;border:1px solid #254a2d;border-radius:7px;color:#fff;padding:9px">
+       style="width:92px;background:#06130b;border:1px solid #254a2d;border-radius:7px;color:#fff;padding:9px;text-align:center">
       <span style="font-size:10px;color:#819487">sekunder</span>
+      <button type="button" id="s64FreezePlus" style="width:34px;height:34px;border:1px solid #254a2d;border-radius:7px;background:#06130b;color:#fff;font-weight:900">+</button>
     </div>
     <small style="display:block;margin-top:5px;color:#65796b">Videoen står stille på “Synlig fra”-billedet og fortsætter automatisk fra samme sted.</small>`;
    end.parentElement?.insertAdjacentElement("afterend",box);
-   q("#s61FreezeDuration")?.addEventListener("change",e=>{
+   const saveFreezeDuration=value=>{
      const ann=currentAnalysisClip()?.annotations?.find(x=>String(x.id)===String(window.s18?.selectedAnn));
      if(!ann)return;
-     ann.freezeDuration=Math.max(.25,Math.min(30,Number(e.target.value)||3));
+     ann.freezeDuration=Math.max(.25,Math.min(30,Number(value)||3));
      ann.freezeVideo=true;
+     const input=q("#s61FreezeDuration");if(input)input.value=String(ann.freezeDuration);
      try{s18Touch?.()}catch(_){}
-   });
+     try{if(typeof scheduleCloudSave==="function")scheduleCloudSave()}catch(_){}
+   };
+   q("#s61FreezeDuration")?.addEventListener("change",e=>saveFreezeDuration(e.target.value));
+   q("#s64FreezeMinus")?.addEventListener("click",()=>saveFreezeDuration((Number(q("#s61FreezeDuration")?.value)||3)-.25));
+   q("#s64FreezePlus")?.addEventListener("click",()=>saveFreezeDuration((Number(q("#s61FreezeDuration")?.value)||3)+.25));
  }
  const input=q("#s61FreezeDuration");
  if(input&&document.activeElement!==input)input.value=String(Number(a.freezeDuration).toFixed(Number(a.freezeDuration)%1?2:0));
@@ -70515,6 +70538,11 @@ console.info("START11 loaded:",window.START11_BUILD);
 /* START11 V63 – library/presentation freeze data resolver fix
    s13Data is app-scope state and is not guaranteed to exist on window. */
 window.START11_BUILD="V63-FREEZE-DATA-RESOLVER";
+console.info("START11 loaded:",window.START11_BUILD);
+
+
+/* START11 V64 – adjustable freeze duration + durable video presentations */
+window.START11_BUILD="V64-FREEZE-DURATION-PRESENTATION-SAVE";
 console.info("START11 loaded:",window.START11_BUILD);
 /* =========================================================
    START11 V27.4 – MULTI DEVICE EXERCISE SYNC
