@@ -4664,6 +4664,25 @@ function genererPDF() {
    LAV PDF
 ========================================================= */
 
+function start11MatchDocumentPDF(){
+ if(typeof window.start11V73RenderDocumentPages==="function"){
+   const css=`<style>
+   #pdfDocument .v73-a4{--v73-accent:var(--v24-accent,#82ff54);position:relative;box-sizing:border-box;width:210mm;height:297mm;overflow:hidden;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;background:radial-gradient(circle at 88% 12%,rgba(130,255,84,.10),transparent 30%),linear-gradient(145deg,#071009 0%,#0a140d 52%,#050a07 100%)!important;color:#fff!important;page-break-after:always}
+   #pdfDocument .v73-top-rule{position:absolute;left:0;right:0;top:0;height:1.4mm;background:var(--v73-accent)}
+   #pdfDocument .v73-watermark{position:absolute;right:-8mm;top:28mm;transform:rotate(90deg);font-size:38pt;font-weight:950;letter-spacing:3mm;color:rgba(255,255,255,.018)}
+   #pdfDocument .v73-page-body{position:absolute;inset:13mm 14mm 16mm;overflow:hidden}
+   #pdfDocument .v73-footer{position:absolute;left:14mm;right:14mm;bottom:6mm;display:flex;justify-content:space-between;border-top:.3mm solid #26362b;padding-top:2mm;color:#738078;font-size:6pt;font-weight:900}
+   #pdfDocument .v73-h1{font-size:23pt;font-weight:950;line-height:1.08;margin:0 0 4mm}#pdfDocument .v73-h2{font-size:13pt;font-weight:900;color:var(--v73-accent);margin:4mm 0 2mm}#pdfDocument .v73-text{font-size:9pt;line-height:1.55;color:#e7eee8;margin:0 0 2.5mm;white-space:pre-wrap}
+   #pdfDocument .v73-divider hr{border:0;border-top:.3mm solid #36533c;margin:4mm 0}
+   #pdfDocument .v73-image{text-align:center;margin:3mm 0}#pdfDocument .v73-image img{max-width:100%;max-height:100mm;object-fit:contain;border-radius:2mm}#pdfDocument .v73-image figcaption{color:#8d9a90;font-size:6pt;margin-top:1.5mm}
+   #pdfDocument .v73-video{display:grid;grid-template-columns:34mm 1fr;gap:4mm;align-items:center;padding:3mm;border:.3mm solid #31523a;border-radius:2mm;background:#0b170e;margin:3mm 0}#pdfDocument .v73-video img,#pdfDocument .v73-video-ph{width:34mm;height:19mm;object-fit:cover;border-radius:1.5mm;background:#102a17;display:grid;place-items:center;color:var(--v73-accent);font-size:16pt}#pdfDocument .v73-video b{display:block;font-size:8pt}#pdfDocument .v73-video small,#pdfDocument .v73-video a{display:block;margin-top:1mm;font-size:6pt;color:#87958b;overflow-wrap:anywhere}#pdfDocument .v73-video a{color:var(--v73-accent)}
+   #pdfDocument .v73-situation{margin:3mm 0}
+   </style>`;
+   return css+window.start11V73RenderDocumentPages();
+ }
+ return "";
+}
+
 function lavPDF() {
 
     const home =
@@ -4830,98 +4849,7 @@ function lavPDF() {
 
 
 
-        <!-- =================================================
-             SIDE 2
-        ================================================== -->
-
-        <section class="pdf-page">
-
-            <div class="pdf-content">
-
-                <h1 class="pdf-heading">
-                    Praktisk info
-                </h1>
-
-
-                ${
-                    kampplan.practicalInfo
-                    ?
-                    `
-
-                    <div class="pdf-box">
-
-                        <div class="pdf-text">
-                            ${escapeHTML(
-                                kampplan.practicalInfo
-                            )}
-                        </div>
-
-                    </div>
-
-                    `
-                    :
-                    ""
-                }
-
-
-                ${
-                    kampplan.matchProgram
-                    ?
-                    `
-
-                    <h2 class="pdf-subheading">
-                        PROGRAM
-                    </h2>
-
-                    <div class="pdf-box">
-
-                        <div class="pdf-text">
-                            ${escapeHTML(
-                                kampplan.matchProgram
-                            )}
-                        </div>
-
-                    </div>
-
-                    `
-                    :
-                    ""
-                }
-
-
-                ${
-                    kampplan.coachMessage
-                    ?
-                    `
-
-                    <h2 class="pdf-subheading">
-                        BESKED TIL SPILLERNE
-                    </h2>
-
-                    <div class="pdf-box">
-
-                        <div class="pdf-text">
-                            ${escapeHTML(
-                                kampplan.coachMessage
-                            )}
-                        </div>
-
-                    </div>
-
-                    `
-                    :
-                    ""
-                }
-
-            </div>
-
-
-            <div class="pdf-footer">
-                KAMPPLAN
-            </div>
-
-        </section>
-
+        ${start11MatchDocumentPDF()}
 
 
         <!-- =================================================
@@ -4961,91 +4889,6 @@ function lavPDF() {
                 ${escapeHTML(away)}
                 ·
                 ${escapeHTML(formationName)}
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             SIDE 4
-             HOLDTAKTIK
-        ================================================== -->
-
-        <section class="pdf-page">
-
-            <div class="pdf-content">
-
-                <h1 class="pdf-heading">
-                    Holdtaktiske fokuspunkter
-                </h1>
-
-
-                <div class="pdf-tactics-grid">
-
-
-                    <div class="
-                        pdf-tactic-card
-                        with-ball
-                    ">
-
-                        <h3>
-                            Med bold
-                        </h3>
-
-
-                        <div class="pdf-text">
-
-                            ${
-                                kampplan.teamWithBall
-                                ?
-                                escapeHTML(
-                                    kampplan.teamWithBall
-                                )
-                                :
-                                "Ingen fokuspunkter tilføjet."
-                            }
-
-                        </div>
-
-                    </div>
-
-
-
-                    <div class="
-                        pdf-tactic-card
-                        without-ball
-                    ">
-
-                        <h3>
-                            Uden bold
-                        </h3>
-
-
-                        <div class="pdf-text">
-
-                            ${
-                                kampplan.teamWithoutBall
-                                ?
-                                escapeHTML(
-                                    kampplan.teamWithoutBall
-                                )
-                                :
-                                "Ingen fokuspunkter tilføjet."
-                            }
-
-                        </div>
-
-                    </div>
-
-
-                </div>
-
-            </div>
-
-
-            <div class="pdf-footer">
-                HOLDTAKTISKE FOKUSPUNKTER
             </div>
 
         </section>
@@ -8295,4 +8138,432 @@ async function initialiserStart11() {
 
 }
 
+
+
+
+/* =========================================================
+   START11 V52 – PERSONAL HERO COVER + AUTH GREETING
+========================================================= */
+(function(){
+    if(window.__START11_V52_HERO__) return;
+    window.__START11_V52_HERO__=true;
+
+    const COVER_KEY="start11_v52_hero_cover";
+
+    function notify(message){
+        try{
+            if(typeof visNotification==="function") visNotification(message);
+        }catch(_){}
+    }
+
+    function getRealAccountName(){
+        try{
+            const user=session?.user || null;
+            const raw=
+                user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                "";
+            if(raw && String(raw).trim()) return String(raw).trim();
+
+            const email=String(user?.email || "");
+            if(email){
+                return email.split("@")[0]
+                    .replace(/[._-]+/g," ")
+                    .trim()
+                    .split(" ")
+                    .filter(Boolean)
+                    .map(word=>word.charAt(0).toUpperCase()+word.slice(1))
+                    .join(" ");
+            }
+        }catch(_){}
+        return "";
+    }
+
+    function enforceGreeting(){
+        const el=document.getElementById("s34CoachName");
+        const name=getRealAccountName();
+        if(el && name && el.textContent!==name) el.textContent=name;
+    }
+
+    function savedCover(){
+        try{return localStorage.getItem(COVER_KEY)||""}catch(_){return ""}
+    }
+
+    function applyCover(dataUrl=savedCover()){
+        const hero=document.getElementById("s52Hero");
+        const photo=document.getElementById("s52HeroPhoto");
+        const preview=document.getElementById("s52CoverPreview");
+        if(hero && photo){
+            if(dataUrl){
+                photo.style.backgroundImage=`url("${dataUrl}")`;
+                hero.classList.add("s52-has-photo");
+            }else{
+                photo.style.backgroundImage="";
+                hero.classList.remove("s52-has-photo");
+            }
+        }
+        if(preview){
+            preview.classList.toggle("has-image",!!dataUrl);
+            preview.style.backgroundImage=dataUrl?`url("${dataUrl}")`:"";
+        }
+    }
+
+    function compressImage(file){
+        return new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onerror=()=>reject(new Error("Kunne ikke læse billedet."));
+            reader.onload=()=>{
+                const img=new Image();
+                img.onerror=()=>reject(new Error("Billedformatet kunne ikke læses."));
+                img.onload=()=>{
+                    const maxW=1800,maxH=700;
+                    const scale=Math.min(1,maxW/img.width,maxH/img.height);
+                    const w=Math.max(1,Math.round(img.width*scale));
+                    const h=Math.max(1,Math.round(img.height*scale));
+                    const canvas=document.createElement("canvas");
+                    canvas.width=w;canvas.height=h;
+                    const ctx=canvas.getContext("2d");
+                    ctx.drawImage(img,0,0,w,h);
+                    resolve(canvas.toDataURL("image/jpeg",.78));
+                };
+                img.src=reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function chooseCover(file){
+        if(!file) return;
+        if(!/^image\/(jpeg|png|webp)$/i.test(file.type||"")){
+            notify("Vælg et JPG-, PNG- eller WebP-billede.");
+            return;
+        }
+        try{
+            const data=await compressImage(file);
+            localStorage.setItem(COVER_KEY,data);
+            applyCover(data);
+            notify("Dashboard-billedet er gemt.");
+        }catch(error){
+            console.warn("START11 cover:",error);
+            notify("Billedet kunne ikke gemmes. Prøv et mindre billede.");
+        }
+    }
+
+    function bind(){
+        applyCover();
+        enforceGreeting();
+
+        const choose=document.getElementById("s52CoverChoose");
+        const input=document.getElementById("s52CoverInput");
+        const remove=document.getElementById("s52CoverRemove");
+
+        if(choose && !choose.dataset.s52Bound){
+            choose.dataset.s52Bound="1";
+            choose.addEventListener("click",()=>input?.click());
+        }
+        if(input && !input.dataset.s52Bound){
+            input.dataset.s52Bound="1";
+            input.addEventListener("change",async()=>{
+                await chooseCover(input.files?.[0]);
+                input.value="";
+            });
+        }
+        if(remove && !remove.dataset.s52Bound){
+            remove.dataset.s52Bound="1";
+            remove.addEventListener("click",()=>{
+                try{localStorage.removeItem(COVER_KEY)}catch(_){}
+                applyCover("");
+                notify("Dashboard-billedet er fjernet.");
+            });
+        }
+
+        /* Other dashboard modules can refresh the hero with team data.
+           Keep the greeting tied to the authenticated user instead. */
+        const greeting=document.getElementById("s34CoachName");
+        if(greeting && !greeting.dataset.s52Observed){
+            greeting.dataset.s52Observed="1";
+            new MutationObserver(enforceGreeting).observe(greeting,{
+                childList:true,
+                characterData:true,
+                subtree:true
+            });
+        }
+    }
+
+    if(document.readyState==="loading"){
+        document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,120),{once:true});
+    }else{
+        setTimeout(bind,120);
+    }
+    setTimeout(bind,900);
+})();
+
+
+/* =========================================================
+   START11 V71 – FREEFORM MATCH DOCUMENT
+   Replaces the rigid tactical text form with a free document
+   editor. Match metadata, logos, lineup and existing PDF pages
+   remain compatible with the rest of START11.
+========================================================= */
+(function start11V71FreeMatchDocument(){
+"use strict";
+if(window.__START11_V71_MATCHDOC__)return;
+window.__START11_V71_MATCHDOC__=true;
+
+const q=s=>document.querySelector(s);
+const E=v=>typeof escapeHTML==="function"?escapeHTML(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const id=()=>"md_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const data=()=>{
+  if(typeof kampplan==="undefined")return[];
+  if(!Array.isArray(kampplan.documentBlocks))kampplan.documentBlocks=[];
+  return kampplan.documentBlocks;
+};
+function touch(){
+ try{localStorage.setItem("kampplan",JSON.stringify(kampplan))}catch(_){}
+ try{if(typeof gemAlt==="function")gemAlt()}catch(_){}
+}
+function migrate(){
+ /* V72: Intet fast indhold migreres automatisk. Kampdokumentet er frit. */
+ data();
+}
+function clips(){
+ try{
+  const ps=typeof s13Data!=="undefined"&&Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[];
+  return ps.flatMap(p=>(p.clips||[]).map(c=>({key:String(p.id)+"::"+String(c.id),title:c.title||"Klip",project:p.title||"Kampanalyse",url:p.videoUrl||p.url||"",startSec:Number(c.startSec)||0,endSec:Number(c.endSec)||0})));
+ }catch(_){return[]}
+}
+function fmt(sec){sec=Math.max(0,Number(sec)||0);const m=Math.floor(sec/60),s=Math.floor(sec%60);return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`}
+
+function css(){
+ if(q("#s71css"))return;
+ const st=document.createElement("style");st.id="s71css";st.textContent=`
+ #s71EditorSection{border:1px solid #203c26!important;background:#071009!important}
+ .s71-head{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:10px}.s71-head h3{margin:0!important}.s71-head p{margin:3px 0 0;color:#829087;font-size:10px}
+ .s71-toolbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:#0a150c;border:1px solid #203c26;border-radius:8px;margin-bottom:9px}
+ .s71-toolbar button{border:1px solid #31563a;background:#0c1a10;color:#eaf1eb;border-radius:6px;padding:7px 9px;font:inherit;font-size:9px;font-weight:900;cursor:pointer}.s71-toolbar button:hover{border-color:var(--s11-primary,#82ff54);color:var(--s11-primary,#82ff54)}
+ #s71Doc{min-height:360px;padding:18px;background:#0a0f0b;border:1px solid #203c26;border-radius:8px}
+ .s71-empty{display:grid;place-items:center;min-height:280px;text-align:center;color:#647168;font-size:11px}.s71-empty b{display:block;color:#c8d1ca;font-size:14px;margin-bottom:5px}
+ .s71-block{position:relative;padding:8px 42px 8px 8px;border:1px solid transparent;border-radius:7px;margin:3px 0}.s71-block:hover,.s71-block:focus-within{border-color:#25442c;background:#0c160e}
+ .s71-edit{outline:0;white-space:pre-wrap;min-height:22px;color:#eaf0eb}.s71-h1 .s71-edit{font-size:25px;font-weight:950;line-height:1.15}.s71-h2 .s71-edit{font-size:16px;font-weight:900;line-height:1.2;color:var(--s11-primary,#82ff54)}.s71-text .s71-edit{font-size:12px;line-height:1.65}
+ .s71-actions{position:absolute;right:5px;top:5px;display:none;gap:2px}.s71-block:hover .s71-actions,.s71-block:focus-within .s71-actions{display:flex}.s71-actions button{width:25px;height:25px;padding:0;border:1px solid #294831;border-radius:5px;background:#071009;color:#9eaaa1;cursor:pointer;font-size:10px}.s71-actions button:hover{color:#fff;border-color:#82ff54}
+ .s71-image img{display:block;max-width:100%;max-height:430px;object-fit:contain;border-radius:7px;margin:auto}.s71-caption{width:100%;box-sizing:border-box;margin-top:6px;background:transparent;border:0;border-bottom:1px solid #243b29;color:#b7c2ba;padding:5px;text-align:center;font:inherit;font-size:9px;outline:0}
+ .s71-video-card{display:grid;grid-template-columns:54px 1fr auto;align-items:center;gap:10px;padding:10px;border:1px solid #27482f;border-radius:8px;background:#08150c}.s71-video-icon{width:54px;height:38px;border-radius:6px;background:#102a17;display:grid;place-items:center;color:#82ff54;font-size:17px}.s71-video-card b{font-size:11px}.s71-video-card small{display:block;color:#78877c;margin-top:3px}.s71-video-card a{color:#82ff54;font-size:9px;font-weight:900;text-decoration:none}
+ .s71-video-edit{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.s71-video-edit input,.s71-video-edit select{width:100%;box-sizing:border-box;background:#071009;border:1px solid #294831;border-radius:5px;color:#fff;padding:7px;font:inherit;font-size:9px}
+ .s71-divider{border:0;border-top:1px solid #315239;margin:12px 0}
+ .s71-hiddenLegacy{display:none!important}
+ @media(max-width:700px){.s71-video-edit{grid-template-columns:1fr}.s71-toolbar{position:static}}
+ `;document.head.appendChild(st);
+}
+function actions(i){return `<div class="s71-actions"><button data-up="${i}" title="Flyt op">↑</button><button data-down="${i}" title="Flyt ned">↓</button><button data-del="${i}" title="Slet">×</button></div>`}
+function render(){
+ const host=q("#s71Doc");if(!host)return;const a=data();
+ if(!a.length){host.innerHTML=`<div class="s71-empty"><div><b>Start med et tomt kampdokument</b>Tilføj overskrifter, tekst, billeder og video ovenfor.</div></div>`;return}
+ const lib=clips();
+ host.innerHTML=a.map((b,i)=>{
+  if(b.type==="h1"||b.type==="h2"||b.type==="text")return `<div class="s71-block s71-${b.type}" data-i="${i}">${actions(i)}<div class="s71-edit" contenteditable="true" data-text="${i}" data-ph="Skriv her…">${E(b.text||"")}</div></div>`;
+  if(b.type==="image")return `<div class="s71-block s71-image" data-i="${i}">${actions(i)}<img src="${E(b.src||"")}" alt=""><input class="s71-caption" data-caption="${i}" value="${E(b.caption||"")}" placeholder="Billedtekst (valgfri)"></div>`;
+  if(b.type==="divider")return `<div class="s71-block" data-i="${i}">${actions(i)}<hr class="s71-divider"></div>`;
+  if(b.type==="video"){
+   const chosen=lib.find(x=>x.key===b.clipKey);const title=b.title||chosen?.title||"Video";const url=b.url||chosen?.url||"";const meta=chosen?`${chosen.project} · ${fmt(chosen.startSec)}–${fmt(chosen.endSec)}`:(url?"Eksternt videolink":"Vælg klip eller indsæt link");
+   return `<div class="s71-block" data-i="${i}">${actions(i)}<div class="s71-video-card"><div class="s71-video-icon">▶</div><div><b>${E(title)}</b><small>${E(meta)}</small></div>${url?`<a href="${E(url)}" target="_blank" rel="noopener">ÅBN ↗</a>`:""}</div><div class="s71-video-edit"><input data-vtitle="${i}" value="${E(b.title||"")}" placeholder="Videotitel"><select data-vclip="${i}"><option value="">Vælg fra Videobibliotek…</option>${lib.map(x=>`<option value="${E(x.key)}" ${x.key===b.clipKey?"selected":""}>${E(x.project+" · "+x.title)}</option>`).join("")}</select><input data-vurl="${i}" value="${E(b.url||"")}" placeholder="Eller indsæt videolink"></div></div>`;
+  }
+  return "";
+ }).join("");
+ bindBlocks();
+}
+function saveField(i,k,v){const b=data()[i];if(!b)return;b[k]=v;touch()}
+function bindBlocks(){
+ q("#s71Doc")?.querySelectorAll("[data-text]").forEach(el=>el.oninput=()=>saveField(+el.dataset.text,"text",el.innerText));
+ q("#s71Doc")?.querySelectorAll("[data-caption]").forEach(el=>el.oninput=()=>saveField(+el.dataset.caption,"caption",el.value));
+ q("#s71Doc")?.querySelectorAll("[data-vtitle]").forEach(el=>el.oninput=()=>saveField(+el.dataset.vtitle,"title",el.value));
+ q("#s71Doc")?.querySelectorAll("[data-vurl]").forEach(el=>el.onchange=()=>{saveField(+el.dataset.vurl,"url",el.value.trim());render()});
+ q("#s71Doc")?.querySelectorAll("[data-vclip]").forEach(el=>el.onchange=()=>{const i=+el.dataset.vclip,b=data()[i];if(b){b.clipKey=el.value;const c=clips().find(x=>x.key===el.value);if(c&&!b.title)b.title=c.title;touch();render()}});
+ q("#s71Doc")?.querySelectorAll("[data-del]").forEach(el=>el.onclick=()=>{data().splice(+el.dataset.del,1);touch();render()});
+ q("#s71Doc")?.querySelectorAll("[data-up]").forEach(el=>el.onclick=()=>{const i=+el.dataset.up;if(i<1)return;const a=data();[a[i-1],a[i]]=[a[i],a[i-1]];touch();render()});
+ q("#s71Doc")?.querySelectorAll("[data-down]").forEach(el=>el.onclick=()=>{const i=+el.dataset.down,a=data();if(i>=a.length-1)return;[a[i+1],a[i]]=[a[i],a[i+1]];touch();render()});
+}
+function add(type,extra={}){data().push({id:id(),type,text:"",...extra});touch();render();setTimeout(()=>q(`#s71Doc .s71-block:last-child .s71-edit`)?.focus(),0)}
+function imageUpload(){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=()=>{const f=inp.files?.[0];if(!f)return;const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const max=1600,scale=Math.min(1,max/Math.max(im.width,im.height)),cv=document.createElement("canvas");cv.width=Math.round(im.width*scale);cv.height=Math.round(im.height*scale);cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);add("image",{src:cv.toDataURL("image/jpeg",.86),caption:""})};im.src=u};inp.click()}
+function install(){
+ css();const modal=q("#matchplanModal .matchplan-modal")||q("#matchplanModal .modal-content")||q("#matchplanModal");
+ if(!modal||q("#s71EditorSection"))return;
+ migrate();
+ const legacyIds=["practicalInfo","matchProgram","teamWithBall","teamWithoutBall","coachMessage"];
+ legacyIds.forEach(x=>q("#"+x)?.closest(".form-section")?.classList.add("s71-hiddenLegacy"));
+ const section=document.createElement("div");section.id="s71EditorSection";section.className="form-section";
+ section.innerHTML=`<div class="s71-head"><div><h3>📝 KAMPDOKUMENT</h3><p>Byg kampplanen frit – som et dokument. Intet indhold er obligatorisk.</p></div></div><div class="s71-toolbar"><button data-add="h1">+ STOR OVERSKRIFT</button><button data-add="h2">+ OVERSKRIFT</button><button data-add="text">+ TEKST</button><button id="s71Image">+ BILLEDE</button><button data-add="video">+ VIDEO</button><button data-add="divider">+ SKILLELINJE</button></div><div id="s71Doc"></div>`;
+ const save=q("#saveMatchplan")||q(".save-matchplan");
+ const anchor=q("#coachMessage")?.closest(".form-section")||q("#coachMessage")?.parentElement;
+ if(anchor?.parentNode)anchor.insertAdjacentElement("afterend",section);
+ else if(save?.parentNode)save.parentNode.insertBefore(section,save);
+ else modal.appendChild(section);
+ section.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>add(b.dataset.add));q("#s71Image").onclick=imageUpload;render();
+}
+
+/* Keep editor in sync whenever KAMPPLAN opens. */
+const oldOpen=typeof åbnKampplan==="function"?åbnKampplan:null;
+if(oldOpen){åbnKampplan=function(){const r=oldOpen.apply(this,arguments);install();migrate();render();return r}}
+const oldSave=typeof gemKampplan==="function"?gemKampplan:null;
+if(oldSave){gemKampplan=function(){touch();return oldSave.apply(this,arguments)}}
+
+/* Replace only the rigid content pages in the existing PDF. Cover, lineup,
+   player pages and later tactical-situation PDF extensions stay intact. */
+
+const begin=()=>{install();migrate()};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(begin,100),{once:true});else setTimeout(begin,100);
+new MutationObserver(()=>{if(q("#matchplanModal")&&!q("#s71EditorSection"))install()}).observe(document.documentElement,{childList:true,subtree:true});
+window.START11_BUILD="V71-FREEFORM-MATCH-DOCUMENT";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
+
+window.START11_BUILD="V72-DIRECT-FREEFORM-PDF";
+console.info("START11 loaded:",window.START11_BUILD);
+
+
+
+/* =========================================================
+   START11 V73 – A4 KAMPPLAN BUILDER
+   A4 editor + shared document/PDF page model.
+========================================================= */
+(function start11V73A4Builder(){
+"use strict";
+if(window.__START11_V73_A4_BUILDER__)return;
+window.__START11_V73_A4_BUILDER__=true;
+
+const Q=s=>document.querySelector(s);
+const esc=v=>typeof escapeHTML==="function"?escapeHTML(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const uid=()=>`v73_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
+const blocks=()=>{if(!Array.isArray(kampplan.documentBlocks))kampplan.documentBlocks=[];return kampplan.documentBlocks};
+const save=()=>{try{if(typeof gemAlt==="function")gemAlt()}catch(_){}};
+
+function clips(){
+ try{
+  const ps=typeof s13Data!=="undefined"&&Array.isArray(s13Data?.videoProjects)?s13Data.videoProjects:[];
+  return ps.flatMap(p=>(p.clips||[]).map(c=>({
+   key:String(p.id)+"::"+String(c.id),title:c.title||"Klip",project:p.title||"Kampanalyse",
+   url:c.url||p.videoUrl||p.url||"",thumb:c.thumbnail||c.thumbnailUrl||p.thumbnail||p.thumbnailUrl||"",
+   startSec:Number(c.startSec)||0,endSec:Number(c.endSec)||0
+  })));
+ }catch(_){return[]}
+}
+function fmt(sec){sec=Math.max(0,Number(sec)||0);return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(Math.floor(sec%60)).padStart(2,"0")}`}
+
+function pages(){
+ const out=[[]];
+ blocks().forEach(b=>{
+  if(b.type==="pagebreak"){if(out[out.length-1].length)out.push([]);return}
+  out[out.length-1].push(b);
+ });
+ return out.length?out:[[]];
+}
+function blockHtml(b,editor=false){
+ const lib=clips();
+ if(b.type==="h1")return `<div class="v73-block v73-h1" data-id="${esc(b.id)}"><div class="v73-edit" ${editor?'contenteditable="true"':""} data-field="text">${esc(b.text||"")}</div></div>`;
+ if(b.type==="h2")return `<div class="v73-block v73-h2" data-id="${esc(b.id)}"><div class="v73-edit" ${editor?'contenteditable="true"':""} data-field="text">${esc(b.text||"")}</div></div>`;
+ if(b.type==="text")return `<div class="v73-block v73-text" data-id="${esc(b.id)}"><div class="v73-edit" ${editor?'contenteditable="true"':""} data-field="text">${esc(b.text||"").replace(/\n/g,"<br>")}</div></div>`;
+ if(b.type==="divider")return `<div class="v73-block v73-divider" data-id="${esc(b.id)}"><hr></div>`;
+ if(b.type==="image")return `<figure class="v73-block v73-image" data-id="${esc(b.id)}"><img src="${esc(b.src||"")}" alt=""><figcaption ${editor?'contenteditable="true"':""} data-field="caption">${esc(b.caption||"")}</figcaption></figure>`;
+ if(b.type==="video"){
+  const c=lib.find(x=>x.key===b.clipKey), title=b.title||c?.title||"Video", url=b.url||c?.url||"", thumb=b.thumb||c?.thumb||"";
+  return `<div class="v73-block v73-video" data-id="${esc(b.id)}">${thumb?`<img src="${esc(thumb)}" alt="">`:`<div class="v73-video-ph">▶</div>`}<div><b>${esc(title)}</b><small>${c?esc(c.project+" · "+fmt(c.startSec)+"–"+fmt(c.endSec)):"VIDEO"}</small>${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>`:""}</div></div>`;
+ }
+ if(b.type==="situation"){
+  if(typeof window.s73RenderSituationBlock==="function")return `<div class="v73-block v73-situation" data-id="${esc(b.id)}">${window.s73RenderSituationBlock(b.situationId,editor?"editor":"pdf")}</div>`;
+  return `<div class="v73-block v73-missing" data-id="${esc(b.id)}">Kampsituation kan ikke indlæses endnu.</div>`;
+ }
+ return "";
+}
+function pageHtml(list,index,editor=false){
+ const controls=editor?`<div class="v73-page-label">SIDE ${index+3}</div>`:"";
+ return `<section class="${editor?"v73-a4 is-editor":"pdf-page v24-page v73-a4 is-pdf"}" data-page="${index}"><div class="v73-top-rule"></div>${controls}<div class="v73-watermark">START11</div><div class="v73-page-body">${list.map(b=>editor?editorBlock(b):blockHtml(b,false)).join("")}</div><div class="v73-footer"><span>START11 · KAMPDOKUMENT</span><span>${String(index+3).padStart(2,"0")}</span></div></section>`;
+}
+function editorBlock(b){
+ return `<div class="v73-editwrap" data-wrap="${esc(b.id)}">${blockHtml(b,true)}<div class="v73-actions"><button data-up="${esc(b.id)}">↑</button><button data-down="${esc(b.id)}">↓</button><button data-del="${esc(b.id)}">×</button></div></div>`;
+}
+function styles(){
+ if(Q("#v73styles"))return;
+ const st=document.createElement("style");st.id="v73styles";st.textContent=`
+ #s71EditorSection{display:none!important}
+ #v73EditorSection{margin:14px 0;padding:12px;border:1px solid #294a31;border-radius:10px;background:#061008;color:#fff}
+ .v73-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.v73-head h3{margin:0}.v73-head small{display:block;color:#819087;margin-top:3px}
+ .v73-toolbar{position:sticky;top:0;z-index:30;display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid #294a31;border-radius:8px;background:#09150c;margin-bottom:14px}
+ .v73-toolbar button,.v73-toggle{padding:7px 9px;border:1px solid #31563a;border-radius:6px;background:#0c1a10;color:#edf3ee;font:inherit;font-size:9px;font-weight:900}.v73-toolbar button{cursor:pointer}.v73-toolbar button:hover{border-color:var(--s11-primary,#82ff54)}
+ .v73-toggle{margin-left:auto;display:flex;align-items:center;gap:6px}
+ #v73Pages{display:grid;gap:20px;justify-items:center;padding:12px;background:#030805;border-radius:9px}
+ .v73-a4{--v73-accent:var(--s11-primary,#82ff54);position:relative;box-sizing:border-box;width:min(100%,794px);aspect-ratio:210/297;overflow:hidden;background:radial-gradient(circle at 88% 12%,color-mix(in srgb,var(--v73-accent) 11%,transparent),transparent 30%),linear-gradient(145deg,#071009 0%,#0a140d 52%,#050a07 100%);color:#fff}
+ .v73-a4.is-editor{box-shadow:0 12px 38px #0009;border:1px solid #233b29}
+ .v73-top-rule{position:absolute;left:0;right:0;top:0;height:5px;background:var(--v73-accent)}
+ .v73-watermark{position:absolute;right:-30px;top:95px;transform:rotate(90deg);font-size:56px;font-weight:950;letter-spacing:10px;color:#fff;opacity:.018;pointer-events:none}
+ .v73-page-label{position:absolute;right:18px;top:16px;color:#718078;font-size:9px;font-weight:950;letter-spacing:1px}
+ .v73-page-body{position:absolute;inset:42px 52px 48px;overflow:hidden}
+ .v73-footer{position:absolute;left:52px;right:52px;bottom:20px;display:flex;justify-content:space-between;border-top:1px solid #26362b;padding-top:8px;color:#738078;font-size:8px;font-weight:900;letter-spacing:.8px}
+ .v73-editwrap{position:relative;margin:0 0 7px;padding-right:34px;border:1px solid transparent;border-radius:7px}.v73-editwrap:hover,.v73-editwrap:focus-within{border-color:#294a31;background:#0b160e}
+ .v73-actions{position:absolute;right:3px;top:3px;display:none;gap:2px}.v73-editwrap:hover .v73-actions,.v73-editwrap:focus-within .v73-actions{display:grid}
+ .v73-actions button{width:26px;height:22px;border:1px solid #31563a;background:#071009;color:#a8b3aa;border-radius:4px;cursor:pointer}
+ .v73-block{position:relative}.v73-edit{outline:0;white-space:pre-wrap}
+ .v73-h1{font-size:30px;font-weight:950;line-height:1.08;margin:0 0 14px}.v73-h2{font-size:18px;font-weight:900;color:var(--v73-accent);margin:14px 0 7px}.v73-text{font-size:12px;line-height:1.55;color:#e7eee8;margin:0 0 9px}
+ .v73-divider hr{border:0;border-top:1px solid #36533c;margin:14px 0}
+ .v73-image{margin:10px 0;text-align:center}.v73-image img{max-width:100%;max-height:360px;object-fit:contain;border-radius:7px}.v73-image figcaption{outline:0;color:#8d9a90;font-size:9px;margin-top:5px}
+ .v73-video{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;padding:10px;border:1px solid #31523a;border-radius:8px;background:#0b170e;margin:9px 0}.v73-video img,.v73-video-ph{width:120px;height:68px;object-fit:cover;border-radius:6px;background:#102a17;display:grid;place-items:center;color:var(--v73-accent);font-size:24px}.v73-video b{display:block}.v73-video small,.v73-video a{display:block;margin-top:4px;font-size:9px;color:#87958b;overflow-wrap:anywhere}.v73-video a{color:var(--v73-accent)}
+ .v73-situation{margin:10px 0}.v73-missing{padding:12px;border:1px dashed #7b4b4b;color:#c99}
+ .v73-overflow .v73-page-body{outline:2px solid #ff5d5d}.v73-overflow:after{content:"SIDEN ER FOR FULD";position:absolute;right:16px;bottom:50px;color:#ff7777;font-size:9px;font-weight:950}
+ .v73-situation-picker{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#000c;padding:18px}.v73-picker-card{width:min(620px,95vw);max-height:80vh;overflow:auto;background:#071009;border:1px solid #31563a;border-radius:10px;padding:12px}.v73-picker-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #1f3324}
+ @media(max-width:700px){.v73-page-body{inset:34px 28px 42px}.v73-footer{left:28px;right:28px}.v73-toggle{margin-left:0}.v73-video{grid-template-columns:80px 1fr}.v73-video img,.v73-video-ph{width:80px;height:48px}}
+ `;document.head.appendChild(st);
+}
+function findBlock(id){return blocks().find(x=>String(x.id)===String(id))}
+function touchAndRender(){save();render()}
+function bind(){
+ const root=Q("#v73Pages");if(!root)return;
+ root.querySelectorAll("[data-field]").forEach(el=>el.oninput=()=>{const b=findBlock(el.closest("[data-id]")?.dataset.id);if(!b)return;b[el.dataset.field]=el.innerText;save();checkOverflow()});
+ root.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{const a=blocks(),i=a.findIndex(b=>String(b.id)===String(x.dataset.del));if(i>=0){a.splice(i,1);touchAndRender()}});
+ root.querySelectorAll("[data-up]").forEach(x=>x.onclick=()=>move(x.dataset.up,-1));
+ root.querySelectorAll("[data-down]").forEach(x=>x.onclick=()=>move(x.dataset.down,1));
+}
+function move(id,dir){const a=blocks(),i=a.findIndex(b=>String(b.id)===String(id)),j=i+dir;if(i<0||j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];touchAndRender()}
+function add(type,extra={}){
+ const a=blocks();
+ if(type==="pagebreak" && (!a.length||a[a.length-1]?.type==="pagebreak"))return;
+ a.push({id:uid(),type,text:"",...extra});touchAndRender();
+}
+function uploadImage(){const i=document.createElement("input");i.type="file";i.accept="image/*";i.onchange=()=>{const f=i.files?.[0];if(!f)return;const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const max=1800,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);add("image",{src:c.toDataURL("image/jpeg",.88),caption:""})};im.src=u};i.click()}
+function addVideo(){const lib=clips(),a=blocks();const opts=lib.map((x,i)=>`${i+1}. ${x.project} · ${x.title}`).join("\n");const n=opts?prompt("Vælg videoklip med nummer, eller tryk Annuller for eksternt link:\n\n"+opts,"1"):null;if(n!==null&&lib[Number(n)-1]){const c=lib[Number(n)-1];add("video",{clipKey:c.key,title:c.title,url:c.url,thumb:c.thumb});return}const url=prompt("Videolink:","");if(url?.trim())add("video",{title:prompt("Titel:","Video")||"Video",url:url.trim(),thumb:""})}
+function pickSituation(){
+ const list=typeof window.s73GetMatchSituations==="function"?window.s73GetMatchSituations():[];
+ if(!list.length){if(typeof visNotification==="function")visNotification("Opret først en kampsituation.");return}
+ Q("#v73SituationPicker")?.remove();const ov=document.createElement("div");ov.id="v73SituationPicker";ov.className="v73-situation-picker";
+ ov.innerHTML=`<div class="v73-picker-card"><div style="display:flex;justify-content:space-between;align-items:center"><b>VÆLG KAMPSITUATION</b><button class="s13btn" data-close>LUK</button></div>${list.map(s=>`<div class="v73-picker-row"><div><b>${esc(s.title)}</b><small style="display:block;color:#7f8d83">${esc(s.focus||"")}</small></div><button class="s13btn primary" data-sit="${esc(s.id)}">INDSÆT</button></div>`).join("")}</div>`;
+ document.body.appendChild(ov);ov.querySelector("[data-close]").onclick=()=>ov.remove();ov.querySelectorAll("[data-sit]").forEach(b=>b.onclick=()=>{add("situation",{situationId:b.dataset.sit});ov.remove()});
+}
+function checkOverflow(){
+ Q("#v73Pages")?.querySelectorAll(".v73-a4").forEach(p=>{const body=p.querySelector(".v73-page-body");p.classList.toggle("v73-overflow",body.scrollHeight>body.clientHeight+2)});
+}
+function render(){
+ const host=Q("#v73Pages");if(!host)return;host.innerHTML=pages().map((p,i)=>pageHtml(p,i,true)).join("");bind();requestAnimationFrame(checkOverflow)
+}
+function install(){
+ styles();const modal=Q("#matchplanModal .matchplan-modal")||Q("#matchplanModal .modal-content")||Q("#matchplanModal");if(!modal)return;
+ Q("#s71EditorSection")?.classList.add("s71-hiddenLegacy");
+ let sec=Q("#v73EditorSection");
+ if(!sec){
+  sec=document.createElement("section");sec.id="v73EditorSection";
+  sec.innerHTML=`<div class="v73-head"><div><h3>KAMPPLAN BUILDER</h3><small>Side 1 er forsiden · Side 2 er startopstillingen · byg side 3+ her.</small></div></div>
+  <div class="v73-toolbar"><button data-add="h1">+ STOR OVERSKRIFT</button><button data-add="h2">+ OVERSKRIFT</button><button data-add="text">+ TEKST</button><button data-image>+ BILLEDE</button><button data-video>+ VIDEO</button><button data-situation>+ KAMPSITUATION</button><button data-add="divider">+ SKILLELINJE</button><button data-add="pagebreak">+ SIDESKIFT</button><label class="v73-toggle"><input type="checkbox" id="v73Players"> MEDTAG SPILLERPLANER</label></div><div id="v73Pages"></div>`;
+  const saveBtn=Q("#saveMatchplan")||Q(".save-matchplan");if(saveBtn?.parentNode)saveBtn.parentNode.insertBefore(sec,saveBtn);else modal.appendChild(sec);
+  sec.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>add(b.dataset.add));sec.querySelector("[data-image]").onclick=uploadImage;sec.querySelector("[data-video]").onclick=addVideo;sec.querySelector("[data-situation]").onclick=pickSituation;
+  sec.querySelector("#v73Players").checked=kampplan.includePlayerPlans!==false;sec.querySelector("#v73Players").onchange=e=>{kampplan.includePlayerPlans=e.target.checked;save()};
+ }
+ render();
+}
+window.start11V73RenderDocumentPages=()=>pages().map((p,i)=>pageHtml(p,i,false)).join("");
+const begin=()=>setTimeout(install,40);
+document.addEventListener("click",e=>{if(e.target.closest?.("#openCurrentMatchButton,#editMatchPlanShortcut,#editMatchInfoBottom,#editTacticsBottom,#s19MatchPlanButton"))begin()},true);
+new MutationObserver(()=>{
+ const m=Q("#matchplanModal");
+ if(m && getComputedStyle(m).display!=="none" && !Q("#v73EditorSection")) install();
+}).observe(document.documentElement,{subtree:true,childList:true});
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",begin,{once:true});else begin();
+window.START11_BUILD="V73.2-A4-PDF-VISUAL-FIX";
+console.info("START11 loaded:",window.START11_BUILD);
+})();
 

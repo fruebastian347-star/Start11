@@ -822,13 +822,33 @@ function situationPdfPages(){
     </style>`+list.map(page).join("");
 }
 
-if(typeof lavPDF==="function"){
-    const oldLavPDF=lavPDF;
-    lavPDF=function(){
-        const base=oldLavPDF.apply(this,arguments);
-        return base+situationPdfPages();
-    };
-}
+/* V73: Kampsituationer placeres nu som blokke i Kampplan Builder.
+   Den gamle automatiske PDF-append er derfor slået fra. */
+window.s73GetMatchSituations=function(){
+    return situations().map(s=>({id:s.id,title:s.title,focus:s.focus,note:s.note}));
+};
+window.s73RenderSituationBlock=function(id,mode="editor"){
+    const s=situations().find(x=>String(x.id)===String(id));
+    if(!s)return `<div style="padding:10px;border:1px dashed #744;color:#c99">Kampsituationen findes ikke længere.</div>`;
+    const objs=[];
+    const add=(x,html)=>objs.push(`<div class="s73sitobj" style="left:${Number(x.x||0)}%;top:${Number(x.y||0)}%;width:${Number(x.w||7)}%;height:${Number(x.h||7)}%">${html}</div>`);
+    (s.players||[]).forEach(x=>add(x,`<div class="s73sitplayer ${x.gk?"gk":""}">${E(x.number||"")}</div><small>${E(x.name||"")}</small>`));
+    (s.opponents||[]).forEach(x=>add(x,`<div class="s73sitopp"></div>`));
+    (s.balls||[]).forEach(x=>add(x,`<div class="s73sitball"></div>`));
+    (s.cones||[]).forEach(x=>add(x,`<div class="s73sitcone">▲</div>`));
+    (s.texts||[]).forEach(x=>add(x,`<div class="s73sittext">${E(x.text||"")}</div>`));
+    (s.zones||[]).forEach(x=>add(x,`<div class="s73sitzone"></div>`));
+    const marker="s73ah_"+String(s.id).replace(/[^a-z0-9_-]/gi,"");
+    const arrows=(s.arrows||[]).map(a=>`<line x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#fff" stroke-width="${a.stroke||1.1}" marker-end="url(#${marker})"/>`).join("");
+    return `<style>
+      .s73sit{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(115px,.8fr);gap:14px;padding:10px;border:1px solid #31523a;border-radius:8px;background:#08120b}
+      .s73sitpitch{position:relative;width:min(100%,310px);aspect-ratio:68/105;max-height:none;margin:auto;background:#176b37;border:2px solid #fff;overflow:hidden}
+      .s73sithalf{position:absolute;left:0;right:0;top:50%;border-top:1px solid #fff}.s73sitcircle{position:absolute;left:50%;top:50%;width:22%;aspect-ratio:1;border:1px solid #fff;border-radius:50%;transform:translate(-50%,-50%)}.s73sitbox{position:absolute;left:25%;width:50%;height:15%;border:1px solid #fff}.s73sitbox.a{top:-1px}.s73sitbox.b{bottom:-1px}
+      .s73sitpitch>svg{position:absolute;inset:0;width:100%;height:100%;z-index:3}.s73sitobj{position:absolute;z-index:5;transform:translate(-50%,-50%);display:grid;place-items:center}.s73sitplayer,.s73sitopp{width:100%;height:100%;min-width:22px;min-height:22px;border-radius:50%;display:grid;place-items:center;font-size:8px;font-weight:950}.s73sitplayer{background:var(--s11-shirt,var(--v24-shirt,#c8ff00));color:#071008;border:1px solid #fff}.s73sitplayer.gk{background:var(--s11-gk-shirt,var(--v24-gk-shirt,#e31d1d));color:#fff}.s73sitopp{background:#eee;border:1px solid #222}.s73sitobj small{position:absolute;top:calc(100% + 3px);background:#061008;color:#fff;padding:1px 3px;border-radius:2px;font-size:6px;white-space:nowrap}.s73sitball{width:100%;height:100%;border-radius:50%;background:#fff;border:2px dotted #111}.s73sitcone{color:#ff9d31}.s73sitzone{width:100%;height:100%;border:1px dashed #ffe64d;background:#ffe64d22}.s73sittext{background:#061008;color:#fff;padding:2px 3px;border-radius:2px;font-size:6px;white-space:nowrap}
+      .s73sitside{align-self:start}.s73sitside h3{margin:0 0 7px;font-size:15px;color:var(--s11-primary,var(--v24-accent,#82ff54))}.s73sitside b{display:block;margin-top:8px;font-size:7px;color:#829087;letter-spacing:.7px}.s73sitside p{margin:3px 0 0;font-size:10px;line-height:1.5;white-space:pre-wrap}
+      @media(max-width:650px){.s73sit{grid-template-columns:1fr}.s73sitpitch{max-height:300px}}
+    </style><div class="s73sit" style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(115px,.8fr);gap:14px;padding:10px;border:1px solid #31523a;border-radius:8px;background:#08120b;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div class="s73sitpitch" style="position:relative;width:min(100%,310px);aspect-ratio:68/105;min-height:0;max-height:none;margin:auto;background:#176b37;border:2px solid #fff;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div class="s73sithalf"></div><div class="s73sitcircle"></div><div class="s73sitbox a"></div><div class="s73sitbox b"></div><svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><marker id="${marker}" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5z" fill="#fff"/></marker></defs>${arrows}</svg>${objs.join("")}</div><div class="s73sitside"><h3>${E(s.title)}</h3><b>FOKUSPUNKT</b><p>${E(s.focus||"—")}</p>${s.note?`<b>NOTE</b><p>${E(s.note)}</p>`:""}</div></div>`;
+};
 
 /* Refresh KAMPPLAN count after manager closes/opens. */
 const oldOpen=window.s25OpenMatchSituations;
@@ -844,3 +864,6 @@ console.info("START11 loaded:",window.START11_BUILD);
 
 
 
+
+
+window.START11_V73_TACTICAL_BUILD="V73.3-LARGE-INLINE-TACTICAL-BOARD";

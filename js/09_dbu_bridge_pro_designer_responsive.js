@@ -4709,177 +4709,6 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
 
 
                 <!-- =========================================
-                     PAGE 2 · MATCH HUB
-                ========================================== -->
-
-                <section class="pdf-page v24-page">
-
-                    <div class="v24-top-rule"></div>
-
-                    <div class="v24-page-head">
-
-                        <div>
-                            <div class="v24-kicker">
-                                MATCHDAY HUB
-                            </div>
-
-                            <h1>
-                                KAMPEN
-                            </h1>
-                        </div>
-
-                        <div class="v24-page-no">
-                            02
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="v24-grid-2"
-                        style="
-                            position:relative;
-                            z-index:5;
-                            margin:9mm 13mm 0;
-                        "
-                    >
-
-                        <div class="v24-card">
-
-                            <div class="v24-card-head">
-                                <strong>
-                                    KAMPINFO
-                                </strong>
-
-                                <span class="v24-kicker">
-                                    ${s24Esc(formation)}
-                                </span>
-                            </div>
-
-                            <div class="v24-card-body">
-
-                                <div class="v24-info-row">
-                                    ${s24PdfIcon("date")}
-                                    <div>
-                                        <strong>DATO</strong>
-                                        <span>${s24Esc(date || "—")}</span>
-                                    </div>
-                                </div>
-
-                                <div class="v24-info-row">
-                                    ${s24PdfIcon("time")}
-                                    <div>
-                                        <strong>KAMPSTART</strong>
-                                        <span>${s24Esc(time || "—")}</span>
-                                    </div>
-                                </div>
-
-                                <div class="v24-info-row">
-                                    ${s24PdfIcon("place")}
-                                    <div>
-                                        <strong>SPILLESTED</strong>
-                                        <span>${s24Esc(place || "—")}</span>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="v24-card">
-
-                            <div class="v24-card-head">
-                                <strong>
-                                    PRAKTISK INFO
-                                </strong>
-
-                                ${s24PdfIcon("info")}
-                            </div>
-
-                            <div class="v24-card-body">
-                                <div class="v24-copy">
-                                    ${s24Esc(practical || "Ingen praktisk info tilføjet.")}
-                                </div>
-                            </div>
-
-                        </div>
-
-
-                        <div class="v24-card">
-
-                            <div class="v24-card-head">
-                                <strong>
-                                    KAMPPROGRAM
-                                </strong>
-
-                                <span class="v24-kicker">
-                                    TIMELINE
-                                </span>
-                            </div>
-
-                            <div class="v24-card-body">
-                                <div class="v24-copy">
-                                    ${s24Esc(program || "Ingen kampplan/tidslinje tilføjet.")}
-                                </div>
-                            </div>
-
-                        </div>
-
-
-                        <div class="v24-card">
-
-                            <div class="v24-card-head">
-                                <strong>
-                                    TRÆNERENS BESKED
-                                </strong>
-
-                                <span class="v24-kicker">
-                                    TEAM TALK
-                                </span>
-                            </div>
-
-                            <div class="v24-card-body">
-
-                                <div
-                                    style="
-                                        color:var(--v24-accent);
-                                        font-size:26pt;
-                                        line-height:.7;
-                                        font-weight:950;
-                                    "
-                                >
-                                    “
-                                </div>
-
-                                <div
-                                    class="v24-copy"
-                                    style="
-                                        margin-top:2mm;
-                                        font-size:10pt;
-                                        line-height:1.55;
-                                    "
-                                >
-                                    ${s24Esc(coach || "Tilføj en besked til spillerne.")}
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="v24-pdf-footer">
-                        <span>START11 · ${s24Esc(home)} VS ${s24Esc(away)}</span>
-                        <span>MATCHDAY 02</span>
-                    </div>
-
-                </section>
-
-
-
-                <!-- =========================================
                      PAGE 3 · STARTING XI
                 ========================================== -->
 
@@ -4955,81 +4784,18 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
 
 
                 <!-- =========================================
-                     PAGE 4 · TEAM PRINCIPLES
+                     FREE MATCH DOCUMENT
                 ========================================== -->
 
-                <section class="pdf-page v24-page">
-
-                    <div class="v24-top-rule"></div>
-
-                    <div class="v24-page-head">
-
-                        <div>
-                            <div class="v24-kicker">
-                                GAME MODEL
-                            </div>
-
-                            <h1>
-                                VORES SPIL
-                            </h1>
-                        </div>
-
-                        <div class="v24-page-no">
-                            04
-                        </div>
-
-                    </div>
+                ${
+                    typeof start11MatchDocumentPDF === "function"
+                        ? start11MatchDocumentPDF()
+                        : ""
+                }
 
 
-                    <div class="v24-tactic-hero">
 
-                        <div class="v24-tactic-panel with">
-
-                            <div class="v24-kicker">
-                                ATTACKING PHASE
-                            </div>
-
-                            <h2>
-                                MED BOLD
-                            </h2>
-
-                            ${s24TacticList(
-                                kampplan.teamWithBall,
-                                "with"
-                            )}
-
-                        </div>
-
-
-                        <div class="v24-tactic-panel without">
-
-                            <div class="v24-kicker">
-                                DEFENSIVE PHASE
-                            </div>
-
-                            <h2>
-                                UDEN BOLD
-                            </h2>
-
-                            ${s24TacticList(
-                                kampplan.teamWithoutBall,
-                                "without"
-                            )}
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="v24-pdf-footer">
-                        <span>START11 · GAME MODEL</span>
-                        <span>${s24Esc(home)}</span>
-                    </div>
-
-                </section>
-
-
-                ${s24PlayerFocusPages()}
+                ${kampplan?.includePlayerPlans!==false ? s24PlayerFocusPages() : ""}
             `;
 
         };
@@ -6977,3 +6743,10 @@ setTimeout(()=>{const ex=typeof s19ExerciseForDesigner==="function"?s19ExerciseF
         }
     };
 })();
+
+
+window.START11_V24_PDF_BUILD = "V24.3-FREEFORM-KAMPDOKUMENT";
+console.info("START11 V24 PDF:", window.START11_V24_PDF_BUILD);
+
+
+window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
