@@ -27686,6 +27686,7 @@ function start11V11Dev(raw={}){
     focus:Array.isArray(d.focus)?d.focus:[],
     trainingPlan:Array.isArray(d.trainingPlan)?d.trainingPlan:[],
     videos:Array.isArray(d.videos)?d.videos:[],
+    notes:Array.isArray(d.notes)?d.notes:[],
     coachNote:String(d.coachNote||''),updatedAt:String(d.updatedAt||new Date().toISOString())
   }
 }
@@ -27726,7 +27727,7 @@ function start11V11Focus(t){t.innerHTML=`<section class="s11v11-panel"><div clas
 function start11V11Training(t){t.innerHTML=`<section class="s11v11-panel"><div class="s11v11-head"><div><strong>INDIVIDUEL TRÆNINGSPLAN</strong><div class="s11v11-muted">Øvelser, hyppighed og udviklingsmål.</div></div><button id="s11v11addtraining" class="s11v11-btn">+ TRÆNING</button></div><div id="s11v11training" class="s11v11-stack">${start11V11Draft.trainingPlan.length?start11V11Draft.trainingPlan.map(x=>`<div class="s11v11-item" data-training="${x.id}"><div class="s11v11-grid four"><input class="s11v11-input" data-f="exercise" value="${start11V11Esc(x.exercise||'')}" placeholder="Øvelse"><input class="s11v11-input" data-f="frequency" value="${start11V11Esc(x.frequency||'')}" placeholder="Fx 2x ugentligt"><select class="s11v11-select" data-f="status">${['Planlagt','I gang','Gennemført'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`).join('')}</select><button class="s11v11-del" data-del>×</button></div><textarea class="s11v11-text" data-f="goal" placeholder="Mål med træningen">${start11V11Esc(x.goal||'')}</textarea></div>`).join(''):'<div class="s11v11-muted">Ingen træningsplan endnu.</div>'}</div></section>`;start11V11BindList(document.getElementById('s11v11training'),'trainingPlan','training');document.getElementById('s11v11addtraining').onclick=()=>{start11V11Draft.trainingPlan.push({id:start11V11Id('tr'),exercise:'',frequency:'',goal:'',status:'Planlagt'});start11V11Training(t)}}
 function start11V11Videos(t){t.innerHTML=`<section class="s11v11-panel"><div class="s11v11-head"><div><strong>VIDEO FRA KAMPE</strong><div class="s11v11-muted">Link, kamp, tidspunkt og analyse-note.</div></div><button id="s11v11addvideo" class="s11v11-btn">+ VIDEO</button></div><div id="s11v11videos" class="s11v11-stack">${start11V11Draft.videos.length?start11V11Draft.videos.map(x=>`<div class="s11v11-item" data-video="${x.id}"><div class="s11v11-grid video"><input class="s11v11-input" data-f="title" value="${start11V11Esc(x.title||'')}" placeholder="Titel"><input class="s11v11-input" data-f="match" value="${start11V11Esc(x.match||'')}" placeholder="Fx vs AGF"><input class="s11v11-input" data-f="timestamp" value="${start11V11Esc(x.timestamp||'')}" placeholder="34:20"><button class="s11v11-del" data-del>×</button></div><input class="s11v11-input" data-f="url" value="${start11V11Esc(x.url||'')}" placeholder="https://..."><textarea class="s11v11-text" data-f="note" placeholder="Hvad skal spilleren se?">${start11V11Esc(x.note||'')}</textarea></div>`).join(''):'<div class="s11v11-muted">Ingen videoer endnu.</div>'}</div></section>`;start11V11BindList(document.getElementById('s11v11videos'),'videos','video');document.getElementById('s11v11addvideo').onclick=()=>{start11V11Draft.videos.push({id:start11V11Id('v'),title:'',match:'',timestamp:'',url:'',note:''});start11V11Videos(t)}}
 function start11V11Evals(t){const e=[...start11V11Draft.evaluations].sort((a,b)=>String(b.date).localeCompare(String(a.date)));t.innerHTML=`<section class="s11v11-panel"><div class="s11v11-head"><div><strong>EVALUERINGSHISTORIK</strong><div class="s11v11-muted">Gem et snapshot af de nuværende ratings.</div></div><button id="s11v11addeval" class="s11v11-btn primary">+ NY EVALUERING</button></div><div class="s11v11-stack">${e.length?e.map(x=>`<div class="s11v11-eval" data-eval="${x.id}"><strong>${start11V11Esc(x.date||'')}</strong><div><b>${start11V11Esc(x.title||'Evaluering')} · OVR ${start11V11Overall({attributes:x.attributes||[]})}</b><div class="s11v11-muted">${start11V11Esc(x.note||'Ingen note.')}</div></div><button class="s11v11-del" data-del>×</button></div>`).join(''):'<div class="s11v11-muted">Ingen evalueringer endnu.</div>'}</div></section>`;t.querySelectorAll('[data-eval]').forEach(r=>r.querySelector('[data-del]').onclick=()=>{start11V11Draft.evaluations=start11V11Draft.evaluations.filter(x=>x.id!==r.dataset.eval);start11V11Evals(t);start11V11Side()});document.getElementById('s11v11addeval').onclick=()=>{const title=prompt('Titel på evalueringen:','Status '+new Date().toLocaleDateString('da-DK'));if(title===null)return;const note=prompt('Kort note:','')||'';start11V11Draft.evaluations.push({id:start11V11Id('ev'),date:start11V11Today(),title:title||'Evaluering',note,attributes:start11V11Clone(start11V11Draft.attributes)});start11V11Evals(t);start11V11Side()}}
-function start11V11Notes(t){t.innerHTML=`<section class="s11v11-panel"><div class="s11v11-head"><div><strong>TRÆNERNOTER</strong><div class="s11v11-muted">Samlet vurdering til udviklingsplanen og PDF'en.</div></div></div><textarea id="s11v11note" class="s11v11-text" style="min-height:220px" placeholder="Skriv samlet vurdering...">${start11V11Esc(start11V11Draft.coachNote)}</textarea></section>`;document.getElementById('s11v11note').oninput=e=>start11V11Draft.coachNote=e.target.value}
+function start11V11Notes(t){const notes=[...(start11V11Draft.notes||[])].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));t.innerHTML=`<section class="s11v11-panel"><div class="s11v11-head"><div><strong>SPILLERNOTER</strong><div class="s11v11-muted">Kampnoter fra Kampanalyse gemmes automatisk her og bevarer historikken.</div></div></div><div class="s11v11-stack">${notes.length?notes.map(x=>`<div class="s11v11-item"><div style="display:flex;justify-content:space-between;gap:10px"><strong>${start11V11Esc(x.date||"")}</strong><span class="s11v11-muted">${start11V11Esc(x.opponent||"")}${x.rating!==undefined?` · ${start11V11Esc(x.rating)}`:""}</span></div><div style="margin-top:7px;font-size:9px;line-height:1.5">${start11V11Esc(x.note||"")}</div></div>`).join(""):'<div class="s11v11-muted">Ingen spillernoter endnu.</div>'}</div></section><section class="s11v11-panel"><div class="s11v11-head"><div><strong>TRÆNERNOTER</strong><div class="s11v11-muted">Samlet vurdering til udviklingsplanen og PDF'en.</div></div></div><textarea id="s11v11note" class="s11v11-text" style="min-height:220px" placeholder="Skriv samlet vurdering...">${start11V11Esc(start11V11Draft.coachNote)}</textarea></section>`;document.getElementById('s11v11note').oninput=e=>start11V11Draft.coachNote=e.target.value}
 
 function start11V11Pdf(){start11V11Save();const p=start11V11Player(),d=start11V11Draft;if(!p||!d)return;const meta=typeof start11V8GetActiveMeta==='function'?start11V8GetActiveMeta():{clubName:'START11',teamName:''};const theme=typeof start11V9GetActiveTheme==='function'?start11V9GetActiveTheme():{};const logo=theme?.logo||'';const head=title=>`<header class="s11v11-phead"><div><b>START11 · ${start11V11Esc(meta.clubName||'')}</b><h1>${title}</h1><div>${start11V11Esc(p.name)} · #${start11V11Esc(p.number||'—')} · ${start11V11Esc(p.position||'—')} · ${start11V11Esc(meta.teamName||'')}</div></div>${logo?`<img class="s11v11-plogo" src="${start11V11Esc(logo)}">`:''}</header>`;const attr=d.attributes.map(a=>`<tr><td>${start11V11Esc(a.name)}</td><td>${start11V11Esc(a.category)}</td><td><b>${a.rating}</b></td></tr>`).join('');const focus=d.focus.length?`<ol>${d.focus.map(x=>`<li><b>${start11V11Esc(x.title||'Fokus')}</b>${x.description?' — '+start11V11Esc(x.description):''}${x.target?'<br><i>Mål: '+start11V11Esc(x.target)+'</i>':''}</li>`).join('')}</ol>`:'<p>Ingen fokuspunkter registreret.</p>';const train=d.trainingPlan.map(x=>`<tr><td>${start11V11Esc(x.exercise)}</td><td>${start11V11Esc(x.frequency)}</td><td>${start11V11Esc(x.goal)}</td><td>${start11V11Esc(x.status)}</td></tr>`).join('')||'<tr><td colspan="4">Ingen træningsplan.</td></tr>';const videos=d.videos.map(x=>`<div style="margin-bottom:4mm;padding:3mm;border:1px solid #ddd"><b>${start11V11Esc(x.title||'Videoklip')}</b><p>${start11V11Esc(x.match||'')} ${x.timestamp?'· '+start11V11Esc(x.timestamp):''}</p><p>${start11V11Esc(x.note||'')}</p>${x.url?`<a href="${start11V11Esc(x.url)}">${start11V11Esc(x.url)}</a>`:''}</div>`).join('')||'<p>Ingen videoklip.</p>';const evals=d.evaluations.map(x=>`<tr><td>${start11V11Esc(x.date||'')}</td><td>${start11V11Esc(x.title||'')}</td><td>${start11V11Overall({attributes:x.attributes||[]})}</td><td>${start11V11Esc(x.note||'')}</td></tr>`).join('')||'<tr><td colspan="4">Ingen tidligere evalueringer.</td></tr>';let out=document.getElementById('start11PlayerPdfV11');if(!out){out=document.createElement('div');out.id='start11PlayerPdfV11';document.body.appendChild(out)}out.innerHTML=`<div class="s11v11-pdf"><section class="s11v11-page">${head('Individuel spillerudvikling')}<div class="s11v11-pgrid"><div class="s11v11-pcard"><h2>Spillerprofil</h2><p><b>Samlet rating:</b> ${start11V11Overall(d)}</p><p><b>Position:</b> ${start11V11Esc(p.position||'—')}</p><h2>Trænerens vurdering</h2><p>${start11V11Esc(d.coachNote||'Ingen samlet vurdering endnu.')}</p></div><div class="s11v11-pcard"><h2>Radardiagram</h2>${start11V11Radar(d,start11V11LastEval()?.attributes||null,360)}</div></div><div class="s11v11-pcard" style="margin-top:7mm"><h2>Attributes</h2><table class="s11v11-ptable"><thead><tr><th>Attribute</th><th>Kategori</th><th>Rating</th></tr></thead><tbody>${attr}</tbody></table></div></section><section class="s11v11-page">${head('Fokus & træningsplan')}<div class="s11v11-pcard"><h2>Spillerfokus</h2>${focus}</div><div class="s11v11-pcard" style="margin-top:7mm"><h2>Individuel træningsplan</h2><table class="s11v11-ptable"><thead><tr><th>Øvelse</th><th>Hyppighed</th><th>Mål</th><th>Status</th></tr></thead><tbody>${train}</tbody></table></div></section><section class="s11v11-page">${head('Video & evaluering')}<div class="s11v11-pcard"><h2>Videoklip fra kampe</h2>${videos}</div><div class="s11v11-pcard" style="margin-top:7mm"><h2>Evalueringshistorik</h2><table class="s11v11-ptable"><thead><tr><th>Dato</th><th>Evaluering</th><th>OVR</th><th>Note</th></tr></thead><tbody>${evals}</tbody></table></div></section></div>`;const old=document.title;document.title=`${p.name||'Spiller'} - Individuel udviklingsplan`;setTimeout(()=>{window.print();setTimeout(()=>document.title=old,700)},250)}
 
@@ -31888,897 +31889,52 @@ function start11V12RenderNotes(
    ROBUST PDF – NEW PRINT WINDOW
 ========================================================= */
 
-function start11V12BuildStandalonePdf() {
-
-    const player =
-        start11V12ProfileDraft;
-
-    const development =
-        start11V12DevelopmentDraft;
-
-
-    const meta =
-        typeof start11V8GetActiveMeta ===
-            "function"
-            ? start11V8GetActiveMeta()
-            : {
-                clubName:
-                    "START11",
-                teamName:
-                    ""
-            };
-
-
-    const theme =
-        typeof start11V9GetActiveTheme ===
-            "function"
-            ? start11V9GetActiveTheme()
-            : {};
-
-
-    const primary =
-        theme.primaryColor ||
-        "#65D13C";
-
-
-    const logo =
-        theme.logo ||
-        "";
-
-
-    const radar =
-        start11V12Radar(
-            development,
-            390
-        );
-
-
-    const attrRows =
-        (
-            development.attributes ||
-            []
-        )
-            .map(
-                item => `
-                    <tr>
-                        <td>
-                            ${
-                                start11V12Escape(
-                                    item.name
-                                )
-                            }
-                        </td>
-
-                        <td>
-                            ${
-                                start11V12Escape(
-                                    item.category
-                                )
-                            }
-                        </td>
-
-                        <td>
-                            <strong>
-                                ${
-                                    Number(
-                                        item.rating ||
-                                        0
-                                    )
-                                }
-                            </strong>
-                        </td>
-                    </tr>
-                `
-            )
-            .join(
-                ""
-            );
-
-
-    const focus =
-        (
-            development.focus ||
-            []
-        )
-            .map(
-                item => `
-                    <div class="card">
-                        <h3>
-                            ${
-                                start11V12Escape(
-                                    item.title ||
-                                    "Fokus"
-                                )
-                            }
-                        </h3>
-
-                        <p>
-                            ${
-                                start11V12Escape(
-                                    item.description ||
-                                    ""
-                                )
-                            }
-                        </p>
-
-                        ${
-                            item.target
-                                ? `
-                                    <p>
-                                        <strong>Mål:</strong>
-                                        ${
-                                            start11V12Escape(
-                                                item.target
-                                            )
-                                        }
-                                    </p>
-                                `
-                                : ""
-                        }
-                    </div>
-                `
-            )
-            .join(
-                ""
-            ) ||
-        `
-            <div class="card">
-                Ingen udviklingsfokus registreret.
-            </div>
-        `;
-
-
-    const trainingRows =
-        (
-            development.trainingPlan ||
-            []
-        )
-            .map(
-                item => `
-                    <tr>
-                        <td>
-                            ${
-                                start11V12Escape(
-                                    item.exercise ||
-                                    ""
-                                )
-                            }
-                        </td>
-
-                        <td>
-                            ${
-                                start11V12Escape(
-                                    item.frequency ||
-                                    ""
-                                )
-                            }
-                        </td>
-
-                        <td>
-                            ${
-                                start11V12Escape(
-                                    item.goal ||
-                                    ""
-                                )
-                            }
-                        </td>
-
-                        <td>
-                            ${
-                                start11V12Escape(
-                                    item.status ||
-                                    ""
-                                )
-                            }
-                        </td>
-                    </tr>
-                `
-            )
-            .join(
-                ""
-            ) ||
-        `
-            <tr>
-                <td colspan="4">
-                    Ingen træningsplan registreret.
-                </td>
-            </tr>
-        `;
-
-
-    const videos =
-        (
-            development.videos ||
-            []
-        )
-            .map(
-                item => `
-                    <div class="video">
-
-                        <strong>
-                            ${
-                                start11V12Escape(
-                                    item.title ||
-                                    "Videoklip"
-                                )
-                            }
-                        </strong>
-
-                        <div class="muted">
-                            ${
-                                start11V12Escape(
-                                    item.match ||
-                                    ""
-                                )
-                            }
-
-                            ${
-                                item.timestamp
-                                    ? ` · ${start11V12Escape(
-                                        item.timestamp
-                                    )}`
-                                    : ""
-                            }
-                        </div>
-
-                        ${
-                            item.note
-                                ? `
-                                    <p>
-                                        ${
-                                            start11V12Escape(
-                                                item.note
-                                            )
-                                        }
-                                    </p>
-                                `
-                                : ""
-                        }
-
-                        ${
-                            item.url
-                                ? `
-                                    <a
-                                        href="${
-                                            start11V12Escape(
-                                                item.url
-                                            )
-                                        }"
-                                    >
-                                        ${
-                                            start11V12Escape(
-                                                item.url
-                                            )
-                                        }
-                                    </a>
-                                `
-                                : ""
-                        }
-
-                    </div>
-                `
-            )
-            .join(
-                ""
-            ) ||
-        `
-            <p>
-                Ingen videoklip registreret.
-            </p>
-        `;
-
-
-    return `
-<!DOCTYPE html>
-
-<html lang="da">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <title>
-        ${
-            start11V12Escape(
-                player.name
-            )
-        } - Individuel spillerudvikling
-    </title>
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: #fff;
-            color: #111;
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-        }
-
-        .page {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            padding: 14mm;
-            page-break-after: always;
-        }
-
-        .page:last-child {
-            page-break-after: auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-
-            padding-bottom: 7mm;
-
-            border-bottom:
-                3px solid
-                ${primary};
-        }
-
-        .brand {
-            color: ${primary};
-            font-size: 12px;
-            font-weight: 900;
-            letter-spacing: 1.5px;
-        }
-
-        h1 {
-            margin: 2mm 0 1mm;
-            font-size: 25px;
-        }
-
-        h2 {
-            margin:
-                0 0 4mm;
-            font-size: 14px;
-        }
-
-        h3 {
-            margin:
-                0 0 2mm;
-            font-size: 11px;
-        }
-
-        p,
-        td,
-        th {
-            font-size: 9.5px;
-            line-height: 1.45;
-        }
-
-        .meta {
-            color: #666;
-            font-size: 9px;
-        }
-
-        .logo {
-            width: 23mm;
-            height: 23mm;
-            object-fit: contain;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns:
-                1fr
-                1fr;
-
-            gap: 7mm;
-
-            margin-top: 8mm;
-        }
-
-        .card {
-            padding: 5mm;
-
-            border:
-                1px solid
-                #DDD;
-
-            border-radius: 3mm;
-        }
-
-        .rating {
-            color: ${primary};
-            font-size: 28px;
-            font-weight: 900;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 2.5mm;
-            border-bottom:
-                1px solid
-                #DDD;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        th {
-            color: #555;
-            font-size: 8px;
-            text-transform: uppercase;
-        }
-
-        .video {
-            padding: 4mm 0;
-            border-bottom:
-                1px solid
-                #DDD;
-        }
-
-        .video a {
-            color: #111;
-            word-break: break-all;
-        }
-
-        .muted {
-            margin-top: 1mm;
-            color: #666;
-            font-size: 8px;
-        }
-
-        .radar svg {
-            width: 100%;
-            height: auto;
-        }
-
-        .radar text {
-            fill: #111 !important;
-        }
-
-        .radar polygon {
-            stroke: #999;
-        }
-
-        @page {
-            size: A4 portrait;
-            margin: 0;
-        }
-
-        @media print {
-
-            .page {
-                margin: 0;
-            }
-
-        }
-
-    </style>
-
-</head>
-
-
-<body>
-
-    <section class="page">
-
-        <header>
-
-            <div>
-
-                <div class="brand">
-                    START11 · ${
-                        start11V12Escape(
-                            meta.clubName ||
-                            ""
-                        )
-                    }
-                </div>
-
-                <h1>
-                    Individuel spillerudvikling
-                </h1>
-
-                <div class="meta">
-                    ${
-                        start11V12Escape(
-                            player.name
-                        )
-                    }
-                    · #${
-                        start11V12Escape(
-                            player.number ||
-                            "—"
-                        )
-                    }
-                    · ${
-                        start11V12Escape(
-                            player.position ||
-                            "—"
-                        )
-                    }
-                    · ${
-                        start11V12Escape(
-                            meta.teamName ||
-                            ""
-                        )
-                    }
-                </div>
-
-            </div>
-
-            ${
-                logo
-                    ? `
-                        <img
-                            class="logo"
-                            src="${
-                                start11V12Escape(
-                                    logo
-                                )
-                            }"
-                        >
-                    `
-                    : ""
-            }
-
-        </header>
-
-
-        <div class="grid">
-
-            <div class="card">
-
-                <h2>Spillerprofil</h2>
-
-                <div class="rating">
-                    ${start11V12Overall()}
-                </div>
-
-                <p>
-                    <strong>Position:</strong>
-                    ${
-                        start11V12Escape(
-                            player.position ||
-                            "—"
-                        )
-                    }
-                </p>
-
-                <p>
-                    <strong>Styrker:</strong><br>
-                    ${
-                        start11V12Escape(
-                            player.strengths ||
-                            "Ikke udfyldt."
-                        )
-                    }
-                </p>
-
-                <p>
-                    <strong>Udviklingsområder:</strong><br>
-                    ${
-                        start11V12Escape(
-                            player.weaknesses ||
-                            "Ikke udfyldt."
-                        )
-                    }
-                </p>
-
-                <p>
-                    <strong>Trænerens vurdering:</strong><br>
-                    ${
-                        start11V12Escape(
-                            development.coachNote ||
-                            "Ikke udfyldt."
-                        )
-                    }
-                </p>
-
-            </div>
-
-
-            <div class="card radar">
-
-                <h2>Radardiagram</h2>
-
-                ${radar}
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="card"
-            style="margin-top:7mm;"
-        >
-
-            <h2>Attributes</h2>
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Attribute</th>
-                        <th>Kategori</th>
-                        <th>Rating</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${attrRows}
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
-
-    <section class="page">
-
-        <header>
-
-            <div>
-
-                <div class="brand">
-                    START11 · ${
-                        start11V12Escape(
-                            meta.clubName ||
-                            ""
-                        )
-                    }
-                </div>
-
-                <h1>
-                    Fokus & træningsplan
-                </h1>
-
-                <div class="meta">
-                    ${
-                        start11V12Escape(
-                            player.name
-                        )
-                    }
-                </div>
-
-            </div>
-
-            ${
-                logo
-                    ? `
-                        <img
-                            class="logo"
-                            src="${
-                                start11V12Escape(
-                                    logo
-                                )
-                            }"
-                        >
-                    `
-                    : ""
-            }
-
-        </header>
-
-
-        <h2
-            style="margin-top:8mm;"
-        >
-            Spillerfokus
-        </h2>
-
-        <div class="grid">
-            ${focus}
-        </div>
-
-
-        <div
-            class="card"
-            style="margin-top:8mm;"
-        >
-
-            <h2>
-                Individuel træningsplan
-            </h2>
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Øvelse</th>
-                        <th>Hyppighed</th>
-                        <th>Mål</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${trainingRows}
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
-
-    <section class="page">
-
-        <header>
-
-            <div>
-
-                <div class="brand">
-                    START11 · ${
-                        start11V12Escape(
-                            meta.clubName ||
-                            ""
-                        )
-                    }
-                </div>
-
-                <h1>
-                    Video & noter
-                </h1>
-
-                <div class="meta">
-                    ${
-                        start11V12Escape(
-                            player.name
-                        )
-                    }
-                </div>
-
-            </div>
-
-            ${
-                logo
-                    ? `
-                        <img
-                            class="logo"
-                            src="${
-                                start11V12Escape(
-                                    logo
-                                )
-                            }"
-                        >
-                    `
-                    : ""
-            }
-
-        </header>
-
-
-        <div
-            class="card"
-            style="margin-top:8mm;"
-        >
-
-            <h2>Videoklip</h2>
-
-            ${videos}
-
-        </div>
-
-
-        <div
-            class="card"
-            style="margin-top:8mm;"
-        >
-
-            <h2>Med bold</h2>
-
-            <p>
-                ${
-                    start11V12Escape(
-                        player.focusWithBall ||
-                        "Ikke udfyldt."
-                    )
-                }
-            </p>
-
-
-            <h2>Uden bold</h2>
-
-            <p>
-                ${
-                    start11V12Escape(
-                        player.focusWithoutBall ||
-                        "Ikke udfyldt."
-                    )
-                }
-            </p>
-
-        </div>
-
-    </section>
-
-</body>
-
-</html>
-    `;
-
+function start11V12PdfSelectionDefaults(){
+    return {profile:true,ovr:true,radar:true,attributes:true,strengths:true,developmentAreas:true,focusWithBall:true,focusWithoutBall:true,playerFocus:true,trainingPlan:true,videos:true,evaluations:true,playerNotes:true,coachNote:true};
+}
+function start11V12LoadPdfSelection(){
+    const defaults=start11V12PdfSelectionDefaults();
+    try{const raw=localStorage.getItem("start11_v12_pdf_selection_v1");if(!raw)return defaults;const saved=JSON.parse(raw);return Object.fromEntries(Object.keys(defaults).map(k=>[k,saved?.[k]!==false]));}catch(e){return defaults}
+}
+function start11V12SavePdfSelection(selection){try{localStorage.setItem("start11_v12_pdf_selection_v1",JSON.stringify(selection))}catch(e){}}
+function start11V12ShowPdfSelector(){
+    const existing=document.getElementById("s11v12PdfSelector");if(existing)existing.remove();
+    const selection=start11V12LoadPdfSelection();
+    const groups=[["Spiller",[["profile","Spillerprofil"],["ovr","OVR"],["strengths","Styrker"],["developmentAreas","Udviklingsområder"],["coachNote","Trænerens samlede vurdering"]]],["Udvikling",[["radar","Radardiagram"],["attributes","Attributes"],["playerFocus","Spillerfokus"],["focusWithBall","Fokus med bold"],["focusWithoutBall","Fokus uden bold"],["trainingPlan","Individuel træningsplan"]]],["Historik",[["videos","Video"],["evaluations","Evalueringer"],["playerNotes","Spillernoter"]]]];
+    const modal=document.createElement("div");modal.id="s11v12PdfSelector";modal.style.cssText="position:fixed;inset:0;z-index:12050;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;box-sizing:border-box";
+    const card=document.createElement("div");card.style.cssText="width:min(720px,100%);max-height:min(820px,92vh);overflow:auto;background:#071009;color:#fff;border:1px solid var(--s11-border-strong);border-radius:14px;box-shadow:0 25px 80px rgba(0,0,0,.5);padding:22px;box-sizing:border-box";
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px"><div><div style="color:var(--s11-primary);font-size:9px;font-weight:950;letter-spacing:1.2px">START11 · SPILLERUDVIKLING</div><h2 style="margin:5px 0 4px;font-size:22px">VÆLG PDF-INDHOLD</h2><div style="color:#849087;font-size:9px;line-height:1.5">Vælg præcis hvilke dele der skal med. START11 husker dine valg næste gang.</div></div><button type="button" id="s11v12PdfSelectorClose" class="s11v12-btn">LUK</button></div><div id="s11v12PdfSelectorGroups"></div><div style="display:flex;justify-content:space-between;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)"><button type="button" id="s11v12PdfSelectAll" class="s11v12-btn">VÆLG ALLE</button><div style="display:flex;gap:8px"><button type="button" id="s11v12PdfSelectorCancel" class="s11v12-btn">ANNULLER</button><button type="button" id="s11v12PdfGenerate" class="s11v12-btn primary">GENERER PDF</button></div></div>`;
+    modal.appendChild(card);document.body.appendChild(modal);
+    const groupsEl=card.querySelector("#s11v12PdfSelectorGroups");
+    groups.forEach(([title,items])=>{const section=document.createElement("section");section.style.cssText="margin-bottom:16px";section.innerHTML=`<div style="font-size:9px;font-weight:950;color:#849087;letter-spacing:.8px;margin-bottom:8px">${title.toUpperCase()}</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div>`;const grid=section.lastElementChild;items.forEach(([key,label])=>{const row=document.createElement("label");row.style.cssText="display:flex;align-items:center;gap:9px;min-height:42px;padding:0 11px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:#08100a;cursor:pointer;font-size:9px;font-weight:850";row.innerHTML=`<input type="checkbox" data-pdf-key="${key}" ${selection[key]?"checked":""} style="accent-color:var(--s11-primary);width:16px;height:16px"><span>${label}</span>`;grid.appendChild(row)});groupsEl.appendChild(section)});
+    const close=()=>modal.remove();card.querySelector("#s11v12PdfSelectorClose").onclick=close;card.querySelector("#s11v12PdfSelectorCancel").onclick=close;card.querySelector("#s11v12PdfSelectAll").onclick=()=>card.querySelectorAll("[data-pdf-key]").forEach(x=>x.checked=true);
+    card.querySelector("#s11v12PdfGenerate").onclick=()=>{const next={};card.querySelectorAll("[data-pdf-key]").forEach(x=>next[x.dataset.pdfKey]=x.checked);if(!Object.values(next).some(Boolean)){visNotification?.("Vælg mindst ét punkt til PDF'en.");return}start11V12SavePdfSelection(next);close();start11V12PrintPdf(next)};
+    modal.addEventListener("mousedown",e=>{if(e.target===modal)close()});
 }
 
-
-function start11V12GeneratePdf() {
-
-    if (
-        !start11V12Save(
-            false
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-        Åbn vinduet direkte i klik-eventet.
-        Det er mere robust end V11's window.print() på hovedsiden
-        og undgår at eksisterende app-CSS skjuler PDF'en.
-    */
-    const printWindow =
-        window.open(
-            "",
-            "_blank",
-            "width=1000,height=800"
-        );
-
-
-    if (!printWindow) {
-
-        if (
-            typeof visNotification ===
-            "function"
-        ) {
-
-            visNotification(
-                "Browseren blokerede PDF-vinduet. Tillad popups for START11 og prøv igen."
-            );
-
-        }
-
-
-        return;
-
-    }
-
-
-    printWindow.document.open();
-
-    printWindow.document.write(
-        start11V12BuildStandalonePdf()
-    );
-
-    printWindow.document.close();
-
-
-    printWindow.focus();
-
-
-    setTimeout(
-        () => {
-
-            printWindow.print();
-
-        },
-        700
-    );
-
+function start11V12BuildStandalonePdf(selection=start11V12LoadPdfSelection()){
+    const player=start11V12ProfileDraft,development=start11V12DevelopmentDraft;if(!player||!development)return "";
+    const meta=typeof start11V8GetActiveMeta==="function"?start11V8GetActiveMeta():{clubName:"START11",teamName:""};const theme=typeof start11V9GetActiveTheme==="function"?start11V9GetActiveTheme():{};const primary=theme.primaryColor||"#65D13C",logo=theme.logo||"",esc=start11V12Escape;
+    const card=(title,body,extra="")=>`<div class="card ${extra}"><h2>${title}</h2>${body}</div>`;
+    const header=title=>`<header><div><div class="brand">START11 · ${esc(meta.clubName||"")}</div><h1>${title}</h1><div class="meta">${esc(player.name||"")} · #${esc(player.number||"—")} · ${esc(player.position||"—")} · ${esc(meta.teamName||"")}</div></div>${logo?`<img class="logo" src="${esc(logo)}">`:""}</header>`;
+    const pages=[],pushPage=(title,blocks)=>{const valid=blocks.filter(Boolean);if(valid.length)pages.push(`<section class="page">${header(title)}${valid.join("")}</section>`)},p1=[];
+    if(selection.profile)p1.push(card("Spillerprofil",`<p><strong>Navn:</strong> ${esc(player.name||"—")}</p><p><strong>Nummer:</strong> ${esc(player.number||"—")}</p><p><strong>Position:</strong> ${esc(player.position||"—")}</p>`));
+    if(selection.ovr)p1.push(card("OVR",`<div class="rating">${start11V12Overall()}</div>`));
+    if(selection.radar)p1.push(card("Radardiagram",start11V12Radar(development,390),"radar"));
+    if(selection.attributes){const rows=(development.attributes||[]).map(x=>`<tr><td>${esc(x.name||"")}</td><td>${esc(x.category||"")}</td><td><strong>${Number(x.rating||0)}</strong></td></tr>`).join("")||`<tr><td colspan="3">Ingen attributes registreret.</td></tr>`;p1.push(card("Attributes",`<table><thead><tr><th>Attribute</th><th>Kategori</th><th>Rating</th></tr></thead><tbody>${rows}</tbody></table>`))}
+    if(selection.strengths)p1.push(card("Styrker",`<p>${esc(player.strengths||"Ikke udfyldt.")}</p>`));if(selection.developmentAreas)p1.push(card("Udviklingsområder",`<p>${esc(player.weaknesses||"Ikke udfyldt.")}</p>`));if(selection.coachNote)p1.push(card("Trænerens samlede vurdering",`<p>${esc(development.coachNote||"Ikke udfyldt.")}</p>`));pushPage("Individuel spillerudvikling",p1);
+    const p2=[];
+    if(selection.playerFocus){const items=(development.focus||[]).map(x=>`<div class="focus-item"><h3>${esc(x.title||"Fokus")}</h3><p>${esc(x.description||"")}</p>${x.target?`<p><strong>Mål:</strong> ${esc(x.target)}</p>`:""}</div>`).join("")||`<p>Ingen spillerfokus registreret.</p>`;p2.push(card("Spillerfokus",items))}if(selection.focusWithBall)p2.push(card("Fokus med bold",`<p>${esc(player.focusWithBall||"Ikke udfyldt.")}</p>`));if(selection.focusWithoutBall)p2.push(card("Fokus uden bold",`<p>${esc(player.focusWithoutBall||"Ikke udfyldt.")}</p>`));
+    if(selection.trainingPlan){const rows=(development.trainingPlan||[]).map(x=>`<tr><td>${esc(x.exercise||"")}</td><td>${esc(x.frequency||"")}</td><td>${esc(x.goal||"")}</td><td>${esc(x.status||"")}</td></tr>`).join("")||`<tr><td colspan="4">Ingen træningsplan registreret.</td></tr>`;p2.push(card("Individuel træningsplan",`<table><thead><tr><th>Øvelse</th><th>Hyppighed</th><th>Mål</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`))}pushPage("Fokus & træningsplan",p2);
+    const p3=[];
+    if(selection.videos){const videos=(development.videos||[]).map(x=>`<div class="video"><strong>${esc(x.title||"Videoklip")}</strong><div class="muted">${esc(x.match||"")} ${x.timestamp?`· ${esc(x.timestamp)}`:""}</div><p>${esc(x.note||"")}</p>${x.url?`<a href="${esc(x.url)}">${esc(x.url)}</a>`:""}</div>`).join("")||`<p>Ingen videoklip registreret.</p>`;p3.push(card("Videoklip",videos))}
+    if(selection.evaluations){const rows=(development.evaluations||[]).slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.title||"Evaluering")}</td><td><strong>${start11V11Overall({attributes:x.attributes||[]})}</strong></td><td>${esc(x.note||"")}</td></tr>`).join("")||`<tr><td colspan="4">Ingen evalueringer registreret.</td></tr>`;p3.push(card("Evalueringshistorik",`<table><thead><tr><th>Dato</th><th>Evaluering</th><th>OVR</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>`))}
+    if(selection.playerNotes){const notes=(development.notes||[]).slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).map(x=>`<div class="note"><div><strong>${esc(x.date||"")}</strong>${x.opponent?` · ${esc(x.opponent)}`:""}${x.rating!==undefined?` · <strong>${esc(x.rating)}</strong>`:""}</div><p>${esc(x.note||"")}</p></div>`).join("")||`<p>Ingen spillernoter registreret.</p>`;p3.push(card("Spillernoter",notes))}pushPage("Video, evaluering & noter",p3);
+    return `<!doctype html><html lang="da"><head><meta charset="utf-8"><title>${esc(player.name||"Spiller")} - Individuel udviklingsplan</title><style>*{box-sizing:border-box}body{margin:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}.page{width:210mm;min-height:297mm;margin:0 auto;padding:14mm;page-break-after:always}.page:last-child{page-break-after:auto}header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:7mm;border-bottom:3px solid ${primary}}.brand{color:${primary};font-size:12px;font-weight:900;letter-spacing:1.5px}h1{margin:2mm 0 1mm;font-size:25px}h2{margin:0 0 4mm;font-size:14px}h3{margin:0 0 2mm;font-size:11px}p,td,th{font-size:9.5px;line-height:1.45}.meta{color:#666;font-size:9px}.logo{width:23mm;height:23mm;object-fit:contain}.card{padding:5mm;border:1px solid #ddd;border-radius:3mm;margin-top:7mm;page-break-inside:avoid}.page>.card:first-of-type{margin-top:8mm}.rating{color:${primary};font-size:30px;font-weight:900}.focus-item{padding:3mm 0;border-bottom:1px solid #ddd}.focus-item:last-child{border-bottom:0}.video,.note{padding:4mm 0;border-bottom:1px solid #ddd;page-break-inside:avoid}.video:last-child,.note:last-child{border-bottom:0}.video a{color:#111;word-break:break-all}.muted{margin-top:1mm;color:#666;font-size:8px}table{width:100%;border-collapse:collapse}th,td{padding:2.5mm;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}th{color:#555;font-size:8px;text-transform:uppercase}.radar svg{width:100%;height:auto}.radar text{fill:#111!important}.radar polygon{stroke:#999}@page{size:A4 portrait;margin:0}@media print{.page{margin:0}}</style></head><body>${pages.join("")}</body></html>`;
 }
+function start11V12PrintPdf(selection=start11V12LoadPdfSelection()){if(!start11V12Save(false))return;const printWindow=window.open("","_blank","width=1000,height=800");if(!printWindow){visNotification?.("Browseren blokerede PDF-vinduet. Tillad popups for START11 og prøv igen.");return}printWindow.document.open();printWindow.document.write(start11V12BuildStandalonePdf(selection));printWindow.document.close();printWindow.focus();setTimeout(()=>printWindow.print(),700)}
+
+function start11V12GeneratePdf(){start11V12ShowPdfSelector()}
 
 
 /* =========================================================
@@ -33185,7 +32341,7 @@ function s13Modal(){
  /* V27.5: Coaching Hub må kun lukkes via en eksplicit LUK-handling.
     Klik på backdrop eller indhold lukker derfor ikke hubben. */
 }
-function s13Open(){s13Modal();s13Tab="dashboard";s13Render();document.getElementById("s13modal").style.display="flex"}
+function s13Open(){s13Modal();s13SyncAllMatchPlayerNotes();s13Tab="dashboard";s13Render();document.getElementById("s13modal").style.display="flex"}
 function s13Close(){const m=document.getElementById("s13modal");if(m)m.style.display="none"}
 function s13Render(){
  const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
@@ -33245,9 +32401,46 @@ function s13Attendance(t){const arr=[...s13Data.sessions].sort((a,b)=>String(b.d
 }
 
 /* KAMPANALYSE */
+function s13SyncMatchPlayerNotes(match){
+ const players=s13Players();
+ if(!match||!match.id)return false;
+ let changed=false;
+ const ratings=Array.isArray(match.playerRatings)?match.playerRatings:[];
+ players.forEach(p=>{
+  const d=s13Dev(p);
+  const notes=Array.isArray(d.notes)?d.notes:[];
+  let playerChanged=false;
+  const rating=ratings.find(r=>r.playerId===p.id);
+  const noteText=String(rating?.note||'').trim();
+  const existingIndex=notes.findIndex(n=>n?.source==='match-analysis'&&String(n.matchId)===String(match.id));
+  if(noteText){
+   const next={id:existingIndex>=0?notes[existingIndex].id:s13Id('pnote'),source:'match-analysis',matchId:match.id,date:match.date||s13Today(),opponent:match.opponent||'Kamp',rating:Number(rating?.rating||6),note:noteText};
+   if(existingIndex<0){notes.push(next);changed=true;playerChanged=true}else if(JSON.stringify(notes[existingIndex])!==JSON.stringify(next)){notes[existingIndex]=next;changed=true;playerChanged=true}
+  }else if(existingIndex>=0){notes.splice(existingIndex,1);changed=true;playerChanged=true}
+  if(playerChanged){d.notes=notes;p.development=d}
+ });
+ return changed;
+}
+function s13SyncAllMatchPlayerNotes(){
+ let changed=false;
+ (s13Data.matches||[]).forEach(m=>{if(s13SyncMatchPlayerNotes(m))changed=true});
+ if(changed){start11SaveFullSquad?.();s13Save()}
+ return changed;
+}
+function s13RemoveMatchPlayerNotes(matchId){
+ if(!matchId)return false;
+ let changed=false;
+ s13Players().forEach(p=>{
+  const d=s13Dev(p),notes=Array.isArray(d.notes)?d.notes:[],next=notes.filter(n=>!(n?.source==='match-analysis'&&String(n.matchId)===String(matchId)));
+  if(next.length!==notes.length){d.notes=next;p.development=d;changed=true}
+ });
+ if(changed){start11SaveFullSquad?.();s13Save()}
+ return changed;
+}
+
 function s13Matches(t){const d=s13Data.matches.find(x=>x.id===s13Match)||{id:"",date:s13Today(),opponent:"",result:"",worked:"",improve:"",tactical:"",nextWeek:"",playerRatings:[]};t.innerHTML=`<div class="s13grid"><section class="s13panel"><div class="s13head"><strong>KAMPANALYSER</strong><button id="s13newmatch" class="s13btn primary">+ ANALYSE</button></div><div class="s13stack">${[...s13Data.matches].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<div class="s13item"><div style="display:flex;justify-content:space-between"><div><div class="s13title">${s13Esc(x.opponent||"Kamp")}</div><div class="s13mut">${s13Date(x.date)} ${x.result?"· "+s13Esc(x.result):""}</div></div><button class="s13btn" data-m="${x.id}">ÅBN</button></div></div>`).join("")||`<div class="s13mut">Ingen kampanalyser endnu.</div>`}</div></section>
  <section class="s13panel"><div class="s13head"><strong>${d.id?"REDIGER":"NY"} ANALYSE</strong></div><div class="s13stack"><div class="s13grid"><label class="s13field">Dato<input id="s13mdate" class="s13in" type="date" value="${d.date}"></label><label class="s13field">Resultat<input id="s13mres" class="s13in" value="${s13Esc(d.result)}"></label></div><label class="s13field">Modstander<input id="s13mopp" class="s13in" value="${s13Esc(d.opponent)}"></label><label class="s13field">Hvad fungerede?<textarea id="s13mworked" class="s13txt">${s13Esc(d.worked)}</textarea></label><label class="s13field">Hvad skal forbedres?<textarea id="s13mimp" class="s13txt">${s13Esc(d.improve)}</textarea></label><label class="s13field">Taktiske observationer<textarea id="s13mtac" class="s13txt">${s13Esc(d.tactical)}</textarea></label><label class="s13field">Fokus til næste uge<textarea id="s13mnext" class="s13txt">${s13Esc(d.nextWeek)}</textarea></label><div class="s13head"><strong>SPILLERKARAKTERER 1–10</strong></div><div id="s13ratings">${s13Players().map(p=>{const r=d.playerRatings.find(x=>x.playerId===p.id)||{rating:6,note:""};return`<div class="s13att" data-rp="${p.id}"><div><div class="s13title">${s13Esc(p.name)}</div><div class="s13mut">${s13Esc(p.position||"—")}</div></div><div class="s13grid"><input class="s13in" data-f="rating" type="number" min="1" max="10" step=".1" value="${Number(r.rating)}"><input class="s13in" data-f="note" value="${s13Esc(r.note)}" placeholder="Kort note"></div></div>`}).join("")}</div><div style="text-align:right">${d.id?`<button id="s13delmatch" class="s13btn">SLET</button> `:""}<button id="s13savematch" class="s13btn primary">GEM ANALYSE</button></div></div></section></div>`;
- t.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{s13Match=b.dataset.m;s13Matches(t)});document.getElementById("s13newmatch").onclick=()=>{s13Match=null;s13Matches(t)};document.getElementById("s13savematch").onclick=()=>{const ratings=[...t.querySelectorAll("[data-rp]")].map(r=>({playerId:r.dataset.rp,rating:Math.max(1,Math.min(10,Number(r.querySelector('[data-f="rating"]').value||6))),note:r.querySelector('[data-f="note"]').value}));const v={id:d.id||s13Id("match"),date:document.getElementById("s13mdate").value,opponent:document.getElementById("s13mopp").value,result:document.getElementById("s13mres").value,worked:document.getElementById("s13mworked").value,improve:document.getElementById("s13mimp").value,tactical:document.getElementById("s13mtac").value,nextWeek:document.getElementById("s13mnext").value,playerRatings:ratings};const i=s13Data.matches.findIndex(x=>x.id===v.id);i<0?s13Data.matches.push(v):s13Data.matches[i]=v;s13Match=v.id;s13Save();s13Matches(t);s13Home()};document.getElementById("s13delmatch")?.addEventListener("click",()=>{if(confirm("Slet kampanalysen?")){s13Data.matches=s13Data.matches.filter(x=>x.id!==d.id);s13Match=null;s13Save();s13Matches(t);s13Home()}})
+ t.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{s13Match=b.dataset.m;s13Matches(t)});document.getElementById("s13newmatch").onclick=()=>{s13Match=null;s13Matches(t)};document.getElementById("s13savematch").onclick=()=>{const ratings=[...t.querySelectorAll("[data-rp]")].map(r=>({playerId:r.dataset.rp,rating:Math.max(1,Math.min(10,Number(r.querySelector('[data-f="rating"]').value||6))),note:r.querySelector('[data-f="note"]').value}));const v={id:d.id||s13Id("match"),date:document.getElementById("s13mdate").value,opponent:document.getElementById("s13mopp").value,result:document.getElementById("s13mres").value,worked:document.getElementById("s13mworked").value,improve:document.getElementById("s13mimp").value,tactical:document.getElementById("s13mtac").value,nextWeek:document.getElementById("s13mnext").value,playerRatings:ratings};const i=s13Data.matches.findIndex(x=>x.id===v.id);i<0?s13Data.matches.push(v):s13Data.matches[i]=v;s13Match=v.id;s13SyncMatchPlayerNotes(v);start11SaveFullSquad?.();s13Save();s13Matches(t);s13Home()};document.getElementById("s13delmatch")?.addEventListener("click",()=>{if(confirm("Slet kampanalysen?")){s13RemoveMatchPlayerNotes(d.id);s13Data.matches=s13Data.matches.filter(x=>x.id!==d.id);s13Match=null;s13Save();s13Matches(t);s13Home()}})
 }
 
 /* UDVIKLINGSMATRIX + HISTORIK */

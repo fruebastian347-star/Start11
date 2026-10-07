@@ -66,7 +66,7 @@ function s13Modal(){
  /* V27.5: Coaching Hub må kun lukkes via en eksplicit LUK-handling.
     Klik på backdrop eller indhold lukker derfor ikke hubben. */
 }
-function s13Open(){s13Modal();s13Tab="dashboard";s13Render();document.getElementById("s13modal").style.display="flex"}
+function s13Open(){s13Modal();s13SyncAllMatchPlayerNotes();s13Tab="dashboard";s13Render();document.getElementById("s13modal").style.display="flex"}
 function s13Close(){const m=document.getElementById("s13modal");if(m)m.style.display="none"}
 function s13Render(){
  const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
@@ -126,9 +126,46 @@ function s13Attendance(t){const arr=[...s13Data.sessions].sort((a,b)=>String(b.d
 }
 
 /* KAMPANALYSE */
+function s13SyncMatchPlayerNotes(match){
+ const players=s13Players();
+ if(!match||!match.id)return false;
+ let changed=false;
+ const ratings=Array.isArray(match.playerRatings)?match.playerRatings:[];
+ players.forEach(p=>{
+  const d=s13Dev(p);
+  const notes=Array.isArray(d.notes)?d.notes:[];
+  let playerChanged=false;
+  const rating=ratings.find(r=>r.playerId===p.id);
+  const noteText=String(rating?.note||'').trim();
+  const existingIndex=notes.findIndex(n=>n?.source==='match-analysis'&&String(n.matchId)===String(match.id));
+  if(noteText){
+   const next={id:existingIndex>=0?notes[existingIndex].id:s13Id('pnote'),source:'match-analysis',matchId:match.id,date:match.date||s13Today(),opponent:match.opponent||'Kamp',rating:Number(rating?.rating||6),note:noteText};
+   if(existingIndex<0){notes.push(next);changed=true;playerChanged=true}else if(JSON.stringify(notes[existingIndex])!==JSON.stringify(next)){notes[existingIndex]=next;changed=true;playerChanged=true}
+  }else if(existingIndex>=0){notes.splice(existingIndex,1);changed=true;playerChanged=true}
+  if(playerChanged){d.notes=notes;p.development=d}
+ });
+ return changed;
+}
+function s13SyncAllMatchPlayerNotes(){
+ let changed=false;
+ (s13Data.matches||[]).forEach(m=>{if(s13SyncMatchPlayerNotes(m))changed=true});
+ if(changed){start11SaveFullSquad?.();s13Save()}
+ return changed;
+}
+function s13RemoveMatchPlayerNotes(matchId){
+ if(!matchId)return false;
+ let changed=false;
+ s13Players().forEach(p=>{
+  const d=s13Dev(p),notes=Array.isArray(d.notes)?d.notes:[],next=notes.filter(n=>!(n?.source==='match-analysis'&&String(n.matchId)===String(matchId)));
+  if(next.length!==notes.length){d.notes=next;p.development=d;changed=true}
+ });
+ if(changed){start11SaveFullSquad?.();s13Save()}
+ return changed;
+}
+
 function s13Matches(t){const d=s13Data.matches.find(x=>x.id===s13Match)||{id:"",date:s13Today(),opponent:"",result:"",worked:"",improve:"",tactical:"",nextWeek:"",playerRatings:[]};t.innerHTML=`<div class="s13grid"><section class="s13panel"><div class="s13head"><strong>KAMPANALYSER</strong><button id="s13newmatch" class="s13btn primary">+ ANALYSE</button></div><div class="s13stack">${[...s13Data.matches].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<div class="s13item"><div style="display:flex;justify-content:space-between"><div><div class="s13title">${s13Esc(x.opponent||"Kamp")}</div><div class="s13mut">${s13Date(x.date)} ${x.result?"· "+s13Esc(x.result):""}</div></div><button class="s13btn" data-m="${x.id}">ÅBN</button></div></div>`).join("")||`<div class="s13mut">Ingen kampanalyser endnu.</div>`}</div></section>
  <section class="s13panel"><div class="s13head"><strong>${d.id?"REDIGER":"NY"} ANALYSE</strong></div><div class="s13stack"><div class="s13grid"><label class="s13field">Dato<input id="s13mdate" class="s13in" type="date" value="${d.date}"></label><label class="s13field">Resultat<input id="s13mres" class="s13in" value="${s13Esc(d.result)}"></label></div><label class="s13field">Modstander<input id="s13mopp" class="s13in" value="${s13Esc(d.opponent)}"></label><label class="s13field">Hvad fungerede?<textarea id="s13mworked" class="s13txt">${s13Esc(d.worked)}</textarea></label><label class="s13field">Hvad skal forbedres?<textarea id="s13mimp" class="s13txt">${s13Esc(d.improve)}</textarea></label><label class="s13field">Taktiske observationer<textarea id="s13mtac" class="s13txt">${s13Esc(d.tactical)}</textarea></label><label class="s13field">Fokus til næste uge<textarea id="s13mnext" class="s13txt">${s13Esc(d.nextWeek)}</textarea></label><div class="s13head"><strong>SPILLERKARAKTERER 1–10</strong></div><div id="s13ratings">${s13Players().map(p=>{const r=d.playerRatings.find(x=>x.playerId===p.id)||{rating:6,note:""};return`<div class="s13att" data-rp="${p.id}"><div><div class="s13title">${s13Esc(p.name)}</div><div class="s13mut">${s13Esc(p.position||"—")}</div></div><div class="s13grid"><input class="s13in" data-f="rating" type="number" min="1" max="10" step=".1" value="${Number(r.rating)}"><input class="s13in" data-f="note" value="${s13Esc(r.note)}" placeholder="Kort note"></div></div>`}).join("")}</div><div style="text-align:right">${d.id?`<button id="s13delmatch" class="s13btn">SLET</button> `:""}<button id="s13savematch" class="s13btn primary">GEM ANALYSE</button></div></div></section></div>`;
- t.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{s13Match=b.dataset.m;s13Matches(t)});document.getElementById("s13newmatch").onclick=()=>{s13Match=null;s13Matches(t)};document.getElementById("s13savematch").onclick=()=>{const ratings=[...t.querySelectorAll("[data-rp]")].map(r=>({playerId:r.dataset.rp,rating:Math.max(1,Math.min(10,Number(r.querySelector('[data-f="rating"]').value||6))),note:r.querySelector('[data-f="note"]').value}));const v={id:d.id||s13Id("match"),date:document.getElementById("s13mdate").value,opponent:document.getElementById("s13mopp").value,result:document.getElementById("s13mres").value,worked:document.getElementById("s13mworked").value,improve:document.getElementById("s13mimp").value,tactical:document.getElementById("s13mtac").value,nextWeek:document.getElementById("s13mnext").value,playerRatings:ratings};const i=s13Data.matches.findIndex(x=>x.id===v.id);i<0?s13Data.matches.push(v):s13Data.matches[i]=v;s13Match=v.id;s13Save();s13Matches(t);s13Home()};document.getElementById("s13delmatch")?.addEventListener("click",()=>{if(confirm("Slet kampanalysen?")){s13Data.matches=s13Data.matches.filter(x=>x.id!==d.id);s13Match=null;s13Save();s13Matches(t);s13Home()}})
+ t.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{s13Match=b.dataset.m;s13Matches(t)});document.getElementById("s13newmatch").onclick=()=>{s13Match=null;s13Matches(t)};document.getElementById("s13savematch").onclick=()=>{const ratings=[...t.querySelectorAll("[data-rp]")].map(r=>({playerId:r.dataset.rp,rating:Math.max(1,Math.min(10,Number(r.querySelector('[data-f="rating"]').value||6))),note:r.querySelector('[data-f="note"]').value}));const v={id:d.id||s13Id("match"),date:document.getElementById("s13mdate").value,opponent:document.getElementById("s13mopp").value,result:document.getElementById("s13mres").value,worked:document.getElementById("s13mworked").value,improve:document.getElementById("s13mimp").value,tactical:document.getElementById("s13mtac").value,nextWeek:document.getElementById("s13mnext").value,playerRatings:ratings};const i=s13Data.matches.findIndex(x=>x.id===v.id);i<0?s13Data.matches.push(v):s13Data.matches[i]=v;s13Match=v.id;s13SyncMatchPlayerNotes(v);start11SaveFullSquad?.();s13Save();s13Matches(t);s13Home()};document.getElementById("s13delmatch")?.addEventListener("click",()=>{if(confirm("Slet kampanalysen?")){s13RemoveMatchPlayerNotes(d.id);s13Data.matches=s13Data.matches.filter(x=>x.id!==d.id);s13Match=null;s13Save();s13Matches(t);s13Home()}})
 }
 
 /* UDVIKLINGSMATRIX + HISTORIK */
