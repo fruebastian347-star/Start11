@@ -64309,6 +64309,10 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
 (function start11TrainingLibraryV244(){
 
     const PROFILE_KEY_PREFIX = "start11.profile.exerciseLibrary.v244.";
+    const CLOUD_BACKUP_TABLE = "start11_exercise_library_backups";
+    const LOCAL_BACKUP_PREFIX = PROFILE_KEY_PREFIX + "backup.";
+    const MAX_LOCAL_BACKUPS = 2;
+    let allowEmptyWriteUntil = 0;
     let profileReady = false;
     let profileOwnerId = "";
     let folderFilter = "all";
@@ -64366,12 +64370,60 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
         s13Data.exerciseFolders = normalizeFolders(clone(lib?.folders || []));
     }
 
+    function libraryHasData(lib){
+        return !!lib && ((Array.isArray(lib.exercises) && lib.exercises.length > 0) || (Array.isArray(lib.folders) && lib.folders.length > 0));
+    }
+
+    function normalizeLibraryPayload(lib){
+        return {
+            exercises: normalizeExerciseLibrary(clone(Array.isArray(lib?.exercises) ? lib.exercises : [])),
+            folders: normalizeFolders(clone(Array.isArray(lib?.folders) ? lib.folders : []))
+        };
+    }
+
+    function librarySignature(lib){
+        try { return JSON.stringify(normalizeLibraryPayload(lib)); } catch { return ""; }
+    }
+
+    function localBackupKey(){
+        const uid = (typeof session !== "undefined" && session?.user?.id) ? String(session.user.id) : "local";
+        return LOCAL_BACKUP_PREFIX + uid;
+    }
+
+    function addLocalBackup(lib, reason="Automatisk lokal sikkerhedskopi"){
+        try{
+            const clean = normalizeLibraryPayload(lib);
+            if(!libraryHasData(clean)) return;
+            const key = localBackupKey();
+            let history = [];
+            try { const parsed = JSON.parse(localStorage.getItem(key) || "[]"); if(Array.isArray(parsed)) history = parsed; } catch {}
+            const signature = librarySignature(clean);
+            if(history[0]?.signature === signature) return;
+            history.unshift({createdAt:new Date().toISOString(), reason, signature, exercises:clean.exercises, folders:clean.folders});
+            let stored = false;
+            for(let keep= Math.min(MAX_LOCAL_BACKUPS, history.length); keep>=1; keep--){
+                try{ localStorage.setItem(key, JSON.stringify(history.slice(0,keep))); stored=true; break; }
+                catch(storageError){ /* Reduce history if browser storage is close to its quota. */ }
+            }
+            if(!stored) console.warn("START11: Der var ikke plads til en lokal sikkerhedskopi. Brug eksport/cloud-backup.");
+        }catch(error){ console.warn("START11: Lokal øvelsesbackup kunne ikke oprettes.", error); }
+    }
+
     function saveLocal(){
         try{
-            localStorage.setItem(userKey(), JSON.stringify(currentLibrary()));
-        }catch(error){
-            console.warn("START11: Kunne ikke gemme personlig øvelsesbank lokalt.", error);
-        }
+            const next = currentLibrary();
+            const raw = localStorage.getItem(userKey());
+            if(raw){
+                try{
+                    const parsed = JSON.parse(raw);
+                    if(parsed && Array.isArray(parsed.exercises)){
+                        const previous = normalizeLibraryPayload(parsed);
+                        if(libraryHasData(previous) && librarySignature(previous) !== librarySignature(next)) addLocalBackup(previous, "Automatisk før lokal ændring");
+                    }
+                }catch(error){ console.warn("START11: Tidligere lokal bank kunne ikke sikkerhedskopieres.", error); }
+            }
+            localStorage.setItem(userKey(), JSON.stringify(next));
+        }catch(error){ console.warn("START11: Kunne ikke gemme personlig øvelsesbank lokalt.", error); }
     }
 
     function loadLocal(){
@@ -64389,6 +64441,152 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
         }
     }
 
+    function currentUserId(){
+        return (typeof session !== "undefined" && session?.user?.id) ? String(session.user.id) : "";
+    }
+
+    function libraryFromTeam(team){
+        const raw = team?.data?.start11CoachHub || {};
+        return normalizeLibraryPayload({exercises:Array.isArray(raw.exercises)?raw.exercises:[], folders:Array.isArray(raw.exerciseFolders)?raw.exerciseFolders:[]});
+    }
+
+    async function createCloudBackup(lib, reason="Automatisk sikkerhedskopi"){
+        const uid = currentUserId();
+        if(!uid) throw new Error("Log ind for cloud-backup.");
+        if(typeof supabaseRequest !== "function") throw new Error("Supabase er ikke tilgængelig.");
+        const clean = normalizeLibraryPayload(lib);
+        await supabaseRequest(`/rest/v1/${CLOUD_BACKUP_TABLE}`, {
+            method:"POST", headers:{Prefer:"return=minimal"},
+            body:JSON.stringify({user_id:uid, backup_reason:String(reason).slice(0,120), payload:{schema:"start11-exercise-library",version:1,createdAt:new Date().toISOString(),exercises:clean.exercises,folders:clean.folders}})
+        });
+    }
+
+    async function fetchCloudBackups(){
+        const uid = currentUserId();
+        if(!uid) throw new Error("Log ind for at hente sikkerhedskopier.");
+        return await supabaseRequest(`/rest/v1/${CLOUD_BACKUP_TABLE}?select=id,created_at,backup_reason,payload&user_id=eq.${encodeURIComponent(uid)}&order=created_at.desc&limit=25`);
+    }
+
+    function safetyNotice(message){
+        try { if(typeof visNotification === "function") visNotification(message); else alert(message); } catch { alert(message); }
+    }
+
+    async function protectBeforeCloudSave(){
+        if(typeof s13Data === "undefined" || !s13Data || typeof cloudTeams === "undefined" || !Array.isArray(cloudTeams)) return true;
+        const team = cloudTeams.find(item => item?.id && item.id === activeTeamId);
+        if(!team) return true;
+        const previous = libraryFromTeam(team), next = currentLibrary();
+        if(libraryHasData(previous) && !libraryHasData(next) && Date.now() > allowEmptyWriteUntil){
+            applyLibrary(previous); saveLocal();
+            safetyNotice("START11 blokerede en tom øvelsesbank, så eksisterende øvelser ikke overskrives. Brug eksport/backup, eller vælg TØM BANK efter sikkerhedskopiering.");
+            return false;
+        }
+        if(libraryHasData(previous) && librarySignature(previous) !== librarySignature(next)){
+            try { await createCloudBackup(previous, "Automatisk før ændring"); }
+            catch(error){
+                console.error("START11: Cloud-backup fejlede; cloud-gemning stoppet.", error);
+                safetyNotice("Sikkerhedskopien kunne ikke gemmes. Cloud-gemning er stoppet for at beskytte den tidligere øvelsesbank. Kontrollér backup-tabellen i Supabase.");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    async function exportExerciseLibrary(){
+        const lib=currentLibrary();
+        const payload={schema:"start11-exercise-library",version:1,exportedAt:new Date().toISOString(),userId:currentUserId()||null,exercises:lib.exercises,folders:lib.folders};
+        const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+        const url=URL.createObjectURL(blob); const a=document.createElement("a");
+        a.href=url; a.download=`START11-øvelsesbank-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+        safetyNotice(`Eksport klar: ${lib.exercises.length} øvelser og ${lib.folders.length} mapper.`);
+    }
+
+    async function importExerciseLibrary(file){
+        if(!file) return;
+        let parsed; try { parsed=JSON.parse(await file.text()); } catch { alert("Filen kunne ikke læses som JSON. Intet er ændret."); return; }
+        const incoming=parsed?.payload && Array.isArray(parsed.payload.exercises) ? parsed.payload : parsed;
+        if(!incoming || !Array.isArray(incoming.exercises) || (incoming.folders!==undefined && !Array.isArray(incoming.folders))){ alert("Filen er ikke en gyldig START11-øvelsesbank. Intet er ændret."); return; }
+        if(!confirm(`Importér ${incoming.exercises.length} øvelser og ${(incoming.folders||[]).length} mapper? Den nuværende bank erstattes, efter at START11 forsøger at sikkerhedskopiere den.`)) return;
+        const previous=currentLibrary();
+        if(libraryHasData(previous)){
+            addLocalBackup(previous,"Før import");
+            if(currentUserId()) try { await createCloudBackup(previous,"Automatisk før import"); } catch(error){ console.error(error); alert("Import stoppet: cloud-backup fejlede. Intet er importeret."); return; }
+        }
+        try{
+            applyLibrary(normalizeLibraryPayload({exercises:incoming.exercises,folders:incoming.folders||[]}));
+            profileReady=true; profileOwnerId=currentUserId()||"local"; saveLocal();
+            if(typeof s13Save==="function") s13Save();
+            const target=document.getElementById("s13content"); if(target && typeof s13Exercises==="function") s13Exercises(target);
+            safetyNotice("Øvelsesbanken er importeret. Kontrollér øvelserne, før du fortsætter.");
+        }catch(error){ console.error("START11: Import fejlede.",error); alert("Importen fejlede. Kontrollér backupfilen."); }
+    }
+
+    async function restoreCloudBackup(){
+        let rows; try { rows=await fetchCloudBackups(); } catch(error){ console.error(error); alert("Kunne ikke hente cloud-backups. Kontrollér backup-tabellen i Supabase."); return; }
+        if(!Array.isArray(rows)||!rows.length){ alert("Der er ingen cloud-sikkerhedskopier for denne konto endnu."); return; }
+        const options=rows.map((r,i)=>`${i+1}. ${r.created_at||r.payload?.createdAt||"Ukendt dato"} — ${r.backup_reason||"Backup"} — ${(r.payload?.exercises||[]).length} øvelser`).join("\n");
+        const answer=prompt(`Vælg backupnummer:\n\n${options}\n\nAnnullér for at lukke.`); if(answer===null) return;
+        const index=Number(answer)-1; if(!Number.isInteger(index)||index<0||index>=rows.length){ alert("Ugyldigt backupnummer."); return; }
+        const payload=rows[index].payload; if(!payload||!Array.isArray(payload.exercises)||!Array.isArray(payload.folders)){ alert("Den valgte backup er ugyldig. Intet er ændret."); return; }
+        if(!confirm(`Gendan backup med ${payload.exercises.length} øvelser? Den nuværende bank sikkerhedskopieres først.`)) return;
+        const current=currentLibrary();
+        if(libraryHasData(current)){
+            addLocalBackup(current,"Før gendannelse");
+            try { await createCloudBackup(current,"Automatisk før gendannelse"); } catch(error){ console.error(error); alert("Gendannelse stoppet, fordi den nuværende bank ikke kunne sikkerhedskopieres."); return; }
+        }
+        applyLibrary({exercises:payload.exercises,folders:payload.folders}); profileReady=true; profileOwnerId=currentUserId()||"local"; saveLocal();
+        if(typeof s13Save==="function") s13Save();
+        const target=document.getElementById("s13content"); if(target && typeof s13Exercises==="function") s13Exercises(target);
+        safetyNotice("Sikkerhedskopien er gendannet. Kontrollér indholdet.");
+    }
+
+    async function restoreLocalBackup(){
+        let history=[];
+        try{ const parsed=JSON.parse(localStorage.getItem(localBackupKey())||"[]"); if(Array.isArray(parsed)) history=parsed; }catch{}
+        if(!history.length){ alert("Der er ingen lokale sikkerhedskopier på denne enhed."); return; }
+        const options=history.map((item,i)=>`${i+1}. ${item.createdAt||"Ukendt dato"} — ${item.reason||"Lokal backup"} — ${(item.exercises||[]).length} øvelser`).join("\n");
+        const answer=prompt(`Vælg lokal backup, der skal gendannes:\n\n${options}\n\nAnnullér for at lukke.`); if(answer===null) return;
+        const index=Number(answer)-1; if(!Number.isInteger(index)||index<0||index>=history.length){ alert("Ugyldigt backupnummer."); return; }
+        const selected=history[index]; if(!Array.isArray(selected.exercises)||!Array.isArray(selected.folders)){ alert("Den lokale backup er ugyldig. Intet er ændret."); return; }
+        if(!confirm(`Gendan lokal backup med ${selected.exercises.length} øvelser? Den nuværende bank sikkerhedskopieres først.`)) return;
+        const current=currentLibrary();
+        if(libraryHasData(current)){
+            addLocalBackup(current,"Før lokal gendannelse");
+            if(currentUserId()) try{ await createCloudBackup(current,"Automatisk før lokal gendannelse"); }catch(error){ console.error(error); alert("Gendannelse stoppet, fordi den nuværende bank ikke kunne sikkerhedskopieres i skyen."); return; }
+        }
+        applyLibrary({exercises:selected.exercises,folders:selected.folders}); profileReady=true; profileOwnerId=currentUserId()||"local"; saveLocal();
+        if(typeof s13Save==="function") s13Save();
+        const target=document.getElementById("s13content"); if(target&&typeof s13Exercises==="function") s13Exercises(target);
+        safetyNotice("Den lokale sikkerhedskopi er gendannet.");
+    }
+
+    async function clearExerciseLibrarySafely(){
+        const current=currentLibrary(); if(!libraryHasData(current)){ alert("Øvelsesbanken er allerede tom."); return; }
+        if(!confirm(`Tøm hele øvelsesbanken? ${current.exercises.length} øvelser og ${current.folders.length} mapper fjernes fra den aktive bank. START11 laver først en backup.`)) return;
+        addLocalBackup(current,"Før manuel tømning");
+        if(currentUserId()) try { await createCloudBackup(current,"Manuel backup før tømning"); } catch(error){ console.error(error); alert("Banken blev ikke tømt, fordi cloud-backup fejlede."); return; }
+        allowEmptyWriteUntil=Date.now()+10000; applyLibrary({exercises:[],folders:[]}); saveLocal();
+        if(typeof s13Save==="function") s13Save();
+        const target=document.getElementById("s13content"); if(target && typeof s13Exercises==="function") s13Exercises(target);
+        safetyNotice("Øvelsesbanken er tømt efter sikkerhedskopiering.");
+    }
+
+    function installSafetyControls(target){
+        if(!target || target.querySelector("#s11ExerciseSafetyTools")) return;
+        const grid=target.querySelector(".s13grid"); if(!grid) return;
+        const bar=document.createElement("section"); bar.id="s11ExerciseSafetyTools"; bar.className="s13panel"; bar.style.marginBottom="12px";
+        bar.innerHTML=`<div class="s13head" style="margin-bottom:7px"><div><strong>SIKKERHEDSKOPI · ØVELSESBANK</strong><div class="s13mut">Download en kopi eller gendan en tidligere skyversion.</div></div></div><div style="display:flex;flex-wrap:wrap;gap:7px"><button type="button" id="s11ExerciseExport" class="s13btn primary">EKSPORTÉR BANK</button><button type="button" id="s11ExerciseImport" class="s13btn">IMPORTÉR BANK</button><button type="button" id="s11ExerciseBackupNow" class="s13btn">SIKKERHEDSKOPI NU</button><button type="button" id="s11ExerciseRestore" class="s13btn">GENDAN SKYBACKUP</button><button type="button" id="s11ExerciseRestoreLocal" class="s13btn">GENDAN LOKAL BACKUP</button><button type="button" id="s11ExerciseClear" class="s13btn">TØM BANK</button><input type="file" id="s11ExerciseImportFile" accept=".json,application/json" style="display:none"></div><div class="s13mut" style="margin-top:7px">Cloud-backup kræver, at backup-tabellen er oprettet i Supabase. Eksport virker også uden den.</div>`;
+        grid.parentElement.insertBefore(bar,grid);
+        bar.querySelector("#s11ExerciseExport").onclick=exportExerciseLibrary;
+        bar.querySelector("#s11ExerciseImport").onclick=()=>bar.querySelector("#s11ExerciseImportFile").click();
+        bar.querySelector("#s11ExerciseImportFile").onchange=async e=>{const file=e.target.files?.[0];e.target.value="";await importExerciseLibrary(file);};
+        bar.querySelector("#s11ExerciseBackupNow").onclick=async()=>{const lib=currentLibrary();addLocalBackup(lib,"Manuel sikkerhedskopi");if(!currentUserId()){safetyNotice("Lokal sikkerhedskopi gemt. Log ind for cloud-backup.");return;}try{await createCloudBackup(lib,"Manuel sikkerhedskopi");safetyNotice("Sikkerhedskopien er gemt i skyen.");}catch(error){console.error(error);alert("Cloud-backup fejlede. Kontrollér backup-tabellen i Supabase.");}};
+        bar.querySelector("#s11ExerciseRestore").onclick=restoreCloudBackup;
+        bar.querySelector("#s11ExerciseRestoreLocal").onclick=restoreLocalBackup;
+        bar.querySelector("#s11ExerciseClear").onclick=clearExerciseLibrarySafely;
+    }
+
     /*
        Cloud-adfærd:
        Den personlige øvelsesbank replikeres til brugerens holdposter.
@@ -64400,45 +64598,24 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
 
     function syncLibraryToCloud(){
         clearTimeout(cloudSyncTimer);
-
         cloudSyncTimer = setTimeout(async () => {
-            if(
-                typeof supabaseRequest !== "function" ||
-                typeof CLOUD_TABLE === "undefined" ||
-                typeof cloudTeams === "undefined" ||
-                !Array.isArray(cloudTeams) ||
-                !cloudTeams.length
-            ) return;
-
-            const lib = currentLibrary();
-
+            if(typeof supabaseRequest!=="function" || typeof CLOUD_TABLE==="undefined" || typeof cloudTeams==="undefined" || !Array.isArray(cloudTeams) || !cloudTeams.length) return;
+            const lib=currentLibrary(), newHasData=libraryHasData(lib);
             for(const team of cloudTeams){
                 if(!team?.id) continue;
-
-                const data = clone(team.data || {});
-                data.start11CoachHub = {
-                    ...(data.start11CoachHub || {}),
-                    exercises: clone(lib.exercises),
-                    exerciseFolders: clone(lib.folders)
-                };
-
+                const oldLib=libraryFromTeam(team), oldHasData=libraryHasData(oldLib);
+                const same=librarySignature(oldLib)===librarySignature(lib);
+                if(oldHasData && !newHasData && Date.now()>allowEmptyWriteUntil){ console.warn("START11: Tom bank blev ikke synkroniseret over eksisterende øvelser.",team.id); continue; }
+                if(oldHasData && !same){ try{ await createCloudBackup(oldLib,"Automatisk før cloud-synkronisering"); }catch(error){ console.error("START11: Cloud-sync stoppet; backup fejlede.",error); continue; } }
+                const data=clone(team.data||{});
+                data.start11CoachHub={...(data.start11CoachHub||{}),exercises:clone(lib.exercises),exerciseFolders:clone(lib.folders)};
                 try{
-                    await supabaseRequest(
-                        `/rest/v1/${CLOUD_TABLE}?id=eq.${encodeURIComponent(team.id)}`,
-                        {
-                            method:"PATCH",
-                            headers:{Prefer:"return=minimal"},
-                            body:JSON.stringify({data})
-                        }
-                    );
-                    team.data = data;
-                }catch(error){
-                    console.warn("START11: Personlig øvelsesbank cloud-sync fejlede.", error);
-                }
+                    await supabaseRequest(`/rest/v1/${CLOUD_TABLE}?id=eq.${encodeURIComponent(team.id)}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({data})});
+                    team.data=data;
+                }catch(error){ console.warn("START11: Personlig øvelsesbank cloud-sync fejlede.",error); }
             }
-        }, 650);
+        },650);
     }
-
     function persistProfileLibrary(){
         if(!profileReady) return;
         saveLocal();
@@ -64479,10 +64656,16 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
            Det er vigtigt, fordi en gammel lokal cache ellers kan overskrive
            en nyere øvelse, som blev oprettet på en anden enhed.
         */
-        const cloudLibrary = {
+        let cloudLibrary = {
             exercises: normalizeExerciseLibrary(clone(s13Data?.exercises || [])),
             folders: normalizeFolders(clone(s13Data?.exerciseFolders || []))
         };
+        /* Hvis det aktive hold mangler bankdata, led efter en ikke-tom kopi
+           på et andet hold på samme konto, før en tom bank accepteres. */
+        if(!libraryHasData(cloudLibrary) && typeof cloudTeams !== "undefined" && Array.isArray(cloudTeams)){
+            const recovered = cloudTeams.map(libraryFromTeam).find(libraryHasData);
+            if(recovered) cloudLibrary = normalizeLibraryPayload(recovered);
+        }
         const local = loadLocal();
 
         const cloudHasData = cloudLibrary.exercises.length > 0 || cloudLibrary.folders.length > 0;
@@ -64544,9 +64727,25 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
     if(typeof s13Save === "function"){
         const beforeSave = s13Save;
         s13Save = function(){
-            const result = beforeSave();
-            persistProfileLibrary();
-            return result;
+            const team=(typeof cloudTeams!=="undefined"&&Array.isArray(cloudTeams))?cloudTeams.find(item=>item?.id&&item.id===activeTeamId):null;
+            if(team && Date.now()>allowEmptyWriteUntil){
+                const previous=libraryFromTeam(team), next=currentLibrary();
+                if(libraryHasData(previous)&&!libraryHasData(next)){
+                    applyLibrary(previous); saveLocal();
+                    safetyNotice("START11 gendannede den eksisterende bank, fordi en tom bank ikke må overskrive skydata. Brug TØM BANK for at tømme den sikkert.");
+                    return false;
+                }
+            }
+            const result=beforeSave(); persistProfileLibrary(); return result;
+        };
+    }
+
+    if(typeof saveCloudNow === "function"){
+        const beforeSaveCloudNow=saveCloudNow;
+        saveCloudNow=async function(){
+            try{ if(!(await protectBeforeCloudSave())) return; }
+            catch(error){ console.error("START11: Sikkerhedstjek før cloud-gemning fejlede.",error); safetyNotice("START11 stoppede cloud-gemningen, fordi sikkerhedstjekket fejlede."); return; }
+            return beforeSaveCloudNow.apply(this,arguments);
         };
     }
 
@@ -64674,6 +64873,7 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
             initializeProfileLibrary();
             baseExercisesRender(target);
             enhanceExerciseLibrary(target);
+            installSafetyControls(target);
         };
     }
 
