@@ -1090,6 +1090,11 @@ function start11OpenSquadPlayerModal(
         player?.status || "available"
     );
 
+    const photoData = document.getElementById("squadPlayerPhotoData");
+    if (photoData) photoData.value = player?.photo || "";
+    const photoPreview = document.getElementById("squadPlayerPhotoPreview");
+    if (photoPreview) start11SetSquadPhotoPreview(photoPreview, player?.photo || "");
+
 
     const selected =
         document.getElementById(
@@ -4047,6 +4052,11 @@ function start11SaveSquadPlayerFromModal() {
             )?.value.trim() ||
             "",
 
+        photo:
+            document.getElementById("squadPlayerPhotoData")
+                ? document.getElementById("squadPlayerPhotoData").value
+                : (start11EditingSquadPlayerId ? (start11FullSquad.find(p => p.id === start11EditingSquadPlayerId)?.photo || "") : ""),
+
         video:
             document.getElementById(
                 "squadPlayerVideo"
@@ -5332,192 +5342,41 @@ function start11InstallContextMenuFlowV3() {
 ========================================================= */
 
 function start11RenderFullSquad() {
-
-    const list =
-        document.getElementById(
-            "fullSquadList"
-        );
-
-
-    const count =
-        document.getElementById(
-            "fullSquadCount"
-        );
-
-
-    if (
-        !list
-    ) {
-
+    const list = document.getElementById("fullSquadList");
+    const count = document.getElementById("fullSquadCount");
+    if (!list) return;
+    if (count) count.textContent = String(start11FullSquad.length);
+    if (typeof window.s25MountSquadGroups === "function") window.s25MountSquadGroups();
+    const players = start11GetVisibleSquad();
+    list.innerHTML = "";
+    list.classList.add("start11-player-card-grid");
+    if (!players.length) {
+        list.innerHTML = `<div class="start11-player-empty"><span class="start11-player-empty-icon">♙</span><strong>Ingen spillere endnu</strong><span>Tilføj spillere for at opbygge din trup.</span></div>`;
         return;
-
     }
-
-
-    if (
-        count
-    ) {
-
-        count.textContent =
-            String(
-                start11FullSquad.length
-            );
-
-    }
-
-
-    if (typeof window.s25MountSquadGroups === "function") {
-        window.s25MountSquadGroups();
-    }
-
-
-    const players =
-        start11GetVisibleSquad();
-
-
-    list.innerHTML =
-        "";
-
-
-    if (
-        !players.length
-    ) {
-
-        list.innerHTML = `
-            <div class="start11-help-text">
-                Ingen spillere matcher filteret.
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    players.forEach(
-        player => {
-
-            const role =
-                start11GetPlayerRole(
-                    player
-                );
-
-
-            const row =
-                document.createElement(
-                    "div"
-                );
-
-
-            row.className =
-                "full-squad-row" +
-                (
-                    player.selected
-                        ? ""
-                        : " not-selected"
-                );
-
-
-            row.dataset.playerId =
-                player.id;
-
-
-            const selectionLabel =
-                (
-                    role === "starting"
-                )
-                    ? "STARTER"
-                    : (
-                        role === "substitute"
-                    )
-                        ? "BÆNK"
-                        : (
-                            player.selected
-                        )
-                            ? "UDTAGET"
-                            : start11StatusLabel(
-                                player.status
-                            );
-
-
-            const selectionClass =
-                (
-                    role === "starting" ||
-                    role === "substitute" ||
-                    player.selected
-                )
-                    ? "available"
-                    : player.status;
-
-
-            row.innerHTML = `
-
-                <span class="squad-no">
-                    ${start11Escape(player.number || "—")}
-                </span>
-
-                <span class="squad-name">
-                    ${start11Escape(player.name)}
-                </span>
-
-                <span class="squad-pos">
-                    ${start11Escape(player.position)}
-                </span>
-
-                <span class="squad-status-pill ${start11Escape(selectionClass)}">
-                    ${start11Escape(selectionLabel)}
-                </span>
-
-            `;
-
-
-            row.addEventListener(
-                "click",
-                () => {
-
-                    /*
-                        Ikke udtaget:
-                        ét venstreklik -> KAMPTRUP.
-                    */
-                    if (
-                        !player.selected &&
-                        role === "not-selected"
-                    ) {
-
-                        start11SetSquadPlayerSelected(
-                            player.id,
-                            true
-                        );
-
-                        return;
-
-                    }
-
-
-                    /*
-                        Allerede udtaget/placeret:
-                        venstreklik åbner profilen.
-                    */
-                    start11OpenSquadPlayerModal(
-                        player.id
-                    );
-
-                }
-            );
-
-
-            list.appendChild(
-                row
-            );
-
-        }
-    );
-
-
-    if (typeof window.s25OrganizeSquadRows === "function") {
-        window.s25OrganizeSquadRows();
-    }
-
+    players.forEach(player => {
+        const role = start11GetPlayerRole(player);
+        const selectionLabel = role === "starting" ? "STARTER" : role === "substitute" ? "BÆNK" : (player.selected ? "UDTAGET" : start11StatusLabel(player.status));
+        const selectionClass = (role === "starting" || role === "substitute" || player.selected) ? "available" : (player.status || "available");
+        const card = document.createElement("article");
+        card.className = "start11-player-card" + (player.selected ? " is-selected" : "");
+        card.dataset.playerId = player.id;
+        const avatar = player.photo
+            ? `<img class="start11-player-photo" src="${String(player.photo).replace(/"/g,"&quot;")}" alt="Spillerbillede af ${start11Escape(player.name)}">`
+            : `<div class="start11-player-photo-placeholder" aria-label="Intet spillerbillede"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></svg></div>`;
+        card.innerHTML = `
+          <div class="start11-player-card-top"><span class="start11-player-number">${start11Escape(player.number || "—")}</span><button class="start11-player-more" type="button" aria-label="Rediger ${start11Escape(player.name)}" title="Rediger spiller">⋮</button></div>
+          <button class="start11-player-avatar-button" type="button" aria-label="Åbn spillerprofil for ${start11Escape(player.name)}">${avatar}</button>
+          <div class="start11-player-card-name">${start11Escape(player.name)}</div>
+          <div class="start11-player-card-position">${start11Escape(player.position || "—")}</div>
+          <span class="start11-player-card-status ${start11Escape(selectionClass)}">${start11Escape(selectionLabel)}</span>`;
+        const openProfile = () => start11OpenSquadPlayerModal(player.id);
+        card.querySelector(".start11-player-more")?.addEventListener("click", e => { e.stopPropagation(); openProfile(); });
+        card.querySelector(".start11-player-avatar-button")?.addEventListener("click", e => { e.stopPropagation(); openProfile(); });
+        card.addEventListener("click", openProfile);
+        list.appendChild(card);
+    });
+    if (typeof window.s25OrganizeSquadRows === "function") window.s25OrganizeSquadRows();
 }
 
 
@@ -6909,4 +6768,97 @@ if (
     }else{
         bind();
     }
+})();
+
+
+/* =========================================================
+   START11 PLAYER CARDS + OPTIONAL PLAYER PHOTO
+   Photo is resized before storage to keep browser storage safe.
+========================================================= */
+function start11SetSquadPhotoPreview(preview, data) {
+    if (!preview) return;
+    if (data) {
+        preview.innerHTML = `<img src="${String(data).replace(/"/g,"&quot;")}" alt="Forhåndsvisning af spillerbillede">`;
+        preview.classList.add("has-photo");
+    } else {
+        preview.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></svg><span>Intet billede valgt</span>`;
+        preview.classList.remove("has-photo");
+    }
+}
+(function start11InstallPlayerCardsAndPhoto(){
+    if (window.__START11_PLAYER_CARDS_PHOTO__) return;
+    window.__START11_PLAYER_CARDS_PHOTO__ = true;
+    const style = document.createElement("style");
+    style.id = "start11PlayerCardsPhotoStyles";
+    style.textContent = `
+      #s41PlayersView .s41-native-page-host{width:100%}
+      #s41PlayersView #squadSection{width:100%;max-width:none}
+      #s41PlayersView .full-squad-card{padding:18px;background:linear-gradient(145deg,rgba(7,24,15,.98),rgba(2,11,7,.98));border:1px solid rgba(95,255,93,.15);border-radius:16px;box-shadow:0 16px 45px rgba(0,0,0,.18)}
+      #s41PlayersView .start11-card-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+      #s41PlayersView .start11-card-heading h2{font-size:22px;letter-spacing:-.03em}
+      #s41PlayersView #squadSearchInput{width:100%;min-height:46px;border-radius:10px;margin-bottom:10px}
+      #s41PlayersView .squad-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+      #s41PlayersView .squad-filter-row select{min-height:44px;border-radius:10px}
+      #s41PlayersView .full-squad-table-header{display:none!important}
+      #s41PlayersView #fullSquadList.start11-player-card-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;overflow:visible;padding:0}
+      #s41PlayersView .start11-player-card{position:relative;min-width:0;min-height:180px;padding:14px;border:1px solid rgba(94,255,108,.15);border-radius:13px;background:linear-gradient(145deg,rgba(8,30,18,.92),rgba(2,15,9,.96));cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease;display:flex;flex-direction:column;align-items:flex-start}
+      #s41PlayersView .start11-player-card:hover{transform:translateY(-2px);border-color:rgba(94,255,108,.42);background:linear-gradient(145deg,rgba(10,39,22,.98),rgba(3,18,10,.98))}
+      #s41PlayersView .start11-player-card-top{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+      #s41PlayersView .start11-player-number{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 8px;border-radius:50%;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.055);font-size:13px;font-weight:750;color:#e8f5ec}
+      #s41PlayersView .start11-player-more{border:0;background:transparent;color:#b8c9bf;font-size:23px;line-height:1;padding:0 2px;cursor:pointer}
+      #s41PlayersView .start11-player-avatar-button{align-self:center;border:0;padding:0;background:transparent;cursor:pointer;margin:-23px 0 9px}
+      #s41PlayersView .start11-player-photo,#s41PlayersView .start11-player-photo-placeholder{display:flex;width:58px;height:58px;border-radius:50%;object-fit:cover;align-items:center;justify-content:center;border:2px solid rgba(200,255,210,.17);background:#17251f;overflow:hidden}
+      #s41PlayersView .start11-player-photo-placeholder svg{width:29px;height:29px;fill:#7f9388;stroke:#7f9388;stroke-width:1.2}
+      #s41PlayersView .start11-player-card-name{font-size:14px;font-weight:750;line-height:1.25;color:#f2f7f3;overflow-wrap:anywhere;margin-top:0}
+      #s41PlayersView .start11-player-card-position{font-size:12px;color:#9baea3;margin-top:5px;margin-bottom:10px}
+      #s41PlayersView .start11-player-card-status{display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.01em;background:rgba(91,255,85,.13);color:#8bff76;white-space:nowrap}
+      #s41PlayersView .start11-player-card-status.available{background:linear-gradient(90deg,#0ca849,#078737);color:#fff}
+      #s41PlayersView .start11-player-card-status.unavailable,#s41PlayersView .start11-player-card-status.injured{background:#303a35;color:#e3e9e5}
+      #s41PlayersView .start11-player-empty{grid-column:1/-1;min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#a6b8ad;border:1px dashed rgba(96,255,100,.2);border-radius:12px}
+      #s41PlayersView .start11-player-empty-icon{font-size:32px;color:#6dff61}
+      #s41PlayersView #addFullSquadPlayerButton{width:100%;min-height:48px;margin-top:16px;border-radius:10px;font-weight:800}
+      .start11-photo-field{grid-column:1/-1;display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:center;padding:14px;border:1px solid rgba(100,255,100,.16);border-radius:12px;background:rgba(0,0,0,.13);margin:0 0 14px}
+      .start11-photo-preview{width:88px;height:88px;border-radius:50%;background:#17251f;border:1px solid rgba(150,255,160,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;overflow:hidden;color:#92a79a;font-size:10px;text-align:center;padding:8px}
+      .start11-photo-preview svg{width:30px;height:30px;fill:#7f9388;stroke:#7f9388;stroke-width:1.2}
+      .start11-photo-preview img{width:100%;height:100%;object-fit:cover}
+      .start11-photo-actions{display:flex;flex-direction:column;gap:8px;min-width:0}.start11-photo-actions strong{font-size:13px;color:#f0f7f1}.start11-photo-actions small{color:#93a79a;font-size:11px;line-height:1.45}.start11-photo-actions input{width:100%;font-size:12px}
+      @media(max-width:1100px){#s41PlayersView #fullSquadList.start11-player-card-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+      @media(max-width:760px){#s41PlayersView #fullSquadList.start11-player-card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#s41PlayersView .start11-player-card{padding:11px;min-height:172px}#s41PlayersView .squad-filter-row{grid-template-columns:1fr}.start11-photo-field{grid-template-columns:72px minmax(0,1fr)}.start11-photo-preview{width:68px;height:68px}}
+    `;
+    document.head.appendChild(style);
+    function mountPhotoField(){
+      const form = document.querySelector("#squadPlayerModal .squad-player-form-grid");
+      if(!form || document.getElementById("squadPlayerPhotoData")) return;
+      const field = document.createElement("div");
+      field.className = "start11-photo-field";
+      field.innerHTML = `<div id="squadPlayerPhotoPreview" class="start11-photo-preview"></div><div class="start11-photo-actions"><strong>Spillerbillede</strong><small>Valgfrit. Upload et portræt, eller lad standardikonet blive vist. Billedet tilpasses automatisk.</small><input id="squadPlayerPhotoFile" type="file" accept="image/*"><input id="squadPlayerPhotoData" type="hidden" value=""><button id="squadPlayerPhotoRemove" type="button" class="start11-text-button">Fjern billede</button></div>`;
+      form.appendChild(field);
+      const editingPlayer = (typeof start11EditingSquadPlayerId !== "undefined" && start11EditingSquadPlayerId) ? start11FullSquad.find(p => p.id === start11EditingSquadPlayerId) : null;
+      const initialPhoto = editingPlayer?.photo || "";
+      document.getElementById("squadPlayerPhotoData").value = initialPhoto;
+      start11SetSquadPhotoPreview(document.getElementById("squadPlayerPhotoPreview"), initialPhoto);
+      document.getElementById("squadPlayerPhotoFile")?.addEventListener("change", async e=>{
+        const file=e.target.files?.[0]; if(!file) return;
+        if(!file.type.startsWith("image/")){ if(typeof visNotification==="function")visNotification("Vælg en billedfil."); return; }
+        if(file.size>12*1024*1024){ if(typeof visNotification==="function")visNotification("Billedet skal være under 12 MB."); e.target.value=""; return; }
+        try{
+          const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file)});
+          const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=data});
+          const canvas=document.createElement("canvas"); const size=360; const scale=Math.min(1,size/Math.max(img.width,img.height)); canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
+          canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+          const compressed=canvas.toDataURL("image/jpeg",0.78);
+          document.getElementById("squadPlayerPhotoData").value=compressed;
+          start11SetSquadPhotoPreview(document.getElementById("squadPlayerPhotoPreview"),compressed);
+        }catch(err){if(typeof visNotification==="function")visNotification("Billedet kunne ikke indlæses.");}
+      });
+      document.getElementById("squadPlayerPhotoRemove")?.addEventListener("click",()=>{
+        const hidden=document.getElementById("squadPlayerPhotoData");if(hidden)hidden.value="";
+        const input=document.getElementById("squadPlayerPhotoFile");if(input)input.value="";
+        start11SetSquadPhotoPreview(document.getElementById("squadPlayerPhotoPreview"),"");
+      });
+    }
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(mountPhotoField,100),{once:true});else setTimeout(mountPhotoField,100);
+    const modal=document.getElementById("squadPlayerModal");
+    if(modal)new MutationObserver(()=>{if(modal.style.display==="flex")mountPhotoField()}).observe(modal,{attributes:true,attributeFilter:["style"]});
+    setTimeout(mountPhotoField,800);
 })();
