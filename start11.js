@@ -15371,39 +15371,39 @@ function start11SetSquadPhotoPreview(preview, data) {
     const style = document.createElement("style");
     style.id = "start11PlayerCardsPhotoStyles";
     style.textContent = `
-      #s41PlayersView .s41-native-page-host{width:100%}
-      #s41PlayersView #squadSection{width:100%;max-width:none}
-      #s41PlayersView .full-squad-card{padding:18px;background:linear-gradient(145deg,rgba(7,24,15,.98),rgba(2,11,7,.98));border:1px solid rgba(95,255,93,.15);border-radius:16px;box-shadow:0 16px 45px rgba(0,0,0,.18)}
-      #s41PlayersView .start11-card-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-      #s41PlayersView .start11-card-heading h2{font-size:22px;letter-spacing:-.03em}
-      #s41PlayersView #squadSearchInput{width:100%;min-height:46px;border-radius:10px;margin-bottom:10px}
-      #s41PlayersView .squad-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-      #s41PlayersView .squad-filter-row select{min-height:44px;border-radius:10px}
-      #s41PlayersView .full-squad-table-header{display:none!important}
-      #s41PlayersView #fullSquadList.start11-player-card-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;overflow:visible;padding:0}
-      #s41PlayersView .start11-player-card{position:relative;min-width:0;min-height:180px;padding:14px;border:1px solid rgba(94,255,108,.15);border-radius:13px;background:linear-gradient(145deg,rgba(8,30,18,.92),rgba(2,15,9,.96));cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease;display:flex;flex-direction:column;align-items:flex-start}
-      #s41PlayersView .start11-player-card:hover{transform:translateY(-2px);border-color:rgba(94,255,108,.42);background:linear-gradient(145deg,rgba(10,39,22,.98),rgba(3,18,10,.98))}
-      #s41PlayersView .start11-player-card-top{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
-      #s41PlayersView .start11-player-number{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 8px;border-radius:50%;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.055);font-size:13px;font-weight:750;color:#e8f5ec}
-      #s41PlayersView .start11-player-more{border:0;background:transparent;color:#b8c9bf;font-size:23px;line-height:1;padding:0 2px;cursor:pointer}
-      #s41PlayersView .start11-player-avatar-button{align-self:center;border:0;padding:0;background:transparent;cursor:pointer;margin:-23px 0 9px}
-      #s41PlayersView .start11-player-photo,#s41PlayersView .start11-player-photo-placeholder{display:flex;width:58px;height:58px;border-radius:50%;object-fit:cover;align-items:center;justify-content:center;border:2px solid rgba(200,255,210,.17);background:#17251f;overflow:hidden}
-      #s41PlayersView .start11-player-photo-placeholder svg{width:29px;height:29px;fill:#7f9388;stroke:#7f9388;stroke-width:1.2}
-      #s41PlayersView .start11-player-card-name{font-size:14px;font-weight:750;line-height:1.25;color:#f2f7f3;overflow-wrap:anywhere;margin-top:0}
-      #s41PlayersView .start11-player-card-position{font-size:12px;color:#9baea3;margin-top:5px;margin-bottom:10px}
-      #s41PlayersView .start11-player-card-status{display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.01em;background:rgba(91,255,85,.13);color:#8bff76;white-space:nowrap}
-      #s41PlayersView .start11-player-card-status.available{background:linear-gradient(90deg,#0ca849,#078737);color:#fff}
-      #s41PlayersView .start11-player-card-status.unavailable,#s41PlayersView .start11-player-card-status.injured{background:#303a35;color:#e3e9e5}
-      #s41PlayersView .start11-player-empty{grid-column:1/-1;min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#a6b8ad;border:1px dashed rgba(96,255,100,.2);border-radius:12px}
-      #s41PlayersView .start11-player-empty-icon{font-size:32px;color:#6dff61}
-      #s41PlayersView #addFullSquadPlayerButton{width:100%;min-height:48px;margin-top:16px;border-radius:10px;font-weight:800}
+      .s41-native-page-host{width:100%}
+      #squadSection{width:100%;max-width:none}
+      .full-squad-card{padding:18px;background:linear-gradient(145deg,rgba(7,24,15,.98),rgba(2,11,7,.98));border:1px solid rgba(95,255,93,.15);border-radius:16px;box-shadow:0 16px 45px rgba(0,0,0,.18)}
+      .start11-card-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+      .start11-card-heading h2{font-size:22px;letter-spacing:-.03em}
+      #squadSearchInput{width:100%;min-height:46px;border-radius:10px;margin-bottom:10px}
+      .squad-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+      .squad-filter-row select{min-height:44px;border-radius:10px}
+      .full-squad-table-header{display:none!important}
+      #fullSquadList.start11-player-card-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;overflow:visible;padding:0}
+      .start11-player-card{position:relative;min-width:0;min-height:180px;padding:14px;border:1px solid rgba(94,255,108,.15);border-radius:13px;background:linear-gradient(145deg,rgba(8,30,18,.92),rgba(2,15,9,.96));cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease;display:flex;flex-direction:column;align-items:flex-start}
+      .start11-player-card:hover{transform:translateY(-2px);border-color:rgba(94,255,108,.42);background:linear-gradient(145deg,rgba(10,39,22,.98),rgba(3,18,10,.98))}
+      .start11-player-card-top{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+      .start11-player-number{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 8px;border-radius:50%;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.055);font-size:13px;font-weight:750;color:#e8f5ec}
+      .start11-player-more{border:0;background:transparent;color:#b8c9bf;font-size:23px;line-height:1;padding:0 2px;cursor:pointer}
+      .start11-player-avatar-button{align-self:center;border:0;padding:0;background:transparent;cursor:pointer;margin:-23px 0 9px}
+      .start11-player-photo,.start11-player-photo-placeholder{display:flex;width:58px;height:58px;border-radius:50%;object-fit:cover;align-items:center;justify-content:center;border:2px solid rgba(200,255,210,.17);background:#17251f;overflow:hidden}
+      .start11-player-photo-placeholder svg{width:29px;height:29px;fill:#7f9388;stroke:#7f9388;stroke-width:1.2}
+      .start11-player-card-name{font-size:14px;font-weight:750;line-height:1.25;color:#f2f7f3;overflow-wrap:anywhere;margin-top:0}
+      .start11-player-card-position{font-size:12px;color:#9baea3;margin-top:5px;margin-bottom:10px}
+      .start11-player-card-status{display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.01em;background:rgba(91,255,85,.13);color:#8bff76;white-space:nowrap}
+      .start11-player-card-status.available{background:linear-gradient(90deg,#0ca849,#078737);color:#fff}
+      .start11-player-card-status.unavailable,.start11-player-card-status.injured{background:#303a35;color:#e3e9e5}
+      .start11-player-empty{grid-column:1/-1;min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#a6b8ad;border:1px dashed rgba(96,255,100,.2);border-radius:12px}
+      .start11-player-empty-icon{font-size:32px;color:#6dff61}
+      #addFullSquadPlayerButton{width:100%;min-height:48px;margin-top:16px;border-radius:10px;font-weight:800}
       .start11-photo-field{grid-column:1/-1;display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:center;padding:14px;border:1px solid rgba(100,255,100,.16);border-radius:12px;background:rgba(0,0,0,.13);margin:0 0 14px}
       .start11-photo-preview{width:88px;height:88px;border-radius:50%;background:#17251f;border:1px solid rgba(150,255,160,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;overflow:hidden;color:#92a79a;font-size:10px;text-align:center;padding:8px}
       .start11-photo-preview svg{width:30px;height:30px;fill:#7f9388;stroke:#7f9388;stroke-width:1.2}
       .start11-photo-preview img{width:100%;height:100%;object-fit:cover}
       .start11-photo-actions{display:flex;flex-direction:column;gap:8px;min-width:0}.start11-photo-actions strong{font-size:13px;color:#f0f7f1}.start11-photo-actions small{color:#93a79a;font-size:11px;line-height:1.45}.start11-photo-actions input{width:100%;font-size:12px}
-      @media(max-width:1100px){#s41PlayersView #fullSquadList.start11-player-card-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-      @media(max-width:760px){#s41PlayersView #fullSquadList.start11-player-card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#s41PlayersView .start11-player-card{padding:11px;min-height:172px}#s41PlayersView .squad-filter-row{grid-template-columns:1fr}.start11-photo-field{grid-template-columns:72px minmax(0,1fr)}.start11-photo-preview{width:68px;height:68px}}
+      @media(max-width:1100px){#fullSquadList.start11-player-card-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+      @media(max-width:760px){#fullSquadList.start11-player-card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.start11-player-card{padding:11px;min-height:172px}.squad-filter-row{grid-template-columns:1fr}.start11-photo-field{grid-template-columns:72px minmax(0,1fr)}.start11-photo-preview{width:68px;height:68px}}
     `;
     document.head.appendChild(style);
     function mountPhotoField(){
