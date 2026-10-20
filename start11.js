@@ -8434,7 +8434,18 @@ const Q=s=>document.querySelector(s);
 const esc=v=>typeof escapeHTML==="function"?escapeHTML(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const uid=()=>`v73_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
 const blocks=()=>{if(!Array.isArray(kampplan.documentBlocks))kampplan.documentBlocks=[];return kampplan.documentBlocks};
-const save=()=>{try{if(typeof gemAlt==="function")gemAlt()}catch(_){}};
+const save=()=>{
+ try{if(typeof gemAlt==="function")gemAlt()}catch(_){}
+ /* V73 cloud-persistence fix: the document builder used to rely only on
+    the debounced/local save path. Explicitly queue the active team's cloud
+    save too, so documentBlocks travel with kampplan to the signed-in profile. */
+ try{
+  if(typeof scheduleCloudSave==="function")scheduleCloudSave();
+  if(typeof saveCloudNow==="function" && typeof cloudReady!=="undefined" && cloudReady && typeof session!=="undefined" && session && typeof activeTeamId!=="undefined" && activeTeamId){
+   saveCloudNow();
+  }
+ }catch(_){}
+};
 
 function clips(){
  try{
@@ -32345,9 +32356,9 @@ function s13Open(){s13Modal();s13SyncAllMatchPlayerNotes();s13Tab="dashboard";s1
 function s13Close(){const m=document.getElementById("s13modal");if(m)m.style.display="none"}
 function s13Render(){
  const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
- if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · træning, kampanalyse og spillerudvikling</div></div><div><button id="s13quick" class="s13btn primary">+ TRÆNING</button> <button id="s13close" class="s13btn">LUK</button></div>`;
- document.getElementById("s13close")?.addEventListener("click",s13Close);document.getElementById("s13quick")?.addEventListener("click",()=>{s13Tab="training";s13Session=null;s13Render();setTimeout(s13EditSession,0)});
- const list=[["dashboard","DASHBOARD"],["training","TRÆNING"],["exercises","ØVELSESBANK"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["matches","KAMPANALYSE"],["matrix","UDVIKLING"],["videos","VIDEOARKIV"],["meetings","SPILLERSAMTALER"]];
+ if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · kampanalyse og spillerudvikling</div></div><div><button id="s13close" class="s13btn">LUK</button></div>`;
+ document.getElementById("s13close")?.addEventListener("click",s13Close);
+ const list=[["dashboard","DASHBOARD"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["matches","KAMPANALYSE"],["matrix","UDVIKLING"],["videos","VIDEOARKIV"],["meetings","SPILLERSAMTALER"]];
  if(tabs){tabs.innerHTML=list.map(([id,l])=>`<button class="s13tab ${s13Tab===id?"active":""}" data-t="${id}">${l}</button>`).join("");tabs.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{s13Tab=b.dataset.t;s13Render()})}
  s13RenderContent();s13Home()
 }
@@ -51564,11 +51575,10 @@ function s20LineChart(points){
 s13Render=function(){
   const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
   if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · coach operating system</div></div>
-  <div><button id="s13quick" class="s13btn primary">+ TRÆNING</button> <button id="s20quicklive" class="s13btn">LIVE KAMP</button> <button id="s13close" class="s13btn">LUK</button></div>`;
+  <div><button id="s20quicklive" class="s13btn">LIVE KAMP</button> <button id="s13close" class="s13btn">LUK</button></div>`;
   document.getElementById("s13close")?.addEventListener("click",s13Close);
-  document.getElementById("s13quick")?.addEventListener("click",()=>{s13Tab="training";s13Session=null;s13Render();setTimeout(s13EditSession,0)});
   document.getElementById("s20quicklive")?.addEventListener("click",()=>{s13Tab="live";s13Render()});
-  const list=[["dashboard","DASHBOARD"],["training","TRÆNING"],["exercises","ØVELSESBANK"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["live","LIVE KAMP"],["matches","KAMPANALYSE"],["season","SÆSONPLAN"],["scouting","SCOUTING"],["matrix","UDVIKLING"],["videos","VIDEO"],["meetings","SAMTALER"],["intelligence","INTELLIGENCE"]];
+  const list=[["dashboard","DASHBOARD"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["live","LIVE KAMP"],["matches","KAMPANALYSE"],["season","SÆSONPLAN"],["scouting","SCOUTING"],["matrix","UDVIKLING"],["videos","VIDEO"],["meetings","SAMTALER"],["intelligence","INTELLIGENCE"]];
   if(tabs){tabs.innerHTML=list.map(([id,l])=>`<button class="s13tab ${s13Tab===id?"active":""}" data-t="${id}">${l}</button>`).join("");tabs.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{s13Tab=b.dataset.t;s13Render()})}
   s13RenderContent();s13Home();
 };
@@ -64574,14 +64584,34 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
 
     function installSafetyControls(target){
         if(!target || target.querySelector("#s11ExerciseSafetyTools")) return;
-        const grid=target.querySelector(".s13grid"); if(!grid) return;
-        const bar=document.createElement("section"); bar.id="s11ExerciseSafetyTools"; bar.className="s13panel"; bar.style.marginBottom="12px";
-        bar.innerHTML=`<div class="s13head" style="margin-bottom:7px"><div><strong>SIKKERHEDSKOPI · ØVELSESBANK</strong><div class="s13mut">Download en kopi eller gendan en tidligere skyversion.</div></div></div><div style="display:flex;flex-wrap:wrap;gap:7px"><button type="button" id="s11ExerciseExport" class="s13btn primary">EKSPORTÉR BANK</button><button type="button" id="s11ExerciseImport" class="s13btn">IMPORTÉR BANK</button><button type="button" id="s11ExerciseBackupNow" class="s13btn">SIKKERHEDSKOPI NU</button><button type="button" id="s11ExerciseRestore" class="s13btn">GENDAN SKYBACKUP</button><button type="button" id="s11ExerciseRestoreLocal" class="s13btn">GENDAN LOKAL BACKUP</button><button type="button" id="s11ExerciseClear" class="s13btn">TØM BANK</button><input type="file" id="s11ExerciseImportFile" accept=".json,application/json" style="display:none"></div><div class="s13mut" style="margin-top:7px">Cloud-backup kræver, at backup-tabellen er oprettet i Supabase. Eksport virker også uden den.</div>`;
-        grid.parentElement.insertBefore(bar,grid);
+        const bar=document.createElement("section");
+        bar.id="s11ExerciseSafetyTools"; bar.className="s13panel";
+        bar.style.marginBottom="12px"; bar.style.padding="10px 14px";
+        bar.innerHTML=`<details id="s11ExerciseSafetyDetails"><summary style="cursor:pointer;display:flex;align-items:center;gap:9px;list-style:none;font-weight:700"><span aria-hidden="true" style="color:var(--accent,#72f34b);font-size:18px">↻</span><span>Sikkerhedskopi og gendannelse</span><span class="s13mut" style="font-weight:400;margin-left:4px">Automatisk backup er aktiv</span></summary><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px"><button type="button" id="s11ExerciseExport" class="s13btn">EKSPORTÉR BANK</button><button type="button" id="s11ExerciseImport" class="s13btn">IMPORTÉR BANK</button><button type="button" id="s11ExerciseBackupNow" class="s13btn primary">SIKKERHEDSKOPI NU</button><button type="button" id="s11ExerciseRestore" class="s13btn">GENDAN SKYBACKUP</button><button type="button" id="s11ExerciseRestoreLocal" class="s13btn">GENDAN LOKAL BACKUP</button><button type="button" id="s11ExerciseClear" class="s13btn">TØM BANK</button><input type="file" id="s11ExerciseImportFile" accept=".json,application/json" style="display:none"></div><div class="s13mut" style="margin-top:8px">START11 laver automatisk en daglig backup, når banken er indlæst, der er øvelser, og du er logget ind. Du kan også lave en backup manuelt her.</div><div id="s11ExerciseBackupStatus" role="status" aria-live="polite" class="s13mut" style="margin-top:8px"></div></details>`;
+        // Sæt bjælken ind både ved klassisk grid og ved nyere træningslayouts.
+        const grid=target.querySelector(".s13grid");
+        if(grid && grid.parentElement) grid.parentElement.insertBefore(bar,grid);
+        else target.insertBefore(bar,target.firstChild);
         bar.querySelector("#s11ExerciseExport").onclick=exportExerciseLibrary;
         bar.querySelector("#s11ExerciseImport").onclick=()=>bar.querySelector("#s11ExerciseImportFile").click();
         bar.querySelector("#s11ExerciseImportFile").onchange=async e=>{const file=e.target.files?.[0];e.target.value="";await importExerciseLibrary(file);};
-        bar.querySelector("#s11ExerciseBackupNow").onclick=async()=>{const lib=currentLibrary();addLocalBackup(lib,"Manuel sikkerhedskopi");if(!currentUserId()){safetyNotice("Lokal sikkerhedskopi gemt. Log ind for cloud-backup.");return;}try{await createCloudBackup(lib,"Manuel sikkerhedskopi");safetyNotice("Sikkerhedskopien er gemt i skyen.");}catch(error){console.error(error);alert("Cloud-backup fejlede. Kontrollér backup-tabellen i Supabase.");}};
+        const backupButton=bar.querySelector("#s11ExerciseBackupNow");
+        const backupStatus=bar.querySelector("#s11ExerciseBackupStatus");
+        backupButton.onclick=async()=>{
+            if(backupButton.dataset.busy==="1") return;
+            backupButton.dataset.busy="1"; backupButton.disabled=true;
+            const oldLabel=backupButton.textContent; backupButton.textContent="GEMMER BACKUP...";
+            const showStatus=(message,isError=false)=>{backupStatus.textContent=message;backupStatus.style.color=isError?"#ff8b8b":"var(--text,#d9f7d0)";};
+            try{
+                const lib=currentLibrary();
+                if(!libraryHasData(lib)){showStatus("Backup ikke oprettet: øvelsesbanken ser tom ud. Intet er ændret.",true);return;}
+                addLocalBackup(lib,"Manuel sikkerhedskopi");
+                if(!currentUserId()){showStatus("Lokal sikkerhedskopi forsøgt. Log ind for at gemme en cloud-backup.");return;}
+                await createCloudBackup(lib,"Manuel sikkerhedskopi");
+                showStatus("Cloud-backup gemt. Øvelser: "+lib.exercises.length+".");
+            }catch(error){console.error("START11: Manuel backup fejlede.",error);showStatus("Backup fejlede: "+(error?.message||String(error)),true);}
+            finally{backupButton.disabled=false;backupButton.textContent=oldLabel;delete backupButton.dataset.busy;}
+        };
         bar.querySelector("#s11ExerciseRestore").onclick=restoreCloudBackup;
         bar.querySelector("#s11ExerciseRestoreLocal").onclick=restoreLocalBackup;
         bar.querySelector("#s11ExerciseClear").onclick=clearExerciseLibrarySafely;
@@ -64641,6 +64671,31 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
        2) ellers den øvelsesbank der allerede ligger i cloud-holdet
        Dermed migreres eksisterende øvelser automatisk.
     */
+    // Daglig sikkerhedskopi: højst én cloud-backup pr. bruger pr. kalenderdag
+    // på denne browser. En backup laves kun for en ikke-tom, indlæst bank.
+    async function createDailyExerciseBackup(){
+        if(!profileReady) return;
+        const lib = currentLibrary();
+        if(!libraryHasData(lib)) return;
+        const uid = currentUserId();
+        const day = new Date().toISOString().slice(0,10);
+        const localKey = PROFILE_KEY_PREFIX + "dailyBackup." + (uid || "local");
+        let lastDay = "";
+        try { lastDay = localStorage.getItem(localKey) || ""; } catch {}
+        if(lastDay === day) return;
+
+        // Lokal backup først; denne kan stadig hjælpe, hvis cloud ikke er tilgængelig.
+        addLocalBackup(lib, "Automatisk daglig sikkerhedskopi");
+        if(!uid) return;
+        try {
+            await createCloudBackup(lib, "Automatisk daglig sikkerhedskopi");
+            try { localStorage.setItem(localKey, day); } catch {}
+            console.info("START11: Daglig øvelsesbackup gemt i skyen.");
+        } catch(error) {
+            console.warn("START11: Daglig cloud-backup fejlede; den aktive øvelsesbank er ikke ændret.", error);
+        }
+    }
+
     function initializeProfileLibrary(){
         const currentUid = (typeof session !== "undefined" && session?.user?.id)
             ? String(session.user.id)
@@ -64686,6 +64741,8 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
         profileOwnerId = currentUid;
         profileReady = true;
         syncLibraryToCloud();
+        // Giv login/cloud-team indlæsningen et øjeblik til at falde på plads.
+        setTimeout(() => { createDailyExerciseBackup(); }, 1800);
     }
 
     /*
@@ -65264,6 +65321,18 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
         document.addEventListener("DOMContentLoaded", () => setTimeout(init, 3300));
     }else{
         setTimeout(init, 3300);
+    }
+
+    // V2 exercise bank uses #s45ExerciseBankView, not the legacy #s13content.
+    // Install the same backup controls directly in the visible modern bank.
+    const installModernBankBackupControls = () => {
+        const modernBankHost = document.querySelector("#s45ExerciseBankView .s45-bank-main");
+        if(modernBankHost) installSafetyControls(modernBankHost);
+    };
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", installModernBankBackupControls, {once:true});
+    }else{
+        installModernBankBackupControls();
     }
 
 })();
@@ -66937,6 +67006,7 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
                   <div class="s56-editor-plan-head"><div><span>TRÆNINGSFORLØB</span><strong>Byg træningen med øvelser fra banken</strong></div><button id="s56AddBlock" type="button">＋ Tilføj øvelse</button></div>
                   <div class="s56-editor-blocks">${blocks.map((b,i)=>`<article class="s56-edit-block" data-s56-block="${esc(b.id)}">
                     <span class="s56-edit-index">${i+1}</span>
+                    <div class="s56-edit-preview" aria-label="Forhåndsvisning af øvelse">${b.exerciseId&&ex56(b.exerciseId)?svgFor(ex56(b.exerciseId)):'<div class="s56-edit-preview-empty"><span>⚽</span><small>Øvelsesbillede</small></div>'}</div>
                     <div class="s56-edit-fields">
                       <select data-f="exerciseId"><option value="">Manuel øvelse</option>${exercises().map(e=>`<option value="${esc(e.id)}" ${String(b.exerciseId)===String(e.id)?"selected":""}>${esc(e.title||"Øvelse")}${e.folderId?` · ${esc(folderPath(e.folderId))}`:""}</option>`).join("")}</select>
                       <input data-f="title" value="${esc(b.title||"")}" placeholder="Titel">
@@ -67013,7 +67083,39 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
           .s56-editor-layout{min-height:0;display:grid;grid-template-columns:320px 1fr}.s56-editor-meta{padding:18px;border-right:1px solid rgba(255,255,255,.07);overflow:auto}.s56-editor-meta label{display:grid;gap:5px;margin-bottom:12px;color:#829087;font-size:7px;font-weight:900}.s56-editor-meta input,.s56-editor-meta textarea,.s56-edit-fields input,.s56-edit-fields textarea,.s56-edit-fields select,.s56-duration input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#020805;color:#fff;font:inherit;font-size:8px;outline:none}.s56-editor-meta input{height:38px;padding:0 10px}.s56-editor-meta textarea{height:100px;padding:10px;resize:vertical}.s56-editor-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.s56-editor-summary{display:grid;grid-template-columns:1fr auto;gap:7px;padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:7px;color:#829087;font-size:7px}.s56-editor-summary strong{color:#70ed55}
           .s56-editor-plan{min-width:0;padding:18px;overflow:hidden;display:grid;grid-template-rows:auto 1fr}.s56-editor-plan-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.s56-editor-plan-head strong{display:block;margin-top:4px;font-size:10px}.s56-editor-plan-head button{height:34px;padding:0 12px;border:1px solid rgba(101,237,77,.25);border-radius:5px;background:rgba(101,237,77,.06);color:#72ed56;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-editor-blocks{overflow:auto;padding-right:4px}.s56-edit-block{display:grid;grid-template-columns:28px minmax(0,1fr) 70px 30px;gap:9px;align-items:start;padding:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:#061009}.s56-edit-index{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#203328;font-size:7px;font-weight:900}.s56-edit-fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}.s56-edit-fields select{grid-column:1/-1;height:34px;padding:0 8px}.s56-edit-fields input{height:34px;padding:0 8px}.s56-edit-fields textarea{height:34px;padding:8px;resize:vertical}.s56-duration{display:grid;gap:4px;color:#748179;font-size:6px;font-weight:900}.s56-duration input{height:34px;padding:0 7px}.s56-edit-block>[data-del]{width:28px;height:28px;border:1px solid rgba(255,91,82,.14);border-radius:5px;background:transparent;color:#d77b75;cursor:pointer}.s56-editor-empty{padding:50px;text-align:center;color:#718078;font-size:8px}
           .s56-editor>footer{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-top:1px solid rgba(255,255,255,.07)}.s56-editor>footer div{display:flex;gap:8px}.s56-editor>footer button{height:36px;padding:0 15px;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#07110a;color:#dce5de;font:inherit;font-size:7px;font-weight:900;cursor:pointer}.s56-editor>footer button.primary{border-color:#72ed54;background:#72ed54;color:#051006}.s56-editor>footer button.danger{color:#e1847d;border-color:rgba(230,92,83,.18);background:rgba(230,92,83,.035)}
-          @media(max-width:900px){.s56-session-card{grid-template-columns:100px 1fr}.s56-open-session{grid-column:1/-1}.s56-editor-layout{grid-template-columns:1fr}.s56-editor-meta{border-right:0;border-bottom:1px solid rgba(255,255,255,.07)}}
+          /* START11 training editor refresh — mockup 1 */
+          .s56-editor-overlay{padding:clamp(10px,2vw,28px);background:rgba(0,5,2,.82);backdrop-filter:blur(12px)}
+          .s56-editor{width:min(1440px,97vw);height:min(900px,94vh);border:1px solid rgba(103,238,79,.25);border-radius:14px;background:radial-gradient(ellipse at 75% 0%,rgba(17,61,32,.20),transparent 42%),#040d08;box-shadow:0 30px 100px rgba(0,0,0,.65)}
+          .s56-editor>header{padding:22px 26px;background:linear-gradient(90deg,rgba(7,22,13,.92),rgba(3,13,8,.88));}
+          .s56-editor>header span,.s56-editor-plan-head span{font-size:9px;letter-spacing:1.25px}
+          .s56-editor>header h2{font-size:clamp(21px,2vw,28px);letter-spacing:-.5px}
+          .s56-editor>header button{width:42px;height:42px;font-size:22px;transition:background .18s,border-color .18s}
+          .s56-editor>header button:hover{border-color:rgba(105,239,82,.45);background:#102117}
+          .s56-editor-layout{grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:12px;padding:12px;min-height:0}
+          .s56-editor-meta,.s56-editor-plan{border:1px solid rgba(255,255,255,.075);border-radius:11px;background:linear-gradient(150deg,rgba(9,24,15,.92),rgba(4,14,8,.94));}
+          .s56-editor-meta{padding:22px;}
+          .s56-editor-meta label{gap:7px;margin-bottom:17px;color:#a4b2a8;font-size:11px;font-weight:700}
+          .s56-editor-meta input,.s56-editor-meta textarea,.s56-edit-fields input,.s56-edit-fields textarea,.s56-edit-fields select,.s56-duration input{border-color:rgba(171,198,178,.16);border-radius:8px;background:#030a06;font-size:12px;transition:border-color .18s,box-shadow .18s}
+          .s56-editor-meta input{height:46px;padding:0 13px}.s56-editor-meta textarea{height:125px;padding:13px;line-height:1.5}
+          .s56-editor-meta input:focus,.s56-editor-meta textarea:focus,.s56-edit-fields input:focus,.s56-edit-fields textarea:focus,.s56-edit-fields select:focus,.s56-duration input:focus{border-color:rgba(109,239,82,.62);box-shadow:0 0 0 3px rgba(109,239,82,.07)}
+          .s56-editor-pair{gap:10px}.s56-editor-summary{grid-template-columns:1fr auto;gap:10px 12px;padding:16px;border-color:rgba(255,255,255,.09);border-radius:9px;background:rgba(255,255,255,.018);font-size:10px}.s56-editor-summary strong{font-size:12px}
+          .s56-editor-plan{padding:24px;grid-template-rows:auto minmax(0,1fr);min-width:0}
+          .s56-editor-plan-head{align-items:center;margin-bottom:20px;gap:14px}.s56-editor-plan-head strong{margin-top:7px;font-size:13px;color:#f0f6f1}
+          .s56-editor-plan-head button{height:42px;padding:0 17px;border:1px solid rgba(103,238,79,.32);border-radius:8px;background:rgba(95,226,70,.08);font-size:11px;white-space:nowrap;transition:background .18s,transform .18s}
+          .s56-editor-plan-head button:hover{background:rgba(95,226,70,.16);transform:translateY(-1px)}
+          .s56-editor-blocks{padding:2px 5px 10px 0;scrollbar-width:thin;scrollbar-color:#25452c transparent}
+          .s56-edit-block{grid-template-columns:34px 92px minmax(0,1fr) 76px 34px;gap:12px;padding:14px;margin-bottom:10px;border-color:rgba(255,255,255,.085);border-radius:10px;background:linear-gradient(120deg,rgba(10,27,16,.95),rgba(5,16,9,.96));}
+          .s56-edit-index{width:30px;height:30px;background:rgba(101,237,77,.12);color:#7af15e;font-size:11px}
+          .s56-edit-preview{height:82px;align-self:stretch;min-width:0;overflow:hidden;border:1px solid rgba(112,237,85,.13);border-radius:8px;background:#0b2915;display:grid;place-items:center}.s56-edit-preview>svg{display:block;width:100%;height:100%;object-fit:contain}.s56-edit-preview-empty{height:100%;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#7bed5b;background:radial-gradient(ellipse,rgba(76,180,67,.18),transparent 72%)}.s56-edit-preview-empty span{font-size:24px}.s56-edit-preview-empty small{font-size:8px;color:#82988a}
+          .s56-edit-fields{gap:8px}.s56-edit-fields select{height:42px;padding:0 11px}.s56-edit-fields input{height:40px;padding:0 11px}.s56-edit-fields textarea{height:40px;padding:10px;min-height:40px}.s56-duration{gap:6px;font-size:9px}.s56-duration input{height:40px;padding:0 9px}.s56-edit-block>[data-del]{width:32px;height:32px;border-radius:7px;font-size:18px}
+          .s56-editor-empty{position:relative;isolation:isolate;min-height:310px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:#a1afa5;font-size:13px;line-height:1.6;overflow:hidden}
+          .s56-editor-empty:before{content:"";position:absolute;z-index:-1;top:5%;left:10%;width:80%;height:52%;border:1px solid rgba(98,151,108,.15);border-radius:3px;transform:perspective(500px) rotateX(8deg);background:linear-gradient(90deg,transparent 49.7%,rgba(98,151,108,.15) 50%,transparent 50.3%),linear-gradient(transparent 49.7%,rgba(98,151,108,.12) 50%,transparent 50.3%),radial-gradient(ellipse,rgba(52,117,62,.20),transparent 68%);clip-path:polygon(18% 0,82% 0,100% 100%,0 100%)}
+          .s56-editor-empty:after{content:"";position:absolute;z-index:-1;top:15%;left:22%;width:56%;height:32%;border:1px dashed rgba(106,237,83,.28);border-radius:50%;transform:rotate(-12deg);}
+          .s56-editor>footer{padding:15px 20px;background:linear-gradient(90deg,rgba(5,17,9,.96),rgba(7,23,12,.96));}
+          .s56-editor>footer div{gap:10px}.s56-editor>footer button{height:42px;padding:0 20px;border-radius:8px;font-size:11px;transition:filter .18s,transform .18s}
+          .s56-editor>footer button:hover{filter:brightness(1.12);transform:translateY(-1px)}.s56-editor>footer button.primary{min-width:132px;box-shadow:0 4px 18px rgba(105,237,78,.12)}
+          @media(max-width:900px){.s56-editor-overlay{padding:8px}.s56-editor{width:100%;height:96vh}.s56-editor-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(260px,1fr);overflow:auto}.s56-editor-meta{border-right:1px solid rgba(255,255,255,.075);padding:16px}.s56-editor-plan{padding:16px;min-height:320px}.s56-editor-empty{min-height:240px}.s56-edit-block{grid-template-columns:30px 70px minmax(0,1fr) 62px 30px;gap:7px;padding:9px}.s56-edit-fields{grid-template-columns:1fr}.s56-edit-fields select{grid-column:auto}.s56-editor>footer{padding:10px}.s56-editor>footer button{padding:0 12px}}
+          @media(max-width:520px){.s56-edit-block{grid-template-columns:26px 58px minmax(0,1fr) 48px 26px;gap:5px;padding:7px}.s56-edit-preview{height:66px}.s56-editor>header{padding:14px}.s56-editor-layout{padding:8px;gap:8px}.s56-editor-meta{padding:13px}.s56-editor-pair{grid-template-columns:1fr 1fr}.s56-editor-plan-head{align-items:flex-start}.s56-editor-plan-head strong{font-size:11px}.s56-editor-plan-head button{height:38px;padding:0 10px;font-size:10px}.s56-editor>footer button{font-size:10px}.s56-editor>footer button.primary{min-width:0}}
         `;document.head.appendChild(style);
     }
 
@@ -67052,7 +67154,14 @@ window.START11_V24_PDF_BUILD = "V24.4-V73-A4-ORDER";
             if(btn.dataset.s45Bound)return;btn.dataset.s45Bound="1";
             btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();showOnlyBank();},true);
         });
-        $("s45NewExercise")?.addEventListener("click",newExercise);
+        $("s45NewExercise")?.addEventListener("click",e=>{
+            // The same button serves both modes. Handle it once so the legacy
+            // newExercise listener cannot open the exercise editor in plan mode.
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if(state.mode==="plans") openSessionEditor56("");
+            else newExercise();
+        },true);
         $("s45OpenOldBank")?.addEventListener("click",()=>openLegacy("exercises"));
         $("s45OpenOldPlanner")?.addEventListener("click",()=>{state.mode="plans";render();});
         $("s45ExerciseSearch")?.addEventListener("input",e=>{

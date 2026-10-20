@@ -70,9 +70,9 @@ function s13Open(){s13Modal();s13SyncAllMatchPlayerNotes();s13Tab="dashboard";s1
 function s13Close(){const m=document.getElementById("s13modal");if(m)m.style.display="none"}
 function s13Render(){
  const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
- if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · træning, kampanalyse og spillerudvikling</div></div><div><button id="s13quick" class="s13btn primary">+ TRÆNING</button> <button id="s13close" class="s13btn">LUK</button></div>`;
- document.getElementById("s13close")?.addEventListener("click",s13Close);document.getElementById("s13quick")?.addEventListener("click",()=>{s13Tab="training";s13Session=null;s13Render();setTimeout(s13EditSession,0)});
- const list=[["dashboard","DASHBOARD"],["training","TRÆNING"],["exercises","ØVELSESBANK"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["matches","KAMPANALYSE"],["matrix","UDVIKLING"],["videos","VIDEOARKIV"],["meetings","SPILLERSAMTALER"]];
+ if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · kampanalyse og spillerudvikling</div></div><div><button id="s13close" class="s13btn">LUK</button></div>`;
+ document.getElementById("s13close")?.addEventListener("click",s13Close);
+ const list=[["dashboard","DASHBOARD"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["matches","KAMPANALYSE"],["matrix","UDVIKLING"],["videos","VIDEOARKIV"],["meetings","SPILLERSAMTALER"]];
  if(tabs){tabs.innerHTML=list.map(([id,l])=>`<button class="s13tab ${s13Tab===id?"active":""}" data-t="${id}">${l}</button>`).join("");tabs.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{s13Tab=b.dataset.t;s13Render()})}
  s13RenderContent();s13Home()
 }

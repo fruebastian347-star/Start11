@@ -8434,7 +8434,18 @@ const Q=s=>document.querySelector(s);
 const esc=v=>typeof escapeHTML==="function"?escapeHTML(String(v??"")):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const uid=()=>`v73_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
 const blocks=()=>{if(!Array.isArray(kampplan.documentBlocks))kampplan.documentBlocks=[];return kampplan.documentBlocks};
-const save=()=>{try{if(typeof gemAlt==="function")gemAlt()}catch(_){}};
+const save=()=>{
+ try{if(typeof gemAlt==="function")gemAlt()}catch(_){}
+ /* V73 cloud-persistence fix: the document builder used to rely only on
+    the debounced/local save path. Explicitly queue the active team's cloud
+    save too, so documentBlocks travel with kampplan to the signed-in profile. */
+ try{
+  if(typeof scheduleCloudSave==="function")scheduleCloudSave();
+  if(typeof saveCloudNow==="function" && typeof cloudReady!=="undefined" && cloudReady && typeof session!=="undefined" && session && typeof activeTeamId!=="undefined" && activeTeamId){
+   saveCloudNow();
+  }
+ }catch(_){}
+};
 
 function clips(){
  try{

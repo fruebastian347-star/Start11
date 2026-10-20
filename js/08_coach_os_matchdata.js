@@ -110,11 +110,10 @@ function s20LineChart(points){
 s13Render=function(){
   const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
   if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · coach operating system</div></div>
-  <div><button id="s13quick" class="s13btn primary">+ TRÆNING</button> <button id="s20quicklive" class="s13btn">LIVE KAMP</button> <button id="s13close" class="s13btn">LUK</button></div>`;
+  <div><button id="s20quicklive" class="s13btn">LIVE KAMP</button> <button id="s13close" class="s13btn">LUK</button></div>`;
   document.getElementById("s13close")?.addEventListener("click",s13Close);
-  document.getElementById("s13quick")?.addEventListener("click",()=>{s13Tab="training";s13Session=null;s13Render();setTimeout(s13EditSession,0)});
   document.getElementById("s20quicklive")?.addEventListener("click",()=>{s13Tab="live";s13Render()});
-  const list=[["dashboard","DASHBOARD"],["training","TRÆNING"],["exercises","ØVELSESBANK"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["live","LIVE KAMP"],["matches","KAMPANALYSE"],["season","SÆSONPLAN"],["scouting","SCOUTING"],["matrix","UDVIKLING"],["videos","VIDEO"],["meetings","SAMTALER"],["intelligence","INTELLIGENCE"]];
+  const list=[["dashboard","DASHBOARD"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["live","LIVE KAMP"],["matches","KAMPANALYSE"],["season","SÆSONPLAN"],["scouting","SCOUTING"],["matrix","UDVIKLING"],["videos","VIDEO"],["meetings","SAMTALER"],["intelligence","INTELLIGENCE"]];
   if(tabs){tabs.innerHTML=list.map(([id,l])=>`<button class="s13tab ${s13Tab===id?"active":""}" data-t="${id}">${l}</button>`).join("");tabs.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{s13Tab=b.dataset.t;s13Render()})}
   s13RenderContent();s13Home();
 };
