@@ -7442,6 +7442,49 @@ function start11V12InstallStyles() {
         }
 
 
+        .s11v12-photo-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px;
+            margin: 14px 0 18px;
+            border: 1px solid rgba(111, 239, 75, .22);
+            border-radius: 12px;
+            background: rgba(10, 25, 14, .72);
+        }
+        .s11v12-photo-preview {
+            width: 94px;
+            height: 94px;
+            flex: 0 0 94px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #70ef4b;
+            background: #17251a;
+            border: 2px solid rgba(112, 239, 75, .45);
+        }
+        .s11v12-photo-preview img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .s11v12-photo-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:9px; }
+        .s11v12-photo-help { color:#839087; font-size:9px; line-height:1.5; }
+
+
+        .s11v12-crop-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px}
+        .s11v12-crop-dialog{width:min(520px,100%);background:#07120a;border:1px solid rgba(112,239,75,.45);border-radius:16px;padding:20px;color:#f1f5ef;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+        .s11v12-crop-stage{height:300px;max-width:100%;position:relative;overflow:hidden;background:#020704;border:1px solid #26372a;border-radius:12px;margin:14px 0;touch-action:none;cursor:grab}
+        .s11v12-crop-stage:active{cursor:grabbing}.s11v12-crop-stage canvas{display:block;width:100%;height:100%}
+        .s11v12-crop-controls{display:flex;align-items:center;gap:12px;font-size:12px;color:#a5b2a7}.s11v12-crop-controls input{flex:1;accent-color:#70ef4b}
+        .s11v12-crop-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+        .s11v12-crop-btn{border:1px solid #2a3d2d;background:#0d1b10;color:#e8f0e8;border-radius:8px;padding:10px 14px;font-weight:800;font-size:11px;cursor:pointer}
+        .s11v12-crop-btn.primary{background:#70ef4b;color:#061007;border-color:#70ef4b}
+        @media(max-width:560px){.s11v12-crop-dialog{padding:14px}.s11v12-crop-stage{height:260px}}
+
         .s11v12-profile-grid {
             display: grid;
             grid-template-columns:
@@ -9017,6 +9060,21 @@ function start11V12RenderProfile(
             </div>
 
 
+            <div class="s11v12-photo-row">
+                <div class="s11v12-photo-preview" id="s11v12PhotoPreview">
+                    ${player.photo ? `<img src="${start11V12Escape(player.photo)}" alt="Spillerbillede">` : `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4 21c.7-4.2 3.5-6.3 8-6.3s7.3 2.1 8 6.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`}
+                </div>
+                <div style="min-width:0;flex:1">
+                    <strong style="display:block;font-size:10px;color:#f1f5ef">SPILLERBILLEDE</strong>
+                    <div class="s11v12-photo-help" id="s11v12PhotoHelp">${player.photo ? 'Der er tilføjet et billede til spilleren.' : 'Intet billede tilføjet. Standardikonet vises på spillerkortet.'}</div>
+                    <div class="s11v12-photo-actions">
+                        <label for="s11v12PhotoFile" class="s11v12-btn primary" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer">VÆLG BILLEDE</label>
+                        <button type="button" class="s11v12-btn" id="s11v12PhotoRemove" ${player.photo ? '' : 'disabled'}>FJERN BILLEDE</button>
+                    </div>
+                    <input id="s11v12PhotoFile" type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" aria-label="Vælg spillerbillede">
+                </div>
+            </div>
+
             <div class="s11v12-profile-grid">
 
                 <label class="s11v12-field">
@@ -9307,6 +9365,101 @@ function start11V12RenderProfile(
 
         };
 
+
+    const photoInput = document.getElementById("s11v12PhotoFile");
+    const photoPreview = document.getElementById("s11v12PhotoPreview");
+    const photoHelp = document.getElementById("s11v12PhotoHelp");
+    const photoRemove = document.getElementById("s11v12PhotoRemove");
+
+    const renderPhotoPreview = () => {
+        if (!photoPreview) return;
+        if (start11V12ProfileDraft.photo) {
+            photoPreview.innerHTML = `<img src="${start11V12Escape(start11V12ProfileDraft.photo)}" alt="Spillerbillede">`;
+            if (photoHelp) photoHelp.textContent = "Der er tilføjet et billede til spilleren.";
+            if (photoRemove) photoRemove.disabled = false;
+        } else {
+            photoPreview.innerHTML = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4 21c.7-4.2 3.5-6.3 8-6.3s7.3 2.1 8 6.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+            if (photoHelp) photoHelp.textContent = "Intet billede tilføjet. Standardikonet vises på spillerkortet.";
+            if (photoRemove) photoRemove.disabled = true;
+        }
+    };
+
+    photoInput?.addEventListener("change", event => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type || !file.type.startsWith("image/")) {
+            visNotification?.("Vælg venligst en billedfil.");
+            event.target.value = "";
+            return;
+        }
+        if (file.size > 12 * 1024 * 1024) {
+            visNotification?.("Billedet må højst være 12 MB.");
+            event.target.value = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => visNotification?.("Billedet kunne ikke læses. Prøv en anden fil.");
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = () => visNotification?.("Billedet kunne ikke åbnes.");
+            img.onload = () => {
+                const overlay = document.createElement("div");
+                overlay.className = "s11v12-crop-overlay";
+                overlay.innerHTML = `
+                    <section class="s11v12-crop-dialog" role="dialog" aria-modal="true" aria-label="Beskær spillerbillede">
+                        <strong style="font-size:15px">BESKÆR SPILLERBILLEDE</strong>
+                        <div style="font-size:11px;color:#9eaca0;margin-top:5px">Træk billedet for at flytte udsnittet, og brug zoom til at justere.</div>
+                        <div class="s11v12-crop-stage"><canvas aria-label="Forhåndsvisning af beskæring"></canvas></div>
+                        <div class="s11v12-crop-controls"><span>ZOOM</span><input type="range" min="1" max="3" step="0.01" value="1"><span class="s11v12-crop-zoom">1.0×</span></div>
+                        <div style="font-size:10px;color:#849286;margin-top:8px">Det firkantede udsnit vises som et rundt portræt på spillerkortet.</div>
+                        <div class="s11v12-crop-actions"><button type="button" class="s11v12-crop-btn s11v12-crop-cancel">ANNULLER</button><button type="button" class="s11v12-crop-btn primary s11v12-crop-apply">BRUG BILLEDE</button></div>
+                    </section>`;
+                document.body.appendChild(overlay);
+                const canvas = overlay.querySelector("canvas"), ctx = canvas.getContext("2d");
+                const stage = overlay.querySelector(".s11v12-crop-stage"), zoom = overlay.querySelector('input[type="range"]'), zoomLabel = overlay.querySelector(".s11v12-crop-zoom");
+                let z=1, ox=0, oy=0, dragging=false, px=0, py=0;
+                const draw=()=>{
+                    const rect=stage.getBoundingClientRect(), dpr=Math.min(window.devicePixelRatio||1,2);
+                    canvas.width=Math.max(1,Math.round(rect.width*dpr)); canvas.height=Math.max(1,Math.round(rect.height*dpr));
+                    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,rect.width,rect.height);
+                    const base=Math.max(rect.width/img.naturalWidth,rect.height/img.naturalHeight), scale=base*z;
+                    const w=img.naturalWidth*scale,h=img.naturalHeight*scale;
+                    const x=(rect.width-w)/2+ox,y=(rect.height-h)/2+oy;
+                    ctx.fillStyle="#020704";ctx.fillRect(0,0,rect.width,rect.height);ctx.drawImage(img,x,y,w,h);
+                    const side=Math.min(rect.width,rect.height), cx=rect.width/2,cy=rect.height/2;
+                    ctx.save();ctx.strokeStyle="#70ef4b";ctx.lineWidth=2;ctx.strokeRect(cx-side/2,cy-side/2,side,side);ctx.restore();
+                };
+                const close=()=>{overlay.remove(); if(photoInput) photoInput.value="";};
+                const clamp=()=>{const r=stage.getBoundingClientRect(),base=Math.max(r.width/img.naturalWidth,r.height/img.naturalHeight),sc=base*z,w=img.naturalWidth*sc,h=img.naturalHeight*sc;const limX=Math.max(0,(w-r.width)/2),limY=Math.max(0,(h-r.height)/2);ox=Math.max(-limX,Math.min(limX,ox));oy=Math.max(-limY,Math.min(limY,oy));};
+                zoom.addEventListener("input",()=>{z=Number(zoom.value);zoomLabel.textContent=z.toFixed(1)+"×";clamp();draw();});
+                stage.addEventListener("pointerdown",e=>{dragging=true;px=e.clientX;py=e.clientY;stage.setPointerCapture?.(e.pointerId);});
+                stage.addEventListener("pointermove",e=>{if(!dragging)return;ox+=e.clientX-px;oy+=e.clientY-py;px=e.clientX;py=e.clientY;clamp();draw();});
+                stage.addEventListener("pointerup",()=>dragging=false);stage.addEventListener("pointercancel",()=>dragging=false);
+                overlay.querySelector(".s11v12-crop-cancel").addEventListener("click",close);
+                overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
+                overlay.querySelector(".s11v12-crop-apply").addEventListener("click",()=>{
+                    const r=stage.getBoundingClientRect(),side=Math.min(r.width,r.height),base=Math.max(r.width/img.naturalWidth,r.height/img.naturalHeight),scale=base*z;
+                    const sourceSide=side/scale, sourceCx=(img.naturalWidth/2)-(ox/scale),sourceCy=(img.naturalHeight/2)-(oy/scale);
+                    const sx=Math.max(0,Math.min(img.naturalWidth-sourceSide,sourceCx-sourceSide/2)),sy=Math.max(0,Math.min(img.naturalHeight-sourceSide,sourceCy-sourceSide/2));
+                    const out=document.createElement("canvas");out.width=480;out.height=480;const outCtx=out.getContext("2d");
+                    if(!outCtx){visNotification?.("Billedet kunne ikke behandles.");close();return;}
+                    outCtx.drawImage(img,sx,sy,Math.min(sourceSide,img.naturalWidth-sx),Math.min(sourceSide,img.naturalHeight-sy),0,0,480,480);
+                    try{start11V12ProfileDraft.photo=out.toDataURL("image/jpeg",0.84);renderPhotoPreview();close();visNotification?.("Beskåret billede er tilføjet. Tryk GEM for at gemme spillerprofilen.");}
+                    catch(error){visNotification?.("Billedet kunne ikke klargøres. Prøv et mindre billede.");close();}
+                });
+                draw();
+                const esc=e=>{if(e.key==="Escape"){close();document.removeEventListener("keydown",esc);}};document.addEventListener("keydown",esc);
+            };
+            img.src = String(reader.result || "");
+        };
+        reader.readAsDataURL(file);
+    });
+
+    photoRemove?.addEventListener("click", () => {
+        start11V12ProfileDraft.photo = "";
+        if (photoInput) photoInput.value = "";
+        renderPhotoPreview();
+    });
 
     bind(
         "s11v12Name",
