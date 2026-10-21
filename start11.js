@@ -67879,7 +67879,12 @@ function situations(){
     return s13Data.matchTacticalSituations[k];
 }
 function saveSituations(){
-    if(typeof s13Save==="function")s13Save();
+    // Persist through START11's existing data/cloud save path and return its
+    // result so explicit GEM can wait for completion before closing.
+    if(typeof s13Save==="function")return s13Save();
+    if(typeof scheduleCloudSave==="function")return scheduleCloudSave();
+    console.error("START11: hverken s13Save eller scheduleCloudSave er tilgængelig.");
+    return false;
 }
 
 /* =========================================================
@@ -68224,17 +68229,34 @@ function openDesigner(id,after){
     });
     function drawPreview(){if(!pointerDraw)return;const d=pointerDraw;const dx=d.end.x-d.start.x,dy=d.end.y-d.start.y;const extra=d.tool==='freehand'?`<polyline points="${d.points.map(p=>`${p.x},${p.y}`).join(" ")}" fill="none" stroke="#82ff54" stroke-width="1.2" stroke-linecap="round"/>`:d.tool==='curve'?`<path d="M ${d.start.x} ${d.start.y} Q ${(d.start.x+d.end.x)/2-dy*.42} ${(d.start.y+d.end.y)/2+dx*.42} ${d.end.x} ${d.end.y}" fill="none" stroke="#82ff54" stroke-width="1.2" marker-end="url(#s265ah)"/>`:`<line x1="${d.start.x}" y1="${d.start.y}" x2="${d.end.x}" y2="${d.end.y}" stroke="#82ff54" stroke-width="1.2" stroke-dasharray="${d.tool==='run'?'2 1':d.tool==='pass'?'1 1':'none'}" marker-end="url(#s265ah)"/>`;svg.querySelector("#s265preview")?.remove();svg.insertAdjacentHTML("beforeend",`<g id="s265preview" opacity=".75">${d.tool==='zone'?`<rect x="${Math.min(d.start.x,d.end.x)}" y="${Math.min(d.start.y,d.end.y)}" width="${Math.abs(d.end.x-d.start.x)}" height="${Math.abs(d.end.y-d.start.y)}" fill="#82ff5422" stroke="#82ff54" stroke-dasharray="2 1"/>`:extra}</g>`)}
     let autoSaveTimer=null;
-    function queueAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{s.title=ov.querySelector("#s265title").value.trim()||"Situation";s.focus=ov.querySelector("#s265focus").value.trim();s.note=ov.querySelector("#s265note").value.trim();s.includeInPdf=ov.querySelector("#s265pdf").checked;saveSituations();after?.();},250);}
+    function queueAutoSave(){
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer=setTimeout(()=>{
+            s.title=ov.querySelector("#s265title").value.trim()||"Situation";
+            s.focus=ov.querySelector("#s265focus").value.trim();
+            s.note=ov.querySelector("#s265note").value.trim();
+            s.includeInPdf=ov.querySelector("#s265pdf").checked;
+            // Do not call after() here: that callback restores the manager and
+            // can place it over the designer while the user is still editing.
+            Promise.resolve(saveSituations()).catch(err=>console.error("START11: automatisk gemning fejlede",err));
+        },250);
+    }
     ["#s265title","#s265focus","#s265note","#s265pdf"].forEach(sel=>ov.querySelector(sel)?.addEventListener("input",queueAutoSave));
     ov.querySelector("[data-reset]").onclick=()=>{s.players=currentLineup();render();queueAutoSave()};
-    const saveAndClose=()=>{
-        // Keep the metadata-save path self-contained: saveFields() is not defined
-        // in this designer module and caused LUK to throw a ReferenceError.
+    const saveAndClose=async()=>{
+        // Flush pending autosave so it cannot race with the explicit GEM/LUK.
+        clearTimeout(autoSaveTimer);
         s.title=ov.querySelector("#s265title").value.trim()||"Situation";
         s.focus=ov.querySelector("#s265focus").value.trim();
         s.note=ov.querySelector("#s265note").value.trim();
         s.includeInPdf=ov.querySelector("#s265pdf").checked;
-        saveSituations();
+        try{
+            await Promise.resolve(saveSituations());
+        }catch(err){
+            console.error("START11: kunne ikke gemme kampsituationen",err);
+            alert("START11 kunne ikke bekræfte, at situationen blev gemt. Tjek forbindelsen, og prøv igen.");
+            return;
+        }
         ov.remove();
         if(typeof after==="function")after();
     };
