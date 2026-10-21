@@ -68328,14 +68328,24 @@ function situationPdfPages(){
         (s.cones||[]).forEach(x=>add(x,`<div class="s265pdfcone">▲</div>`));
         (s.texts||[]).forEach(x=>add(x,`<div class="s265pdftext">${E(x.text||"")}</div>`));
         (s.zones||[]).forEach(x=>add(x,`<div class="s265pdfzone"></div>`));
-        const arrows=(s.arrows||[]).map(a=>`<line x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#fff" stroke-width="${a.stroke||0.48}" marker-end="url(#s265pdfah${index})"/>`).join("");
+        const arrows=(s.arrows||[]).map(a=>{
+          // PDF/print engines can drop SVG marker-end references. Draw the arrowhead
+          // as explicit SVG geometry so both the shaft and tip survive PDF export.
+          const x1=Number(a.x1),y1=Number(a.y1),x2=Number(a.x2),y2=Number(a.y2);
+          if(![x1,y1,x2,y2].every(Number.isFinite))return "";
+          const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;
+          const ux=dx/len,uy=dy/len,head=Math.max(1.8,Math.min(3.2,len*.22)),half=head*.62;
+          const bx=x2-ux*head,by=y2-uy*head,px=-uy*half,py=ux*half;
+          const sw=Math.max(.45,Number(a.stroke)||.48);
+          return `<g stroke="#fff" fill="#fff" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}"/><path d="M ${x2} ${y2} L ${bx+px} ${by+py} L ${bx-px} ${by-py} Z" stroke="none"/></g>`;
+        }).join("");
 
         return `<section class="pdf-page v24-page s265pdfpage">
           <div class="v24-top-rule"></div>
           <div class="v24-page-head"><div><div class="v24-kicker">KAMPSITUATION</div><h1>${E(s.title)}</h1></div><div class="v24-page-no">T${index+1}</div></div>
           <div class="s265pdfgrid">
             <div class="s265pdfpitch"><div class="s265pdfhalf"></div><div class="s265pdfcircle"></div><div class="s265pdfbox a"></div><div class="s265pdfbox b"></div>
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><marker id="s265pdfah${index}" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L3.2 1.6 L0 3.2z" fill="#fff"/></marker></defs>${arrows}</svg>${objs.join("")}
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;z-index:4;pointer-events:none">${arrows}</svg>${objs.join("")}
             </div>
             <div class="s265pdfside">
               <div class="s265pdfcard"><b>FOKUSPUNKT</b><p>${E(s.focus||"—")}</p></div>
@@ -68379,7 +68389,7 @@ window.s73RenderSituationBlock=function(id,mode="editor"){
     (s.texts||[]).forEach(x=>add(x,`<div class="s73sittext">${E(x.text||"")}</div>`));
     (s.zones||[]).forEach(x=>add(x,`<div class="s73sitzone"></div>`));
     const marker="s73ah_"+String(s.id).replace(/[^a-z0-9_-]/gi,"");
-    const arrows=(s.arrows||[]).map(a=>`<line x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#fff" stroke-width="${a.stroke||0.48}" marker-end="url(#${marker})"/>`).join("");
+    const arrows=(s.arrows||[]).map(a=>{const x1=Number(a.x1),y1=Number(a.y1),x2=Number(a.x2),y2=Number(a.y2);if(![x1,y1,x2,y2].every(Number.isFinite))return "";const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len,head=Math.max(1.8,Math.min(3.2,len*.22)),half=head*.62,bx=x2-ux*head,by=y2-uy*head,px=-uy*half,py=ux*half;return `<g stroke="#fff" fill="#fff" stroke-width="${Math.max(.45,Number(a.stroke)||.48)}" stroke-linecap="round" stroke-linejoin="round"><line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}"/><path d="M ${x2} ${y2} L ${bx+px} ${by+py} L ${bx-px} ${by-py} Z" stroke="none"/></g>`;}).join("");
     return `<style>
       .s73sit{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(115px,.8fr);gap:14px;padding:10px;border:1px solid #31523a;border-radius:8px;background:#08120b}
       .s73sitpitch{position:relative;width:min(100%,520px);aspect-ratio:105/68;max-height:none;margin:auto;background:#176b37;border:2px solid #e8f4e9;overflow:hidden}
