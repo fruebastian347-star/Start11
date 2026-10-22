@@ -1,0 +1,50 @@
+/* START11 Home Redesign V37 — styling scoped to home view only */
+#s34App{--bg:#0b120e;--card:#101a14;--line:#24372c;--tx:#f2f7f4;--tx2:#b2c0b7;--ok:#4ade80;--warn:#f5c542;--bad:#f87171;background:var(--bg);color:var(--tx)}
+#s34App .s34-sidebar{background:#0b120e;border-right:1px solid var(--line)}
+#s34App .s34-nav button,#s34App .s34-nav-bottom button{font-size:15px;color:var(--tx2);border-radius:10px;padding:12px 14px}
+#s34App .s34-nav button.active{background:#1d2c24;color:var(--tx);border:1px solid #2c4a38}
+#s34App .s34-tagline{display:none}
+#s34App .s34-topbar{background:var(--bg);border-bottom:1px solid var(--line)}
+#s34App .s34-search{font-size:15px;color:var(--tx2)}
+#s34App .s34-panel{background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--tx);box-shadow:none;min-width:0}
+#s34App .s34-panel h3{font-size:16px;font-weight:650;color:var(--tx);display:flex;align-items:center;gap:8px;min-width:0}
+#s34App .s34-panel h3 b{margin-left:auto;color:var(--ok)}
+#s34App .s34-panel small,#s34App .s34-sub,#s34App .s34-location{font-size:13px;color:var(--tx2)}
+#s34App .s34-hero{display:grid;grid-template-columns:minmax(250px,1fr);align-items:center;gap:12px;background:none;margin-bottom:10px}
+#s34App .s34-hero-copy span{display:block;font-size:13px;color:var(--tx2);text-transform:none;letter-spacing:0;margin-bottom:2px}
+#s34App .s34-hero h1{font-size:32px;font-weight:750;color:var(--tx);margin:0}
+#s34App .s34-hero h1 em{color:var(--ok);font-style:normal}
+#s34App .s34-home-grid.top{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,1.3fr) minmax(220px,.95fr);gap:12px}
+#s34App .s34-home-grid.bottom{display:grid;grid-template-columns:minmax(0,2.05fr) minmax(250px,.95fr) minmax(270px,1.05fr);gap:12px;margin-top:12px;align-items:stretch}
+#s34App .s34-primary{background:var(--ok);color:#06210f;font-weight:750;font-size:14px;border:0;border-radius:9px;padding:11px 12px}
+#s34App .s34-outline{background:transparent;color:var(--ok);border:1px solid #2c6b46;border-radius:9px;font-size:14px;font-weight:650;padding:10px}
+#s34App .s34-count{font-size:14px}#s34App .s34-count strong{font-size:27px}
+#s34App .s34-status{margin-top:8px}#s34App .s34-status p{font-size:13px;margin:6px 0}
+#s34App .s34-versus{margin:12px 0 8px;gap:12px}#s34App .s34-versus img{width:58px;height:58px;object-fit:contain}
+#s34App .s34-lineup{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,220px);gap:10px 14px;align-content:start}
+#s34App .s34-lineup h3,#s37LineupBar{grid-column:1/-1}
+#s34App .s34-pitch-preview{min-width:0;overflow:hidden;border-radius:8px}
+#s34App .s34-pitch-preview #pitch{width:100%;max-width:100%;}
+#s37Alerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;min-width:0}
+.s37-alert{display:flex;align-items:center;gap:10px;min-width:0;min-height:62px;text-align:left;background:#101a14;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit}
+.s37-alert>b{font-size:21px;min-width:28px;text-align:center}.s37-alert span{flex:1;min-width:0}.s37-alert strong{display:block;font-size:14px;line-height:1.25}.s37-alert small{display:block;font-size:12px;line-height:1.4;color:var(--tx2);margin-top:3px}.s37-alert i{font-style:normal;font-size:22px;color:var(--tx2)}
+.s37-alert.red{background:#291515;border-color:#853737}.s37-alert.red strong,.s37-alert.red>b{color:var(--bad)}
+.s37-alert.yellow{background:#29220f;border-color:#7a611d}.s37-alert.yellow strong,.s37-alert.yellow>b{color:var(--warn)}
+.s37-alert.neutral{background:#10191f;border-color:#2b414d}.s37-alert.neutral>b{color:#b7d3e4}
+.s37-badges{display:inline-flex;gap:6px;margin-left:6px}.s37-badges em{font-style:normal;font-size:12px;font-weight:650;padding:3px 9px;border-radius:999px;background:#12281b;color:var(--ok);border:1px solid #2c6b46;white-space:nowrap}.s37-badges em.n{background:#1d2a33;color:#d0dce3;border-color:#2f4452}
+#s37StatusToday{margin-top:9px;border-top:1px solid var(--line);padding-top:5px}#s37StatusToday h4{font-size:13px;margin:6px 0 3px;color:var(--tx)}.s37-status-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0;border-top:1px solid rgba(255,255,255,.04)}.s37-status-row span{color:var(--tx2);text-align:right}.s37-status-row span.red{color:var(--bad)}.s37-status-row span.yellow{color:var(--warn)}.s37-no-status{font-size:12px;color:var(--tx2);padding:5px 0}
+#s37LineupSide{min-width:0}#s37LineupSide details{background:#0b1510;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;padding:7px 9px}#s37LineupSide summary{font-size:14px;font-weight:700;cursor:pointer}#s37LineupSide ul{list-style:none;margin:6px 0 0;padding:0}#s37LineupSide li{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px;line-height:1.3;padding:4px 0;border-top:1px solid rgba(255,255,255,.035)}#s37LineupSide .s37-number{flex:0 0 24px;color:#dce8df;font-size:12px;font-variant-numeric:tabular-nums}#s37LineupSide .s37-player-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#s37LineupSide li i{margin-left:auto;font-style:normal;font-weight:800}#s37LineupSide li.green i{color:var(--ok)}#s37LineupSide li.yellow i{color:var(--warn)}#s37LineupSide li.red i{color:var(--bad)}#s37LineupSide ul.out li{color:var(--tx2)}#s37LineupSide .s37-empty{color:var(--tx2);font-size:12px}
+#s37LineupBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--tx2);padding-top:4px}#s37LineupBar .s37-legend{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-right:auto}#s37LineupBar .s37-legend span{white-space:nowrap}#s37LineupBar .s37-legend i{font-style:normal;font-weight:800;margin-right:4px}#s37LineupBar .green{color:var(--ok)}#s37LineupBar .yellow{color:var(--warn)}#s37LineupBar .red{color:var(--bad)}#s37LineupBar .gray{color:#a8b7c5}#s37LineupBar button,#s34App .s34-quick button{background:transparent;color:var(--tx);border:1px solid #3a4d42;border-radius:8px;font-size:13px;padding:9px 11px;cursor:pointer}
+#s37Opponent{margin:4px 0 10px}#s37Opponent>strong{display:block;font-size:15px}#s37Opponent>small{display:block;font-size:12px;color:var(--tx2);margin:3px 0 9px}.s37-scout-section{margin-top:10px}.s37-scout-section h4,.s37-focus-title{font-size:14px;margin:9px 0 5px;color:var(--tx)}.s37-scout-section p{display:flex;gap:7px;font-size:12px;margin:5px 0;color:var(--tx2)}.s37-scout-section .up{color:#ff7979}.s37-scout-section .down{color:var(--ok)}#s34FocusList .s34-focus-item{margin:7px 0;gap:8px}#s34FocusList .s34-focus-item i{background:#20372b;color:var(--ok);font-style:normal;font-weight:800;border-radius:50%;width:26px;height:26px;display:grid;place-items:center;flex:0 0 26px}
+#s34App .s34-quick{display:grid;grid-template-columns:1fr 1.35fr;gap:12px;background:none;border:0;margin-top:12px;padding:0}.s37-quick-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding:10px 0}.s37-quick-group strong{width:100%;font-size:13px;color:var(--tx);margin-bottom:2px}.s37-quick-group button{flex:1;min-width:115px}
+#s34App .s34-activity time{font-size:13px;color:var(--tx2)}
+@media(max-width:1350px){#s34App .s34-home-grid.top{grid-template-columns:repeat(2,minmax(0,1fr))}#s34App .s34-home-grid.bottom{grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr)}#s34App .s34-activities{grid-column:1/-1}#s34App .s34-lineup{grid-template-columns:minmax(0,1fr) 200px}}
+@media(max-width:900px){#s37Alerts{grid-template-columns:1fr}#s34App .s34-home-grid.top,#s34App .s34-home-grid.bottom{grid-template-columns:minmax(0,1fr)}#s34App .s34-activities{grid-column:auto}#s34App .s34-lineup{grid-template-columns:minmax(0,1fr)}#s34App .s34-lineup h3,#s37LineupBar{grid-column:auto}#s34App .s34-quick{grid-template-columns:1fr}#s34App .s34-hero h1{font-size:27px}}
+
+/* V37.1 dashboard cleanup: explicit scouting access; no duplicate global action strip */
+#s34HomeView .s34-quick[hidden],#s34HomeView .s34-quick[aria-hidden="true"]{display:none!important}
+#s37Opponent .s37-scout-open{display:block;width:100%;margin-top:12px;padding:10px 12px;border:1px solid #2c6b46;border-radius:8px;background:#0b1710;color:var(--ok);font:inherit;font-size:13px;font-weight:700;text-align:center;cursor:pointer}
+#s37Opponent .s37-scout-open:hover,#s34HomeView #s34OpenCoaching:hover{background:#13271b}
+#s37Opponent .s37-scout-section{padding:8px 10px;margin-top:8px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(0,0,0,.12)}
+#s37Opponent .s37-scout-section h4{margin:0 0 4px}
+#s37Opponent .s37-scout-section p{margin:0;font-size:13px;line-height:1.4}

@@ -1,0 +1,19 @@
+START11 – V37.1 + Coaching Hub Cleanup
+
+Udgangspunkt:
+- V37.1-dashboardændringerne fra START11_V37_Dashboard_Cleanup.zip.
+- Coaching Hub-cleanup fra START11_Coaching_Hub_Cleanup_Full.zip.
+
+Kombineret i denne pakke:
+- Bevarer V37.1's startskærm: fjernet neutral "Opstillingen er ikke sendt"-advarsel, nedtælling beregnes fra kampdatoen der vises på kortet, tydelig adgang til scouting, skjult global handlingsrække på startsiden.
+- Bevarer Coaching Hub-cleanup: Træningsplanlægger, Øvelsesbank, Video, Match Data og Live kamp kan ikke åbnes fra Coaching Hub.
+- Bevarer cleanup-modulet js/15_coaching_hub_cleanup.js og build-rækkefølgen med alle 15 moduler.
+- Andre selvstændige app-funktioner og gemte data er ikke slettet.
+
+Kontrol:
+- start11.js genbygget fra build_start11.py.
+- node --check bestod for start11.js, js/14_home_redesign.js, js/08_coach_os_matchdata.js og js/15_coaching_hub_cleanup.js.
+
+Ikke verificeret:
+- Ingen interaktiv browser-/live-data-test i denne session.
+- Ikke publiceret til Cloudflare.

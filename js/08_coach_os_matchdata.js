@@ -110,16 +110,15 @@ function s20LineChart(points){
 s13Render=function(){
   const meta=s13Meta(),top=document.getElementById("s13top"),tabs=document.getElementById("s13tabs");
   if(top)top.innerHTML=`<div><h2>COACHING HUB</h2><div class="s13mut">${s13Esc(meta.clubName)} · ${s13Esc(meta.teamName)} · coach operating system</div></div>
-  <div><button id="s20quicklive" class="s13btn">LIVE KAMP</button> <button id="s13close" class="s13btn">LUK</button></div>`;
+  <div><button id="s13close" class="s13btn">LUK</button></div>`;
   document.getElementById("s13close")?.addEventListener("click",s13Close);
-  document.getElementById("s20quicklive")?.addEventListener("click",()=>{s13Tab="live";s13Render()});
-  const list=[["dashboard","DASHBOARD"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["live","LIVE KAMP"],["matches","KAMPANALYSE"],["season","SÆSONPLAN"],["scouting","SCOUTING"],["matrix","UDVIKLING"],["videos","VIDEO"],["meetings","SAMTALER"],["intelligence","INTELLIGENCE"]];
+  const list=[["dashboard","DASHBOARD"],["attendance","FREMMØDE"],["principles","PRINCIPPER"],["matches","KAMPANALYSE"],["season","SÆSONPLAN"],["scouting","SCOUTING"],["matrix","UDVIKLING"],["meetings","SAMTALER"],["intelligence","INTELLIGENCE"]];
   if(tabs){tabs.innerHTML=list.map(([id,l])=>`<button class="s13tab ${s13Tab===id?"active":""}" data-t="${id}">${l}</button>`).join("");tabs.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{s13Tab=b.dataset.t;s13Render()})}
   s13RenderContent();s13Home();
 };
 s13RenderContent=function(){
   const t=document.getElementById("s13content");if(!t)return;
-  const map={dashboard:s20Dashboard,training:s13Training,exercises:s13Exercises,attendance:s13Attendance,principles:s20Principles,live:s20Live,matches:s13Matches,season:s20Season,scouting:s20Scouting,matrix:s20Development,videos:s13Videos,meetings:s20Meetings,intelligence:s20Intelligence};
+  const map={dashboard:s20Dashboard,attendance:s13Attendance,principles:s20Principles,matches:s13Matches,season:s20Season,scouting:s20Scouting,matrix:s20Development,meetings:s20Meetings,intelligence:s20Intelligence};
   (map[s13Tab]||s20Dashboard)(t);
 };
 
@@ -128,17 +127,17 @@ s13RenderContent=function(){
 ========================================================= */
 function s20Dashboard(t){
   s20EnsureData();
-  const nm=s20NextMatch(),opp=s20Opponent(nm),ns=s13NextSession(),stale=s13NeedEval(),clips=s20AllClips();
+  const nm=s20NextMatch(),opp=s20Opponent(nm),ns=s13NextSession(),stale=s13NeedEval();
   const scout=s13Data.opponentProfiles.find(x=>String(x.name||"").toLowerCase()===String(opp).toLowerCase());
   const lineup=nm&&typeof s19MatchLineupRecord==="function"?s19MatchLineupRecord(s19MatchKey(nm)):null;
   const insights=s20Insights().slice(0,4);
   t.innerHTML=`<div class="s20dash">
-    ${[["NÆSTE KAMP",opp||"Ingen kamp",nm?.date?s13Date(nm.date):"—"],["NÆSTE TRÆNING",ns?.title||"Ikke planlagt",ns?`${s13Date(ns.date)} · ${s20SessionMinutes(ns)} min`:"—"],["EVALUERING MANGLER",stale.length,"spillerprofiler"],["VIDEOCLIPS",clips.length,"analyserede klip"]].map(([l,v,s])=>`<div class="s20card"><div class="s20label">${l}</div><div class="s20value">${s13Esc(v)}</div><div class="s13mut">${s13Esc(s)}</div></div>`).join("")}
+    ${[["NÆSTE KAMP",opp||"Ingen kamp",nm?.date?s13Date(nm.date):"—"],["NÆSTE TRÆNING",ns?.title||"Ikke planlagt",ns?`${s13Date(ns.date)} · ${s20SessionMinutes(ns)} min`:"—"],["EVALUERING MANGLER",stale.length,"spillerprofiler"]].map(([l,v,s])=>`<div class="s20card"><div class="s20label">${l}</div><div class="s20value">${s13Esc(v)}</div><div class="s13mut">${s13Esc(s)}</div></div>`).join("")}
   </div>
   <div class="s13grid" style="margin-top:12px">
-    <section class="s13panel"><div class="s13head"><div><strong>NÆSTE KAMPFORBEREDELSE</strong><div class="s13mut">START11, scouting og video samlet.</div></div></div>
+    <section class="s13panel"><div class="s13head"><div><strong>NÆSTE KAMPFORBEREDELSE</strong><div class="s13mut">START11 og scouting samlet.</div></div></div>
       ${nm?`<div class="s13item"><div class="s13title">${s13Esc(opp)} · ${s13Date(nm.date)}</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px">
-        <span class="s13badge">${lineup?`XI ${s13Esc(lineup.formation||"—")}`:"XI MANGLER"}</span><span class="s13badge">${scout?"SCOUTING KLAR":"SCOUTING MANGLER"}</span><span class="s13badge">${clips.filter(c=>String(c.projectTitle||"").toLowerCase().includes(String(opp).toLowerCase())).length} CLIPS</span>
+        <span class="s13badge">${lineup?`XI ${s13Esc(lineup.formation||"—")}`:"XI MANGLER"}</span><span class="s13badge">${scout?"SCOUTING KLAR":"SCOUTING MANGLER"}</span>
       </div><button id="s20dashmatch" class="s13btn primary" style="margin-top:9px">ÅBN KAMPENS START11</button></div>`:`<div class="s13mut">Ingen kommende kamp.</div>`}
     </section>
     <section class="s13panel"><div class="s13head"><div><strong>COACH INTELLIGENCE</strong><div class="s13mut">Mønstre i dine START11-data.</div></div><button id="s20dashintel" class="s13btn">SE ALLE</button></div>
@@ -146,7 +145,7 @@ function s20Dashboard(t){
     </section>
   </div>
   <section class="s13panel" style="margin-top:12px"><div class="s13head"><strong>START11 WORKFLOW</strong></div><div class="s20flow">
-    ${["KALENDER","START11","SCOUTING","KAMPPLAN","LIVE","VIDEO","REVIEW","TRÆNING"].map((x,i,a)=>`<div class="s20step"><div class="s20label">${i+1}</div><div class="s13title">${x}</div></div>${i<a.length-1?`<div class="s20arrow">→</div>`:""}`).join("")}
+    ${["KALENDER","START11","SCOUTING","KAMPPLAN","REVIEW"].map((x,i,a)=>`<div class="s20step"><div class="s20label">${i+1}</div><div class="s13title">${x}</div></div>${i<a.length-1?`<div class="s20arrow">→</div>`:""}`).join("")}
   </div></section>`;
   document.getElementById("s20dashmatch")?.addEventListener("click",()=>{if(nm&&typeof s19EnterMatchMode==="function"){s13Close();s19EnterMatchMode(nm)}});
   document.getElementById("s20dashintel")?.addEventListener("click",()=>{s13Tab="intelligence";s13Render()});
@@ -309,11 +308,9 @@ function s20InjectPostReview(){
   const t=document.getElementById("s13content"),m=s13Data.matches.find(x=>x.id===s13Match);if(!t||!m)return;
   const live=m.liveMatchId?s13Data.liveMatches.find(x=>x.id===m.liveMatchId):null,clips=s20AllClips().filter(c=>String(c.projectTitle||"").toLowerCase().includes(String(m.opponent||"").toLowerCase()));
   const sec=document.createElement("section");sec.id="s20postreview";sec.className="s13panel";sec.style.marginTop="10px";
-  sec.innerHTML=`<div class="s13head"><div><strong>AUTOMATISK POST-MATCH REVIEW</strong><div class="s13mut">Live-data, video og næste træning.</div></div></div>
-  <div class="s20metrics"><div class="s20metric"><span>LIVE EVENTS</span><strong>${live?.events?.length||0}</strong></div><div class="s20metric"><span>VIDEOCLIPS</span><strong>${clips.length}</strong></div><div class="s20metric"><span>NÆSTE UGE</span><strong>${m.nextWeek?"✓":"—"}</strong></div></div>
-  ${live?.coachNotes?`<div class="s20insight" style="margin-top:9px"><strong>LIVE COACH NOTES</strong><p>${s13Esc(live.coachNotes)}</p></div>`:""}
-  <div style="display:flex;gap:7px;margin-top:9px"><button id="s20reviewtraining" class="s13btn primary">OPRET NÆSTE TRÆNING</button><button id="s20reviewintel" class="s13btn">INTELLIGENCE</button></div>`;t.appendChild(sec);
-  document.getElementById("s20reviewtraining")?.addEventListener("click",()=>{const d=new Date();d.setDate(d.getDate()+1);const s={id:s13Id("session"),date:d.toISOString().slice(0,10),title:`Efter ${m.opponent}`,theme:m.nextWeek||"Post-match udvikling",note:[m.improve,m.tactical].filter(Boolean).join("\n\n"),blocks:[],attendance:{}};s13Data.sessions.push(s);s13Session=s.id;s13Save();s13Tab="training";s13Render()});
+  sec.innerHTML=`<div class="s13head"><div><strong>POST-MATCH REVIEW</strong><div class="s13mut">Opsamling fra kampanalysen og næste udviklingsfokus.</div></div></div>
+  <div class="s20metrics"><div class="s20metric"><span>NÆSTE UGE</span><strong>${m.nextWeek?"✓":"—"}</strong></div><div class="s20metric"><span>SPILLERNOTER</span><strong>${(m.playerRatings||[]).filter(x=>String(x.note||"").trim()).length}</strong></div><div class="s20metric"><span>TAKTISK OPSAMLING</span><strong>${m.tactical?"✓":"—"}</strong></div></div>
+  <div style="display:flex;gap:7px;margin-top:9px"><button id="s20reviewintel" class="s13btn">ÅBN COACH INTELLIGENCE</button></div>`;t.appendChild(sec);
   document.getElementById("s20reviewintel")?.addEventListener("click",()=>{s13Tab="intelligence";s13Render()});
 }
 if(typeof s13Matches==="function"){const _s20matches=s13Matches;s13Matches=function(t){const r=_s20matches(t);setTimeout(s20InjectPostReview,25);return r}}
@@ -5882,158 +5879,31 @@ function s22Keydown(event){
    V22 COACHING HUB TAB INTEGRATION
 ========================================================= */
 
+/* Coaching Hub cleanup: Match Data is no longer exposed as a Hub tab.
+   Existing stored records are preserved; the Hub entry point is disabled. */
 function s22EnsureDataTab(){
-
-    const tabs =
-        document.getElementById(
-            "s13tabs"
-        );
-
-    if(
-        !tabs ||
-        tabs.querySelector(
-            '[data-t="data"]'
-        )
-    ){
-        return;
-    }
-
-    const intelligence =
-        tabs.querySelector(
-            '[data-t="intelligence"]'
-        );
-
-    const button =
-        document.createElement(
-            "button"
-        );
-
-    button.className =
-        `s13tab ${
-            s13Tab ===
-            "data"
-                ? "active"
-                : ""
-        }`;
-
-    button.dataset.t =
-        "data";
-
-    button.textContent =
-        "MATCH DATA";
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            s13Tab =
-                "data";
-
-            s13Render();
-
-        }
-    );
-
-    if(intelligence){
-
-        tabs.insertBefore(
-            button,
-            intelligence
-        );
-
-    }else{
-
-        tabs.appendChild(
-            button
-        );
-
-    }
-
+    const tabs = document.getElementById("s13tabs");
+    tabs?.querySelector('[data-t="data"]')?.remove();
 }
 
-
-if(
-    typeof s13RenderContent ===
-    "function"
-){
-
-    const s22RenderContentBefore =
-        s13RenderContent;
-
-    s13RenderContent =
-        function(){
-
-            if(
-                s13Tab ===
-                "data"
-            ){
-
-                const target =
-                    document.getElementById(
-                        "s13content"
-                    );
-
-                if(target){
-
-                    s22RenderDataHub(
-                        target
-                    );
-
-                }
-
-                return;
-
-            }
-
-            return s22RenderContentBefore();
-
-        };
-
+if(typeof s13RenderContent === "function"){
+    const s22RenderContentBeforeCleanup = s13RenderContent;
+    s13RenderContent = function(){
+        if(s13Tab === "data") s13Tab = "dashboard";
+        return s22RenderContentBeforeCleanup();
+    };
 }
 
-
-if(
-    typeof s13Render ===
-    "function"
-){
-
-    const s22RenderBefore =
-        s13Render;
-
-    s13Render =
-        function(...args){
-
-            const result =
-                s22RenderBefore(
-                    ...args
-                );
-
-            setTimeout(
-                () => {
-
-                    s22EnsureDataTab();
-
-                    if(
-                        typeof s21HubRefresh ===
-                        "function"
-                    ){
-                        s21HubRefresh();
-                    }
-
-                },
-                0
-            );
-
-            return result;
-
-        };
-
+if(typeof s13Render === "function"){
+    const s22RenderBeforeCleanup = s13Render;
+    s13Render = function(...args){
+        if(["data","live","videos","training","exercises"].includes(s13Tab)) s13Tab = "dashboard";
+        const result = s22RenderBeforeCleanup.apply(this,args);
+        s22EnsureDataTab();
+        return result;
+    };
 }
 
-
-/* =========================================================
-   V22 INIT
-========================================================= */
 
 function s22Init(){
 

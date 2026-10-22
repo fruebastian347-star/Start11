@@ -16,6 +16,8 @@ ORDER = [
     "11_tactical_situations.js",
     "12_video_analysis.js",
     "13_exercise_cloud_sync.js",
+    "14_home_redesign.js",
+    "15_coaching_hub_cleanup.js",
 ]
 
 out = ROOT / "start11.js"
