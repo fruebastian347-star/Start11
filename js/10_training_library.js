@@ -2066,6 +2066,15 @@
         render();
         window.scrollTo({top:0,behavior:"smooth"});
     }
+    // Public entry point used by the calendar: open the selected plan in the modern Træningsplaner view.
+    window.start11OpenTrainingPlanById=function(sessionId){
+        const found=sessions().find(s=>String(s.id)===String(sessionId));
+        if(!found){alert("Træningsplanen blev ikke fundet.");return;}
+        state.mode="plans";state.sessionSelected=String(found.id);state.sessionFilter="all";state.sessionSearch="";
+        showOnlyBank();
+        state.sessionSelected=String(found.id);render();
+        setTimeout(()=>{const card=document.querySelector(`[data-s56-session="${CSS.escape(String(found.id))}"]`);card?.scrollIntoView({block:"nearest",behavior:"smooth"});},60);
+    };
     function openLegacy(tab){
         if(typeof s13Open!=="function")return;
         s13Open();
@@ -2741,6 +2750,7 @@
                 const i=sessions().findIndex(x=>String(x.id)===String(value.id));
                 if(i<0)sessions().push(value);else sessions()[i]=value;
                 try{if(typeof s13Save==="function")s13Save();}catch(_){}
+                try{window.START11CalendarPlanner?.syncSession?.(value);window.START11CalendarPlanner?.render?.();}catch(_){}
                 state.sessionSelected=String(value.id);overlay.remove();render();
             };
             $("s56DeleteSession")&&($("s56DeleteSession").onclick=()=>{
@@ -2868,6 +2878,13 @@
         document.querySelectorAll("[data-s45-duration]").forEach(b=>b.onclick=()=>{state.duration=state.duration===b.dataset.s45Duration?"":b.dataset.s45Duration;render();});
         window.start11ShowExerciseBank=showOnlyBank;
         window.start11ShowTrainingPlans=()=>{state.mode="plans";showOnlyBank();};
+        // Public modal entry point for calendar events: use the same editor shown in the screenshot.
+        window.start11OpenTrainingPlanEditorModal=function(sessionId){
+            const found=sessions().find(x=>String(x.id)===String(sessionId));
+            if(!found){alert("Træningsplanen blev ikke fundet.");return false;}
+            openSessionEditor56(String(found.id));
+            return true;
+        };
         render();
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,250),{once:true});

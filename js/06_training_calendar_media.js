@@ -1244,6 +1244,7 @@ function s15TrainingSessionsForDate(
 
     return s13Data.sessions.filter(
         session =>
+            !session.calendarActivityId &&
             session.date ===
             date
     );
@@ -1704,7 +1705,7 @@ function s15RenderCalendarTrainingList() {
         s13Data.sessions
             .filter(
                 session => {
-
+                    if (session.calendarActivityId) return false;
                     if (
                         !session.date
                     ) {

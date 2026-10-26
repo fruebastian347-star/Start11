@@ -4,6 +4,9 @@
   "use strict";
   if(window.__START11_HOME_V37__) return;
   window.__START11_HOME_V37__=true;
+  // This module is the sole renderer for the existing dashboard calendar cards.
+  // Older V35 dashboard refreshers must not overwrite these cards on their timer.
+  window.__START11_HOME_V37_OWNS_CALENDAR_CARDS__=true;
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
   const arr=f=>{try{const v=f();return Array.isArray(v)?v.filter(Boolean):[]}catch(_){return[]}};
@@ -97,6 +100,123 @@
     const old=$("s34FocusList");if(old){old.hidden=false;const focusTitle=document.createElement("h4");focusTitle.className="s37-focus-title";focusTitle.textContent="Vores fokus";if(!f.querySelector(".s37-focus-title"))old.before(focusTitle)}
     const button=$("s34OpenCoaching");if(button)button.textContent="Åbn kampplan →";
   }
+  function calendarData(){try{return typeof s13Data!=="undefined"&&s13Data&&Array.isArray(s13Data.calendarActivities)?s13Data.calendarActivities:[]}catch(_){return[]}}
+  function localDateKey(d){const x=new Date();x.setHours(0,0,0,0);return x.toLocaleDateString("sv-SE")}
+  function trainingSessionData(){try{return typeof s13Data!=="undefined"&&s13Data&&Array.isArray(s13Data.sessions)?s13Data.sessions:[]}catch(_){return[]}}
+  function homeActivityDate(a){
+    const raw=String(a?.date||a?.sessionDate||a?.session_date||a?.matchDate||a?.match_date||"").trim();
+    let m=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m)return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+    m=raw.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})$/);
+    if(m)return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+    return "";
+  }
+  function homeActivityTime(a){return String(a?.startTime||a?.time||a?.kickoff||a?.matchTime||a?.match_time||"").slice(0,5)}
+  function calendarPanel(){
+    const home=$("s34HomeView");if(!home)return;
+    // Integrate calendar activities, training plans and fixtures into the existing dashboard cards.
+    const todayKey=localDateKey();
+    const rawActivities=calendarData().filter(a=>a&&homeActivityDate(a)&&String(a.status||"Planlagt")!=="Aflyst");
+    const sessions=trainingSessionData().filter(x=>x&&homeActivityDate(x));
+    const sessionActivities=sessions.map(x=>({
+      ...x,
+      id:"session:"+String(x.id||x.sessionId||x.session_id||""),
+      sessionId:String(x.id||x.sessionId||x.session_id||""),
+      linkedCalendarActivityId:String(x.calendarActivityId||x.activityId||""),
+      sourceKind:"session",
+      type:x.type||"Træning",
+      title:x.title||x.name||"Træning",
+      date:homeActivityDate(x),
+      startTime:homeActivityTime(x),
+      focus:x.focus||x.theme||x.topic||""
+    }));
+    const calendarIds=new Set(rawActivities.map(a=>String(a.trainingPlanSessionId||a.sessionId||"")).filter(Boolean));
+    const calendarKeys=new Set(rawActivities.map(a=>[homeActivityDate(a),String(a.title||a.name||a.type||"").trim().toLowerCase()].join("|")));
+    const activities=[...rawActivities];
+    // Add sessions not already represented by a calendar activity; this prevents intermittent
+    // omissions while avoiding duplicate rows for a linked calendar/session pair.
+    sessionActivities.forEach(a=>{
+      const sid=String(a.id||"").replace(/^session:/,"");
+      const represented=calendarIds.has(sid)||calendarKeys.has([a.date,String(a.title||a.name||a.type||"").trim().toLowerCase()].join("|"));
+      if(!represented)activities.push(a);
+    });
+    let matches=[];
+    try{
+      if(typeof start11CalendarAllMatches==="function"){
+        matches=(start11CalendarAllMatches()||[]).map((m,i)=>({
+          ...m,
+          id:"match:"+String(m.id||m.matchId||m.match_id||i),
+          sourceKind:"match",
+          type:"Kamp",
+          title:[m.home||m.homeTeam||m.home_team,m.away||m.awayTeam||m.away_team].filter(Boolean).join(" – ")||"Kamp",
+          date:homeActivityDate(m),
+          startTime:homeActivityTime(m),
+          place:m.venue||m.place||m.stadium||"",
+          teamName:m.home||m.homeTeam||m.home_team||""
+        })).filter(m=>m.date);
+      }
+    }catch(_){}
+    const combined=[...activities,...matches]
+      .filter(a=>homeActivityDate(a)>=todayKey)
+      .sort((a,b)=>(homeActivityDate(a)+homeActivityTime(a)).localeCompare(homeActivityDate(b)+homeActivityTime(b)));
+    const isTraining=a=>a?.sourceKind==="session"||/træning|traening|training|fysisk/i.test(String(a?.type||""));
+    const upcomingTraining=combined.find(isTraining)||null;
+    const dateLabel=d=>{try{return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("da-DK",{weekday:"short",day:"2-digit",month:"short"})}catch(_){return d||""}};
+    const openTraining=(a,kind)=>{
+      try {
+        if(kind==="session"||a?.sourceKind==="session") {
+          const id=String(a.sessionId||a.id||"").replace(/^session:/,"");
+          if(id && typeof window.start11OpenTrainingPlanEditorModal==="function") window.start11OpenTrainingPlanEditorModal(id);
+          return;
+        }
+        if(a && window.START11CalendarPlanner?.openTrainingPlan) window.START11CalendarPlanner.openTrainingPlan(a);
+        else if(a && window.START11CalendarPlanner?.open) window.START11CalendarPlanner.open(a.date,a.id);
+        else if(a?.trainingPlanSessionId && typeof window.start11OpenTrainingPlanEditorModal==="function") window.start11OpenTrainingPlanEditorModal(a.trainingPlanSessionId);
+        else if(typeof window.start11OpenTrainingPlanEditorModal==="function") window.start11OpenTrainingPlanEditorModal(a?.id);
+      } catch(err){console.warn("START11 home training open:",err)}
+    };
+    const nextDate=$("s34TrainingDate"), nextTitle=$("s34TrainingTitle"), nextMeta=$("s34TrainingMeta"), nextBtn=$("s34OpenTraining");
+    if(upcomingTraining){
+      text(nextDate,`${dateLabel(homeActivityDate(upcomingTraining))}${homeActivityTime(upcomingTraining)?` · ${esc(homeActivityTime(upcomingTraining))}`:""}`);
+      text(nextTitle,upcomingTraining.title||upcomingTraining.name||upcomingTraining.type||"Træning");
+      const meta=[upcomingTraining.place,upcomingTraining.focus||upcomingTraining.theme].filter(Boolean).join(" · ");
+      text(nextMeta,meta);
+      if(nextBtn){nextBtn.textContent="Åbn træning →";nextBtn.onclick=()=>openTraining(upcomingTraining,upcomingTraining.sourceKind==="session"?"session":"activity");}
+    } else {
+      text(nextDate,"Ingen planlagt træning");text(nextTitle,"—");text(nextMeta,"");
+      if(nextBtn){nextBtn.textContent="Åbn træning →";nextBtn.onclick=null;}
+    }
+    const list=$("s34Activities");
+    if(list){
+      const upcoming=combined.slice(0,5);
+      set(list,upcoming.map(a=>{
+        const date=homeActivityDate(a), time=homeActivityTime(a);
+        const when=`${dateLabel(date)}${time?` · ${esc(time)}`:""}`;
+        const title=a.title||a.name||a.type||"Aktivitet";
+        const detail=[a.type,a.place,a.teamName||a.team].filter(Boolean).join(" · ");
+        return `<button type="button" class="s37-existing-activity" data-home-activity="${esc(a.id||"")}" data-home-type="${esc(a.type||"")}" data-home-kind="${esc(a.sourceKind||"activity")}"><span>${esc(when)}</span><strong>${esc(title)}</strong><small>${esc(detail)}</small></button>`;
+      }).join("")||'<div class="s37-calendar-empty">Ingen kommende aktiviteter.</div>');
+      if(!list.dataset.bound){
+        list.dataset.bound="1";
+        list.addEventListener("click",e=>{
+          const b=e.target.closest("[data-home-activity]");if(!b)return;
+          const kind=b.dataset.homeKind, id=String(b.dataset.homeActivity||"");
+          if(kind==="session"){openTraining({id:id.replace(/^session:/,"")}, "session");return;}
+          if(kind==="match"){ $("s34OpenMatch")?.click(); return; }
+          const a=calendarData().find(x=>String(x.id)===id);if(!a)return;
+          if(isTraining(a))openTraining(a,"activity");
+          else if(window.START11CalendarPlanner?.open)window.START11CalendarPlanner.open(a.date,a.id);
+          else $("s34OpenCalendar")?.click();
+        });
+      }
+    }
+  }
+  function calendarPanelStyles(){
+    if($("s37CalendarPanelStyles"))return;
+    const style=document.createElement("style");style.id="s37CalendarPanelStyles";
+    style.textContent=`#s34Activities{display:grid;gap:6px}.s37-existing-activity{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;width:100%;padding:9px 0;text-align:left;border:0;border-bottom:1px solid rgba(255,255,255,.08);background:transparent;color:inherit;cursor:pointer}.s37-existing-activity:hover strong{color:#71ed54}.s37-existing-activity span{grid-column:1/-1;color:#a4b3a8;font-size:10px}.s37-existing-activity strong{font-size:12px;font-weight:700}.s37-existing-activity small{grid-column:1/-1;color:#a4b3a8;font-size:10px}.s37-calendar-empty{padding:10px 0;color:#92a096;font-size:11px}`;
+    document.head.appendChild(style);
+  }
   function actions(){
     // The global quick-action strip was redundant with navigation and lineup actions.
     // Hide it only on the home dashboard; keep the underlying app features intact.
@@ -118,7 +238,7 @@
       else if(go==="video")document.querySelector('[data-s34="video"]')?.click();
     });
   }
-  function run(){if(!ready())return;try{greeting();alerts();matchBadges();status();lineupSide();opponent();actions();bindClicks()}catch(err){console.warn("START11 home v37:",err)}}
+  function run(){if(!ready())return;try{greeting();alerts();matchBadges();status();lineupSide();opponent();calendarPanelStyles();calendarPanel();actions();bindClicks()}catch(err){console.warn("START11 home v37:",err)}}
   function start(){run();setInterval(run,1800);document.addEventListener("click",()=>setTimeout(run,180));window.addEventListener("load",()=>setTimeout(run,400))}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();

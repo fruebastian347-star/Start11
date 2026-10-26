@@ -1,0 +1,29 @@
+START11 – Kalenderplanlægger v1
+
+Udgangspunkt: START11_V37_1_Plus_Coaching_Hub_Cleanup.
+
+Tilføjet:
+- Kalenderaktiviteter med 10 aktivitetstyper og fire statusser.
+- Oprettelses-/redigeringsdialog fra dato og global opretknap.
+- Tid, sted, flere hold, flere trænere, fokus og noter.
+- Gemte steder, månedsliste og filtre efter hold, type, træner og sted.
+- Gentagelser ugentligt, hver anden uge eller hver N. uge frem til valgt slutdato.
+- Spørgsmål ved kendte danske helligdage under oprettelse af gentagelser.
+- Valgfri tilknyttet træningsplan, fremmøde og strukturerede evalueringsfelter.
+- ICS-eksport af aktivitet/måned samt manuel ICS-import med simpel dubletkontrol.
+- Statusbaseret visning og bevaring af aflyste aktiviteter.
+- Advarsel ved mulig dobbeltbooking af hold, træner eller sted; brugeren kan fortsætte.
+- Kalenderdata gemmes i Coaching Hub-data og følger eksisterende gemme-/cloud-save-mønster.
+
+Begrænsninger i denne første version:
+- Automatisk synkronisering begge veje med Apple Kalender/Google Kalender er ikke implementeret. Der er manuel ICS-eksport/import; live-synkronisering kræver særskilt OAuth-/API-integration.
+- Skoleferier opdages ikke automatisk, da der ikke er valgt kommune/skoleferiekalender. Den første version spørger ved indbyggede datoer for kendte helligdage.
+- Adgangsstyring er ikke udvidet med nye roller i denne version; eksisterende backend-rettigheder skal gennemgås særskilt.
+- Datoer for gentagelser oprettes som selvstændige poster i serien. Der er mulighed for at anvende redigering på hele serien fremadrettet.
+
+Testet:
+- Python-build af start11.js gennem build_start11.py.
+- Node.js syntakskontrol (node --check start11.js).
+- Kontrol af at den byggede bundle er identisk med concatenation af modulerne i build_start11.py.
+
+Ikke testet i en rigtig browser eller mod en aktiv Supabase-/Cloudflare-installation.
